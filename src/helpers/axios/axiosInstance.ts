@@ -1,4 +1,3 @@
-import { authKey } from "@/constants/authKey";
 import setAccessToken from "@/services/actions/setAccessToken";
 import { getNewAccessToken } from "@/services/auth.services";
 import { IGenericErrorResponse, ResponseSuccessType } from "@/types";
@@ -29,7 +28,7 @@ const onRefreshed = (token: string) => {
 // Add a request interceptor
 instance.interceptors.request.use(
   async function (config) {
-    const accessToken = Cookies.get(authKey);
+    const accessToken = Cookies.get("accessToken");
     // console.log(accessToken);
 
     if (accessToken) {
@@ -65,7 +64,7 @@ instance.interceptors.response.use(
         isRefreshing = true;
 
         try {
-          const response = await getNewAccessToken(); // Fetch a new access token
+          const response = await getNewAccessToken();
           const newAccessToken = response?.data?.accessToken;
 
           if (newAccessToken) {
