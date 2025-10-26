@@ -1,112 +1,80 @@
-import setAccessToken from "@/services/actions/setAccessToken";
-import { getNewAccessToken } from "@/services/auth.services";
-import { IGenericErrorResponse, ResponseSuccessType } from "@/types";
-import { getFromLocalStorage, setToLocalStorage } from "@/utils/local-storage";
 import axios from "axios";
-import Cookies from "js-cookie";
+import { getNewAccessToken } from "@/services/auth.services";
+import { getCookie, setCookie } from "@/utils/nextCookies";
 
+// Create Axios instance
 const instance = axios.create();
 instance.defaults.headers.post["Content-Type"] = "application/json";
 instance.defaults.headers["Accept"] = "application/json";
 instance.defaults.timeout = 60000;
 
-// Token refresh logic
-let isRefreshing = false; // To prevent multiple refresh calls
-let refreshSubscribers: Array<(token: string) => void> = [];
+// Token refresh state
+let isRefreshing = false;
+let refreshSubscribers = [] as ((token: string) => void)[];
 
-// Function to add subscribers to pending requests
 const subscribeTokenRefresh = (callback: (token: string) => void) => {
   refreshSubscribers.push(callback);
 };
 
-// Function to notify all subscribers after token is refreshed
 const onRefreshed = (token: string) => {
-  refreshSubscribers.forEach((callback) => callback(token));
+  refreshSubscribers.forEach((cb) => cb(token));
   refreshSubscribers = [];
 };
 
-// Add a request interceptor
+// === Request Interceptor ===
 instance.interceptors.request.use(
-  async function (config) {
-    const accessToken = Cookies.get("accessToken");
-    // console.log(accessToken);
+  async (config) => {
+    const accessToken = await getCookie("accessToken");
 
     if (accessToken) {
-      config.headers.Authorization = accessToken;
+      config.headers.Authorization = accessToken?.value;
     }
     return config;
   },
-  function (error) {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Add a response interceptor
+// === Response Interceptor ===
 instance.interceptors.response.use(
-  //@ts-ignore
-  (response) => {
-    const responseObject: ResponseSuccessType = {
-      data: response?.data,
-      meta: response?.data?.meta,
-    };
-    // console.log(response);
-    return responseObject;
-  },
+  (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // Handle 500 and token-related errors
     if (error?.response?.status === 500 && !originalRequest._retry) {
-      // Prevent infinite retry loops
       originalRequest._retry = true;
 
       if (!isRefreshing) {
         isRefreshing = true;
-
         try {
-          const response = await getNewAccessToken();
-          const newAccessToken = response?.data?.accessToken;
+          const res = await getNewAccessToken();
+          const newToken = res?.data?.accessToken;
 
-          if (newAccessToken) {
-            // Update access token in storage and set it globally
-            setAccessToken(newAccessToken);
-            setToLocalStorage(authKey, newAccessToken);
-
-            // Set new token to the failed request's Authorization header
-            originalRequest.headers[
-              "Authorization"
-            ] = `Bearer ${newAccessToken}`;
-
-            // Resolve all requests waiting for token refresh
-            onRefreshed(newAccessToken);
-
-            return instance(originalRequest); // Retry the failed request
+          if (newToken) {
+            await setCookie("refreshToken", newToken);
+            onRefreshed(newToken);
+            isRefreshing = false;
           }
-        } catch (error) {
-          // Handle error cases
-          console.error("Error refreshing token:", error);
-        } finally {
-          isRefreshing = false; // Reset the refreshing flag
+        } catch (err) {
+          isRefreshing = false;
+          console.error("Token refresh failed:", err);
+          return Promise.reject(err);
         }
       }
 
-      // Return pending requests once refresh is done
       return new Promise((resolve) => {
-        subscribeTokenRefresh((token) => {
-          originalRequest.headers["Authorization"] = `Bearer ${token}`;
-          resolve(instance(originalRequest)); // Retry with new token
+        subscribeTokenRefresh((newAccessToken) => {
+          originalRequest.headers.Authorization = newAccessToken;
+          resolve(instance(originalRequest));
         });
       });
     }
 
-    // Handle other errors
-    const responseObject: IGenericErrorResponse = {
-      statusCode: error?.response?.data?.statusCode,
-      message: error?.response?.data?.message,
-      errorMessages: error?.response?.data?.message,
-    };
-
-    return Promise.reject(responseObject); // Reject error
+    // return Promise.reject({
+    //   statusCode: error?.response?.status || 500,
+    //   message: error?.response?.data?.message || "Something went wrong",
+    //   errorMessages: error?.response?.data?.message || [],
+    // });
+    return Promise.reject(error);
   }
 );
 
