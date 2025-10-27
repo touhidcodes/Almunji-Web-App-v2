@@ -172,9 +172,9 @@ export default function BooksPage() {
   const mostPopular = books.sort((a, b) => b.downloads - a.downloads)[0];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
+    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-teal-50 to-cyan-50">
       {/* Hero Header */}
-      <div className="bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 text-white shadow-2xl">
+      <div className="bg-linear-to-br from-emerald-600 via-teal-600 to-cyan-700 text-white shadow-2xl">
         <div className="max-w-7xl mx-auto px-4 py-12">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
             <div>
@@ -330,7 +330,7 @@ export default function BooksPage() {
           </div>
 
           {mostPopular && (
-            <div className="flex items-center gap-3 bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-2 rounded-lg">
+            <div className="flex items-center gap-3 bg-linear-to-r from-emerald-50 to-teal-50 px-4 py-2 rounded-lg">
               <TrendingUp className="w-5 h-5 text-emerald-600" />
               <div>
                 <p className="text-xs text-gray-500">Most Popular</p>
@@ -351,14 +351,14 @@ export default function BooksPage() {
                 className="group overflow-hidden border-0 shadow-md hover:shadow-2xl transition-all duration-500 bg-white rounded-lg relative"
               >
                 <div className="relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/20 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <img
                     src={book.coverImage}
                     alt={book.title}
                     className="w-full h-56 object-cover transform group-hover:scale-110 transition-transform duration-700"
                   />
                   {book.isPremium && (
-                    <div className="absolute top-3 right-3 bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-500 text-white px-2 py-1 rounded-md text-xs font-semibold shadow-lg z-20 flex items-center gap-1">
+                    <div className="absolute top-3 right-3 bg-linear-to-r from-amber-400 via-yellow-500 to-amber-500 text-white px-2 py-1 rounded-md text-xs font-semibold shadow-lg z-20 flex items-center gap-1">
                       <Sparkles className="w-3 h-3" />
                       Premium
                     </div>
@@ -425,7 +425,7 @@ export default function BooksPage() {
                 className="group hover:shadow-xl transition-all duration-300 border-0 shadow-md overflow-hidden bg-white rounded-lg"
               >
                 <div className="flex p-5 gap-5">
-                  <div className="relative flex-shrink-0">
+                  <div className="relative shrink-0">
                     <div className="relative overflow-hidden rounded-lg">
                       <img
                         src={book.coverImage}
@@ -433,7 +433,7 @@ export default function BooksPage() {
                         className="w-28 h-40 object-cover transform group-hover:scale-105 transition-transform duration-500"
                       />
                       {book.isPremium && (
-                        <div className="absolute -top-2 -right-2 bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-500 text-white px-2 py-1 rounded text-xs font-semibold shadow-lg z-10 flex items-center gap-1">
+                        <div className="absolute -top-2 -right-2 bg-linear-to-r from-amber-400 via-yellow-500 to-amber-500 text-white px-2 py-1 rounded text-xs font-semibold shadow-lg z-10 flex items-center gap-1">
                           <Sparkles className="w-3 h-3" />
                           Premium
                         </div>

@@ -75,11 +75,11 @@ const AboutPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
+    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-teal-50 to-cyan-50">
       {/* Hero Section */}
       <div className="max-w-7xl mx-auto px-4 pt-16 pb-20">
         <div className="text-center mb-16">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full mb-8 shadow-xl">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-linear-to-br from-emerald-400 to-teal-500 rounded-full mb-8 shadow-xl">
             <BookOpen className="h-10 w-10 text-white" />
           </div>
           <h1 className="text-5xl md:text-6xl font-bold text-slate-800 mb-6 leading-tight">
@@ -100,7 +100,7 @@ const AboutPage = () => {
               className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white rounded-2xl overflow-hidden group"
             >
               <CardContent className="p-6">
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full mb-4 group-hover:scale-110 transition-transform duration-300">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-linear-to-br from-emerald-100 to-teal-100 rounded-full mb-4 group-hover:scale-110 transition-transform duration-300">
                   <stat.icon className="h-6 w-6 text-emerald-600" />
                 </div>
                 <h3 className="text-3xl font-bold text-slate-800 mb-2">
@@ -139,7 +139,7 @@ const AboutPage = () => {
               </Button>
             </div>
             <div className="relative">
-              <div className="w-full h-96 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-3xl shadow-2xl flex items-center justify-center">
+              <div className="w-full h-96 bg-linear-to-br from-emerald-400 to-teal-500 rounded-3xl shadow-2xl flex items-center justify-center">
                 <div className="text-center text-white">
                   <Heart className="h-16 w-16 mx-auto mb-4" />
                   <h3 className="text-2xl font-bold">Spreading Knowledge</h3>
@@ -154,7 +154,7 @@ const AboutPage = () => {
       </div>
 
       {/* Values Section */}
-      <div className="py-20 bg-gradient-to-br from-slate-50 to-emerald-50">
+      <div className="py-20 bg-linear-to-br from-slate-50 to-emerald-50">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-800 mb-6">
@@ -173,7 +173,7 @@ const AboutPage = () => {
               >
                 <CardContent className="p-8">
                   <div
-                    className={`inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br ${value.color} rounded-2xl mb-6 group-hover:scale-110 transition-transform duration-300`}
+                    className={`inline-flex items-center justify-center w-16 h-16 bg-linear-to-br ${value.color} rounded-2xl mb-6 group-hover:scale-110 transition-transform duration-300`}
                   >
                     <value.icon className="h-8 w-8 text-white" />
                   </div>
@@ -210,7 +210,7 @@ const AboutPage = () => {
                 className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white rounded-2xl overflow-hidden group"
               >
                 <CardContent className="p-8">
-                  <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full mx-auto mb-6 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                  <div className="w-24 h-24 bg-linear-to-br from-emerald-400 to-teal-500 rounded-full mx-auto mb-6 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
                     <Users className="h-12 w-12 text-white" />
                   </div>
                   <h3 className="text-xl font-bold text-slate-800 mb-2">
@@ -229,7 +229,7 @@ const AboutPage = () => {
       </div>
 
       {/* CTA Section */}
-      <div className="py-20 bg-gradient-to-br from-emerald-600 to-teal-700">
+      <div className="py-20 bg-linear-to-br from-emerald-600 to-teal-700">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold text-white mb-6">
             Join Our Learning Community
