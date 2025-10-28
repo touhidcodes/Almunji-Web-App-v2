@@ -31,7 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import SurahSidebar from "@/components/Pages/Surah/SurahSidebar";
+import SurahSidebar from "@/components/pages/Surah/SurahSidebar";
 import { useGetChaptersQuery } from "@/redux/api/quranApi";
 import { RootState } from "@/redux/store";
 import {
