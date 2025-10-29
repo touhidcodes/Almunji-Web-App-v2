@@ -158,7 +158,7 @@ const SurahLayout: React.FC<SurahLayoutProps> = ({ children }) => {
   const volumePercent = Math.round(volume * 100);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
+    <div className="flex h-screen overflow-hidden bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
       {/* Sidebar - Full Height */}
       <SurahSidebar
         chapters={chaptersData}
@@ -308,7 +308,7 @@ const SurahLayout: React.FC<SurahLayoutProps> = ({ children }) => {
                 >
                   <Minus className="h-3 w-3" />
                 </Button>
-                <span className="text-xs text-gray-700 dark:text-gray-300 min-w-[2.5rem] text-center font-semibold">
+                <span className="text-xs text-gray-700 dark:text-gray-300 min-w-10 text-center font-semibold">
                   {fontSize}
                 </span>
                 <Button
@@ -464,7 +464,7 @@ const SurahLayout: React.FC<SurahLayoutProps> = ({ children }) => {
         </header>
 
         {/* Main Content - Scrollable with proper padding for footer */}
-        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+        <main className="flex-1 overflow-y-auto bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
           <div className="container mx-auto px-4 py-6 max-w-4xl">
             {/* Pass props to children */}
             {React.Children.map(children, (child) =>
