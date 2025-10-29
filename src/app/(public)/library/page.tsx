@@ -217,11 +217,11 @@ const LibraryPage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
+    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-teal-50 to-cyan-50">
       {/* Hero Section */}
       <div className="max-w-7xl mx-auto px-4 pt-16 pb-12">
         <div className="text-center mb-16">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full mb-8 shadow-xl">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-linear-to-br from-emerald-400 to-teal-500 rounded-full mb-8 shadow-xl">
             <BookOpen className="h-10 w-10 text-white" />
           </div>
           <h1 className="text-5xl md:text-6xl font-bold text-slate-800 mb-6 leading-tight">
@@ -257,7 +257,7 @@ const LibraryPage = () => {
               className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white rounded-2xl overflow-hidden group"
             >
               <CardContent className="p-6">
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full mb-4 group-hover:scale-110 transition-transform duration-300">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-linear-to-br from-emerald-100 to-teal-100 rounded-full mb-4 group-hover:scale-110 transition-transform duration-300">
                   <stat.icon className="h-6 w-6 text-emerald-600" />
                 </div>
                 <h3 className="text-3xl font-bold text-slate-800 mb-2">
@@ -325,7 +325,7 @@ const LibraryPage = () => {
         </div>
 
         {/* Recently Added Section */}
-        <Card className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-xl rounded-3xl overflow-hidden mb-12">
+        <Card className="bg-linear-to-br from-emerald-600 to-teal-700 text-white shadow-xl rounded-3xl overflow-hidden mb-12">
           <CardContent className="p-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold flex items-center">
@@ -380,17 +380,17 @@ const LibraryPage = () => {
             >
               <div
                 className={`relative ${
-                  viewMode === "list" ? "w-48 flex-shrink-0" : "h-64"
+                  viewMode === "list" ? "w-48 shrink-0" : "h-64"
                 }`}
               >
-                <div className="h-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+                <div className="h-full bg-linear-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
                   <BookOpen className="h-12 w-12 text-white opacity-80 group-hover:scale-110 transition-transform duration-300" />
                 </div>
 
                 {book.badge && (
                   <div className="absolute top-4 left-4">
                     <span
-                      className={`px-3 py-1 bg-gradient-to-r ${book.badgeColor} text-white text-xs font-bold rounded-full shadow-lg`}
+                      className={`px-3 py-1 bg-linear-to-r ${book.badgeColor} text-white text-xs font-bold rounded-full shadow-lg`}
                     >
                       <Crown className="inline h-3 w-3 mr-1" />
                       {book.badge}

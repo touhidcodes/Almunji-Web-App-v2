@@ -167,14 +167,14 @@ const SurahSidebar: React.FC<SurahSidebarProps> = ({
                       "hover:shadow-md hover:scale-[1.02] group",
                       "text-left relative overflow-hidden",
                       isActive
-                        ? "bg-gradient-to-r from-teal-50 to-emerald-50 dark:from-teal-950 dark:to-emerald-950 border-teal-300 dark:border-teal-700 shadow-sm"
+                        ? "bg-linear-to-r from-teal-50 to-emerald-50 dark:from-teal-950 dark:to-emerald-950 border-teal-300 dark:border-teal-700 shadow-sm"
                         : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-teal-200 dark:hover:border-teal-800",
                       isCollapsed && "p-2"
                     )}
                   >
                     {/* Active Indicator */}
                     {isActive && (
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-teal-500 to-emerald-500"></div>
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-linear-to-b from-teal-500 to-emerald-500"></div>
                     )}
 
                     {!isCollapsed ? (
@@ -182,9 +182,9 @@ const SurahSidebar: React.FC<SurahSidebarProps> = ({
                         {/* Surah Number Badge */}
                         <div
                           className={cn(
-                            "flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm transition-colors",
+                            "shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm transition-colors",
                             isActive
-                              ? "bg-gradient-to-br from-teal-500 to-emerald-500 text-white shadow-md"
+                              ? "bg-linear-to-br from-teal-500 to-emerald-500 text-white shadow-md"
                               : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 group-hover:bg-teal-50 dark:group-hover:bg-teal-950"
                           )}
                         >
@@ -219,7 +219,7 @@ const SurahSidebar: React.FC<SurahSidebarProps> = ({
                             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                               {surah.surahNameTranslation}
                             </p>
-                            <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">
+                            <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">
                               {surah.totalAyah} verses
                             </span>
                           </div>
@@ -240,7 +240,7 @@ const SurahSidebar: React.FC<SurahSidebarProps> = ({
                           className={cn(
                             "w-12 h-12 rounded-lg flex items-center justify-center font-bold transition-colors",
                             isActive
-                              ? "bg-gradient-to-br from-teal-500 to-emerald-500 text-white shadow-md"
+                              ? "bg-linear-to-br from-teal-500 to-emerald-500 text-white shadow-md"
                               : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                           )}
                         >

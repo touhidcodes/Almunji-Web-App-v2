@@ -292,9 +292,9 @@ const QuranChapterDisplay: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 pb-32">
+    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 pb-32">
       {/* Header Section */}
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-800 dark:to-teal-800 text-white shadow-lg mb-8">
+      <div className="bg-linear-to-r from-emerald-600 to-teal-600 dark:from-emerald-800 dark:to-teal-800 text-white shadow-lg mb-8">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center">
             <div className="text-5xl font-arabic mb-3 drop-shadow-lg">

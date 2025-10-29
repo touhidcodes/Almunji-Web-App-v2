@@ -111,7 +111,7 @@ const SurahHeader: React.FC<{
   canNavigatePrev = true,
   canNavigateNext = true,
 }) => (
-  <Card className="mb-8 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950 dark:via-teal-950 dark:to-cyan-950 border-emerald-200 dark:border-emerald-800">
+  <Card className="mb-8 bg-linear-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950 dark:via-teal-950 dark:to-cyan-950 border-emerald-200 dark:border-emerald-800">
     <div className="p-8 text-center">
       {/* Badge */}
       <div className="flex items-center justify-center mb-6">
