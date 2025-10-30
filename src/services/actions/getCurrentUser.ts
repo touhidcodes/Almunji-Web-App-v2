@@ -2,13 +2,12 @@
 
 import { cookies } from "next/headers";
 import { jwtDecode, JwtPayload } from "jwt-decode";
-import { authKey } from "@/constants/authKey";
 
 type DecodedUser = JwtPayload & { role?: string };
 
 export const getCurrentUser = async (): Promise<DecodedUser | null> => {
-  const cookieStore = cookies();
-  const token = cookieStore.get(authKey)?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get("accessToken")?.value;
 
   if (!token) return null;
 

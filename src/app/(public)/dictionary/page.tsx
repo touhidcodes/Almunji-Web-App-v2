@@ -184,7 +184,7 @@ export default function QuranPersianDictionary() {
                               </p>
                             )}
                           </div>
-                          <ChevronRight className="h-5 w-5 text-gray-400 flex-shrink-0 ml-2" />
+                          <ChevronRight className="h-5 w-5 text-gray-400 shrink-0 ml-2" />
                         </div>
                       </CardContent>
                     </Card>

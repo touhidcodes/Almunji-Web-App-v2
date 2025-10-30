@@ -1,12 +1,11 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { authKey } from "@/constants/authKey";
 
 export const userLogout = async () => {
   const cookieStore = await cookies();
 
-  cookieStore.set(authKey, "", {
+  cookieStore.set("accessToken", "", {
     path: "/",
     maxAge: 0,
   });

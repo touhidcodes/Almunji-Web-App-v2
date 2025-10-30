@@ -1,11 +1,11 @@
 "use server";
 
-import { authKey } from "@/constants/authKey";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-const setAccessToken = (token: string, option?: any) => {
-  cookies().set(authKey, token, {
+const setAccessToken = async (token: string, option?: any) => {
+  const cookieStore = await cookies();
+  cookieStore.set("accessToken", token, {
     maxAge: 60 * 60 * 24 * 7,
     path: "/",
     httpOnly: true,
