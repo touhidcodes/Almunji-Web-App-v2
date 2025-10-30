@@ -3,7 +3,6 @@
 import { FieldValues } from "react-hook-form";
 import { toast } from "sonner";
 import { setCookie } from "@/utils/nextCookies";
-import { authKey } from "@/constants/authKey";
 
 export const userLogin = async (data: FieldValues) => {
   // TODO: change URL before build
@@ -24,7 +23,7 @@ export const userLogin = async (data: FieldValues) => {
   }
 
   if (userInfo.data.token) {
-    setCookie(authKey, userInfo.data.token);
+    setCookie("accessToken", userInfo.data.token);
   }
 
   return userInfo;
