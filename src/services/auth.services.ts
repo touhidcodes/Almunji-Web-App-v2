@@ -7,6 +7,15 @@ import {
   setToLocalStorage,
 } from "@/utils/local-storage";
 
+interface DecodedToken {
+  role?: string;
+  // Add other properties from your JWT token
+  userId?: string;
+  email?: string;
+  exp?: number;
+  [key: string]: unknown;
+}
+//
 export const storeUserInfo = ({ accessToken }: { accessToken: string }) => {
   //   console.log(accessToken);
   return setToLocalStorage("accessToken", accessToken);
@@ -16,7 +25,7 @@ export const getUserInfo = () => {
   const authToken = getFromLocalStorage("accessToken");
   //   console.log(authToken);
   if (authToken) {
-    const decodedData: any = decodedToken(authToken);
+    const decodedData = decodedToken(authToken) as DecodedToken;
     return {
       ...decodedData,
       role: decodedData?.role,

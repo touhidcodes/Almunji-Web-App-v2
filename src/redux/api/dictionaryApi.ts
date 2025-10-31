@@ -1,6 +1,10 @@
 import { tagTypes } from "../tags";
 import { baseServerApi } from "./baseApi";
 
+interface DictionarySuggestion {
+  data: unknown[];
+}
+
 export const dictionaryApi = baseServerApi.injectEndpoints({
   endpoints: (build) => ({
     getDictionarySuggestions: build.query({
@@ -12,7 +16,7 @@ export const dictionaryApi = baseServerApi.injectEndpoints({
         };
       },
       providesTags: [tagTypes.dictionary],
-      transformResponse: (response: any) => {
+      transformResponse: (response: DictionarySuggestion | undefined) => {
         if (!response || response === undefined) {
           return { data: [] };
         }

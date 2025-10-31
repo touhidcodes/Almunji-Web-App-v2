@@ -3,7 +3,14 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-const setAccessToken = async (token: string, option?: any) => {
+interface SetAccessTokenOptions {
+  redirect?: string;
+}
+
+const setAccessToken = async (
+  token: string,
+  option?: SetAccessTokenOptions
+) => {
   const cookieStore = await cookies();
   cookieStore.set("accessToken", token, {
     maxAge: 60 * 60 * 24 * 7,
@@ -13,7 +20,7 @@ const setAccessToken = async (token: string, option?: any) => {
     sameSite: "lax",
   });
 
-  if (option && option.redirect) {
+  if (option?.redirect) {
     redirect(option.redirect);
   }
 };
