@@ -4,8 +4,8 @@ export type IMeta = {
   total: number;
 };
 
-export type ResponseSuccessType = {
-  data: any;
+export type ResponseSuccessType<T = unknown> = {
+  data: T;
   meta?: IMeta;
 };
 

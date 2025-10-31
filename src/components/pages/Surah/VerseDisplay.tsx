@@ -416,7 +416,10 @@ const VerseDisplay: React.FC<VerseDisplayProps> = ({
       <div className="space-y-6">
         {surah ? (
           surah.bengali.map((ayah, index) => (
-            <Card className="group hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-800">
+            <Card
+              key={index}
+              className="group hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-800"
+            >
               <div className="p-6">
                 {/* Arabic Text */}
                 <div className="text-right mb-6" dir="rtl">
