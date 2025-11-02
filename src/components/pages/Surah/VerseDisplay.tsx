@@ -406,13 +406,6 @@ const VerseDisplay: React.FC<VerseDisplayProps> = ({
 
   return (
     <div className={cn("space-y-6", className)}>
-      {/* <SurahHeader
-        surah={surah}
-        onNavigate={onNavigate}
-        canNavigatePrev={canNavigatePrev}
-        canNavigateNext={canNavigateNext}
-      /> */}
-
       <div className="space-y-6">
         {surah ? (
           surah.bengali.map((ayah, index) => (
