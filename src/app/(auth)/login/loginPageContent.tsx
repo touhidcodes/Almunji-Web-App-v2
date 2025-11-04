@@ -3,11 +3,11 @@
 import { Button } from "@/components/ui/button";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FieldValues } from "react-hook-form";
-import FormContainer from "@/components/Forms/FormContainer";
-import FormInput from "@/components/Forms/FormInput";
+import FormContainer from "@/components/forms/FormContainer";
+import FormInput from "@/components/forms/FormInput";
 import Link from "next/link";
 import { ArrowRight, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { loginValidationSchema } from "@/schema/authSchema";
 import { userLogin } from "@/services/actions/userLogin";
