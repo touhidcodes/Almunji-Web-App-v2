@@ -1,34 +1,33 @@
 "use client";
 
-import React, { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
+  Award,
+  Bookmark,
   BookOpen,
-  Search,
-  Filter,
+  Clock,
+  Crown,
   Download,
   Eye,
-  Star,
-  Clock,
-  Grid3X3,
-  List,
-  Heart,
-  Bookmark,
-  Play,
-  Headphones,
   FileText,
-  Crown,
-  Shield,
+  Filter,
   Globe,
-  Award,
-  Lightbulb,
-  Moon,
-  Sparkles,
-  TrendingUp,
-  Calendar,
+  Grid3X3,
+  Headphones,
+  Heart,
   Languages,
+  Lightbulb,
+  List,
+  Moon,
+  Play,
+  Search,
+  Shield,
+  Sparkles,
+  Star,
+  TrendingUp,
 } from "lucide-react";
+import { useState } from "react";
 
 const LibraryPage = () => {
   const [viewMode, setViewMode] = useState("grid");

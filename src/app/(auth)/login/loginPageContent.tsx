@@ -1,23 +1,22 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { FieldValues } from "react-hook-form";
 import FormContainer from "@/components/forms/FormContainer";
 import FormInput from "@/components/forms/FormInput";
-import Link from "next/link";
-import { ArrowRight, Loader2 } from "lucide-react";
-import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import { loginValidationSchema } from "@/schema/authSchema";
 import { userLogin } from "@/services/actions/userLogin";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowRight, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { FieldValues } from "react-hook-form";
 import { toast } from "sonner";
 
 export default function LoginPageContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const handleLogin = async (values: FieldValues) => {
     try {
