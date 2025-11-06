@@ -1,4 +1,11 @@
-export interface TDictionaryWord {
+export interface TWordSuggestion {
+  id: string;
+  word: string;
+  pronunciation?: string;
+  definition?: string;
+}
+
+export interface TWordDetails {
   id: string;
   word: string;
   pronunciation?: string;
@@ -7,12 +14,4 @@ export interface TDictionaryWord {
   root?: string;
   examples?: string[];
   verses?: string[];
-}
-
-export interface TDictionarySuggestionsResponse {
-  data: TDictionaryWord[];
-}
-
-export interface TDictionaryWordResponse {
-  data: TDictionaryWord;
 }

@@ -9,6 +9,7 @@ import {
   useGetDictionarySuggestionsQuery,
   useGetDictionaryWordQuery,
 } from "@/redux/api/dictionaryApi";
+import { TWordDetails, TWordSuggestion } from "@/types/dictionary";
 import { Book, ChevronRight, Loader2, Search, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
@@ -41,8 +42,8 @@ export default function QuranPersianDictionary() {
       { skip: !selectedWordId } // Skip query if no word is selected
     );
 
-  const suggestions = suggestionsData?.data || [];
-  const selectedWord = wordDetailsData?.data || null;
+  const suggestions = (suggestionsData?.data as TWordSuggestion[]) || [];
+  const selectedWord = (wordDetailsData?.data as TWordDetails) || null;
 
   const handleWordSelect = (wordId: string) => {
     setSelectedWordId(wordId);
@@ -156,7 +157,7 @@ export default function QuranPersianDictionary() {
                     </CardContent>
                   </Card>
                 ) : suggestions.length > 0 ? (
-                  suggestions.map((word: any) => (
+                  suggestions.map((word: TWordSuggestion) => (
                     <Card
                       key={word.id}
                       className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
