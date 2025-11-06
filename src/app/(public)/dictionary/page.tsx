@@ -1,16 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Search, Book, ChevronRight, X, Loader2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   useGetDictionarySuggestionsQuery,
   useGetDictionaryWordQuery,
 } from "@/redux/api/dictionaryApi";
+import { Book, ChevronRight, Loader2, Search, X } from "lucide-react";
+import React, { useEffect, useState } from "react";
 
 export default function QuranPersianDictionary() {
   const [searchTerm, setSearchTerm] = useState("");

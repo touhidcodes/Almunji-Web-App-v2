@@ -22,7 +22,7 @@ export default function LoginPageContent() {
     try {
       setLoading(true);
       setError("");
-      const res: any = await userLogin(values);
+      const res = await userLogin(values);
 
       if (res?.data?.token) {
         toast.success(res?.message);
