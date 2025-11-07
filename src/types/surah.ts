@@ -1,5 +1,6 @@
 // Type definitions
 export interface TChapterData {
+  id: string | number;
   surahName: string;
   surahNameArabic: string;
   surahNameArabicLong: string;

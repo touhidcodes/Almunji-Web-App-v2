@@ -1,23 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  Moon,
-  Sun,
-  Settings,
-  Play,
-  Pause,
-  Volume2,
-  VolumeX,
-  Menu,
-  Minus,
-  Plus,
-  X,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import SurahSidebar from "@/components/pages/Surah/SurahSidebar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -27,21 +11,45 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
-import SurahSidebar from "@/components/pages/Surah/SurahSidebar";
 import { useGetChaptersQuery } from "@/redux/api/quranApi";
-import { RootState } from "@/redux/store";
 import {
   setFontSize,
   setIsPlaying,
   setVolume,
 } from "@/redux/features/playerSlice";
+import { RootState } from "@/redux/store";
+import { TChapterData } from "@/types/surah";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Menu,
+  Minus,
+  Moon,
+  Pause,
+  Play,
+  Plus,
+  Settings,
+  Sun,
+  Volume2,
+  VolumeX,
+  X,
+} from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 interface SurahLayoutProps {
   children: React.ReactNode;
+}
+
+interface ChildProps {
+  fontSize?: number;
+  isPlaying?: boolean;
+  onPlayPause?: () => void;
+  volume?: number;
 }
 
 const SurahLayout: React.FC<SurahLayoutProps> = ({ children }) => {
@@ -66,7 +74,9 @@ const SurahLayout: React.FC<SurahLayoutProps> = ({ children }) => {
   const currentSurahId = pathname.startsWith("/surahs/")
     ? parseInt(pathname.split("/")[2])
     : null;
-  const currentSurah = chaptersData?.find((s: any) => s.id === currentSurahId);
+  const currentSurah = (chaptersData as TChapterData[])?.find(
+    (s: TChapterData) => s.id === currentSurahId
+  );
 
   // Initialize settings from localStorage
   useEffect(() => {
@@ -161,7 +171,7 @@ const SurahLayout: React.FC<SurahLayoutProps> = ({ children }) => {
     <div className="flex h-screen overflow-hidden bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
       {/* Sidebar - Full Height */}
       <SurahSidebar
-        chapters={chaptersData}
+        chapters={chaptersData as TChapterData[]}
         isOpen={isSidebarOpen}
         onToggle={toggleSidebar}
         isLoading={isLoading}
@@ -468,13 +478,13 @@ const SurahLayout: React.FC<SurahLayoutProps> = ({ children }) => {
           <div className="container mx-auto px-4 py-6 max-w-4xl">
             {/* Pass props to children */}
             {React.Children.map(children, (child) =>
-              React.isValidElement(child)
+              React.isValidElement<ChildProps>(child)
                 ? React.cloneElement(child, {
                     fontSize: fontSize,
                     isPlaying,
                     onPlayPause: togglePlayPause,
                     volume: isMuted ? 0 : volume,
-                  } as any)
+                  })
                 : child
             )}
           </div>
