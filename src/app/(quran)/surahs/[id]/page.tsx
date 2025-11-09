@@ -1,26 +1,37 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  Play,
-  Pause,
-  Bookmark,
-  Settings,
-  SkipForward,
-  SkipBack,
-  Repeat,
-  Repeat1,
-} from "lucide-react";
 import { useGetChapterVersesQuery } from "@/redux/api/quranApi";
-import { useParams, useRouter } from "next/navigation";
+import {
+  setCurrentVerse,
+  setIsPlaying,
+  setPlaybackSpeed,
+  setRepeatMode,
+} from "@/redux/features/playerSlice";
 import { RootState } from "@/redux/store";
 import {
-  setIsPlaying,
-  setCurrentVerse,
-  setRepeatMode,
-  setPlaybackSpeed,
-} from "@/redux/features/playerSlice";
+  Bookmark,
+  Pause,
+  Play,
+  Repeat,
+  Repeat1,
+  Settings,
+  SkipBack,
+  SkipForward,
+} from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import React, { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+
+// Define types for audio data
+interface AudioReciter {
+  reciter: string;
+  url: string;
+  verses?: string[];
+}
+
+interface AudioData {
+  [key: string]: AudioReciter;
+}
 
 const QuranChapterDisplay: React.FC = () => {
   const dispatch = useDispatch();
@@ -102,10 +113,11 @@ const QuranChapterDisplay: React.FC = () => {
   // Update audio when reciter changes
   useEffect(() => {
     if (versesData && selectedReciter && audioRef.current && currentVerse) {
-      const audioData = versesData.audio[selectedReciter];
-      if (audioData?.verses) {
+      const audioData = versesData.audio as AudioData;
+      const reciterData = audioData[selectedReciter];
+      if (reciterData?.verses) {
         audioRef.current.src =
-          audioData.verses[currentVerse - 1] || audioData.url;
+          reciterData.verses[currentVerse - 1] || reciterData.url;
         if (isPlaying) {
           audioRef.current.play().catch(console.error);
         }
@@ -122,8 +134,9 @@ const QuranChapterDisplay: React.FC = () => {
     }
 
     const verseNumber = index + 1;
-    const audioData = versesData.audio[selectedReciter];
-    const audioSrc = audioData?.verses?.[index] || audioData?.url || "";
+    const audioData = versesData.audio as AudioData;
+    const reciterData = audioData[selectedReciter];
+    const audioSrc = reciterData?.verses?.[index] || reciterData?.url || "";
 
     const audio = audioRef.current;
     if (!audio) return;
@@ -166,9 +179,10 @@ const QuranChapterDisplay: React.FC = () => {
       dispatch(setIsPlaying(true));
 
       if (audioRef.current && versesData) {
-        const audioData = versesData.audio[selectedReciter];
+        const audioData = versesData.audio as AudioData;
+        const reciterData = audioData[selectedReciter];
         audioRef.current.src =
-          audioData?.verses?.[verseNumber - 1] || audioData?.url || "";
+          reciterData?.verses?.[verseNumber - 1] || reciterData?.url || "";
         audioRef.current.play().catch((err) => {
           console.error("Audio play error:", err);
           handlePauseAll();
@@ -212,9 +226,10 @@ const QuranChapterDisplay: React.FC = () => {
       dispatch(setCurrentVerse(newVerse));
       setCurrentVerseIndex(newVerse - 1);
 
-      const audioData = versesData.audio[selectedReciter];
-      if (audioData?.verses?.[newVerse - 1]) {
-        audioRef.current!.src = audioData.verses[newVerse - 1];
+      const audioData = versesData.audio as AudioData;
+      const reciterData = audioData[selectedReciter];
+      if (reciterData?.verses?.[newVerse - 1]) {
+        audioRef.current!.src = reciterData.verses[newVerse - 1];
         audioRef.current!.play().catch(console.error);
       }
     }
@@ -290,6 +305,8 @@ const QuranChapterDisplay: React.FC = () => {
       </div>
     );
   }
+
+  const audioData = versesData.audio as AudioData;
 
   return (
     <div className="min-h-screen bg-linear-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 pb-32">
@@ -395,8 +412,8 @@ const QuranChapterDisplay: React.FC = () => {
                     onChange={(e) => setSelectedReciter(e.target.value)}
                     className="bg-white/20 border border-white/30 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-white/50"
                   >
-                    {Object.entries(versesData.audio).map(
-                      ([key, value]: [string, any]) => (
+                    {Object.entries(audioData).map(
+                      ([key, value]: [string, AudioReciter]) => (
                         <option
                           key={key}
                           value={key}
