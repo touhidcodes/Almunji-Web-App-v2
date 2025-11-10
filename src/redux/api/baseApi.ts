@@ -1,12 +1,12 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
-import { tagTypesList } from "../tags";
 import { axiosBaseQuery } from "../../helpers/axios/axiosBaseQuery";
+import { tagTypesList } from "../tags";
 
 // const baseUrl = `http://localhost:5000/api`;
-const baseUrl = process.env.BASE_URL!;
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL!;
 console.log(baseUrl);
 
-const quranApiUrl = process.env.QURAN_API_URL!;
+const quranApiUrl = process.env.NEXT_PUBLIC_QURAN_API_URL!;
 
 // Define a service using a base URL and expected endpoints
 export const baseServerApi = createApi({
