@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { loginValidationSchema } from "@/schema/authSchema";
 import { userLogin } from "@/services/actions/userLogin";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -35,23 +35,6 @@ export default function LoginPageContent() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleTestLogin = async (role: "admin" | "user") => {
-    const credentials =
-      role === "admin"
-        ? {
-            identifier:
-              process.env.NEXT_PUBLIC_ADMIN_EMAIL || "admin@example.com",
-            password: process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin123",
-          }
-        : {
-            identifier:
-              process.env.NEXT_PUBLIC_USER_EMAIL || "user@example.com",
-            password: process.env.NEXT_PUBLIC_USER_PASSWORD || "user123",
-          };
-
-    await handleLogin(credentials);
   };
 
   const handleToggle = () => {
@@ -116,27 +99,6 @@ export default function LoginPageContent() {
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Login"}
         </Button>
       </FormContainer>
-
-      <div className="flex justify-between gap-2">
-        <Button
-          variant="outline"
-          className="bg-transparent border-slate-600 hover:bg-slate-800 hover:text-white hover:border-white rounded-full px-6 py-2 font-medium transition-all duration-200 group"
-          onClick={() => handleTestLogin("user")}
-          disabled={loading}
-        >
-          User Login
-          <ArrowRight className="ml-1 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-        </Button>
-        <Button
-          variant="outline"
-          className="bg-transparent border-slate-600 hover:bg-slate-800 hover:text-white hover:border-white rounded-full px-6 py-2 font-medium transition-all duration-200 group"
-          onClick={() => handleTestLogin("admin")}
-          disabled={loading}
-        >
-          Admin Login
-          <ArrowRight className="ml-1 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-        </Button>
-      </div>
 
       <p className="text-sm text-center mt-3">
         Don&apos;t have any account?{" "}
