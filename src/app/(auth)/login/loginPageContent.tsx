@@ -1,17 +1,37 @@
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { ChangeEvent, FormEvent, useState } from "react";
+
+// Types
+interface LoginFormData {
+  identifier: string;
+  password: string;
+  remember: boolean;
+}
+
+interface RegisterFormData {
+  name: string;
+  email: string;
+  username: string;
+  password: string;
+  confirmPassword: string;
+  agreeTerms: boolean;
+}
+
+interface AuthPageContentProps {
+  onToggle: () => void;
+}
 
 // Login Component
-function LoginPageContent({ onToggle }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [formData, setFormData] = useState({
+function LoginPageContent({ onToggle }: AuthPageContentProps) {
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [formData, setFormData] = useState<LoginFormData>({
     identifier: "",
     password: "",
     remember: false,
   });
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -19,7 +39,7 @@ function LoginPageContent({ onToggle }) {
     }));
   };
 
-  const handleLogin = async (e) => {
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     try {
       setLoading(true);
@@ -128,11 +148,11 @@ function LoginPageContent({ onToggle }) {
 }
 
 // Register Component
-function RegisterPageContent({ onToggle }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
-  const [formData, setFormData] = useState({
+function RegisterPageContent({ onToggle }: AuthPageContentProps) {
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [success, setSuccess] = useState<boolean>(false);
+  const [formData, setFormData] = useState<RegisterFormData>({
     name: "",
     email: "",
     username: "",
@@ -141,7 +161,7 @@ function RegisterPageContent({ onToggle }) {
     agreeTerms: false,
   });
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -149,7 +169,7 @@ function RegisterPageContent({ onToggle }) {
     }));
   };
 
-  const handleRegister = async (e) => {
+  const handleRegister = async (e: FormEvent) => {
     e.preventDefault();
     try {
       setLoading(true);
@@ -314,7 +334,7 @@ function RegisterPageContent({ onToggle }) {
 
 // Main Auth Page
 export default function AuthPage() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState<boolean>(true);
 
   const toggleAuthMode = () => {
     setIsLogin(!isLogin);
