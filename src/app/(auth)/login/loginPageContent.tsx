@@ -1,21 +1,6 @@
+import { TLoginFormData, TRegisterFormData } from "@/types/auth";
 import { Loader2 } from "lucide-react";
 import { ChangeEvent, FormEvent, useState } from "react";
-
-// Types
-interface LoginFormData {
-  identifier: string;
-  password: string;
-  remember: boolean;
-}
-
-interface RegisterFormData {
-  name: string;
-  email: string;
-  username: string;
-  password: string;
-  confirmPassword: string;
-  agreeTerms: boolean;
-}
 
 interface AuthPageContentProps {
   onToggle: () => void;
@@ -25,7 +10,7 @@ interface AuthPageContentProps {
 function LoginPageContent({ onToggle }: AuthPageContentProps) {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
-  const [formData, setFormData] = useState<LoginFormData>({
+  const [formData, setFormData] = useState<TLoginFormData>({
     identifier: "",
     password: "",
     remember: false,
@@ -152,7 +137,7 @@ function RegisterPageContent({ onToggle }: AuthPageContentProps) {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<boolean>(false);
-  const [formData, setFormData] = useState<RegisterFormData>({
+  const [formData, setFormData] = useState<TRegisterFormData>({
     name: "",
     email: "",
     username: "",
@@ -341,7 +326,7 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-50 to-slate-100 p-4">
       <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
         {isLogin ? (
           <LoginPageContent onToggle={toggleAuthMode} />
