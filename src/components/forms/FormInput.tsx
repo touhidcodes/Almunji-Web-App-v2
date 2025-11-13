@@ -1,23 +1,8 @@
-import { Loader2 } from "lucide-react";
+import { TLoginFormData, TRegisterFormData } from "@/types/auth";
+import { FormInput, Loader2 } from "lucide-react";
 import { useState } from "react";
+import FormContainer from "./FormContainer";
 
-// Types
-type TLoginFormData = {
-  identifier: string;
-  password: string;
-  remember: boolean;
-};
-
-type TRegisterFormData = {
-  name: string;
-  email: string;
-  username: string;
-  password: string;
-  confirmPassword: string;
-  agreeTerms: boolean;
-};
-
-// Auth Page Interface
 interface AuthPageContentProps {
   onToggle: () => void;
 }
@@ -79,8 +64,10 @@ function LoginPageContent({ onToggle }: AuthPageContentProps) {
         <FormInput name="password" label="Password" type="password" required />
 
         <div className="flex items-center justify-between mt-3 mb-2 space-x-6">
-          <FormCheckbox name="remember" label="Remember Me" />
-
+          <div className="flex items-center text-xs text-gray-500">
+            <input type="checkbox" name="remember" className="mr-2" />
+            <p>Remember Me</p>
+          </div>
           <button
             type="button"
             className="text-xs text-slate-800 underline cursor-pointer font-semibold"
@@ -89,7 +76,17 @@ function LoginPageContent({ onToggle }: AuthPageContentProps) {
           </button>
         </div>
 
-        <LoginSubmitButton loading={loading} />
+        <button
+          type="submit"
+          className="w-full bg-slate-800 text-white hover:bg-slate-700 py-2 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading}
+        >
+          {loading ? (
+            <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+          ) : (
+            "Login"
+          )}
+        </button>
       </FormContainer>
 
       <p className="text-sm text-center mt-3">
@@ -103,21 +100,6 @@ function LoginPageContent({ onToggle }: AuthPageContentProps) {
         </button>
       </p>
     </div>
-  );
-}
-
-// Submit button component for Login
-function LoginSubmitButton({ loading }: { loading: boolean }) {
-  const handleSubmit = useFormSubmit();
-
-  return (
-    <button
-      onClick={handleSubmit}
-      className="w-full bg-slate-800 text-white hover:bg-slate-700 py-2 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      disabled={loading}
-    >
-      {loading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Login"}
-    </button>
   );
 }
 
@@ -212,13 +194,22 @@ function RegisterPageContent({ onToggle }: AuthPageContentProps) {
           required
         />
 
-        <FormCheckbox
-          name="agreeTerms"
-          label="I agree to the Terms & Conditions"
-          className="mt-3 mb-2"
-        />
+        <div className="flex items-center mt-3 mb-2 text-xs text-gray-500">
+          <input type="checkbox" name="agreeTerms" className="mr-2" />
+          <p>I agree to the Terms & Conditions</p>
+        </div>
 
-        <RegisterSubmitButton loading={loading} success={success} />
+        <button
+          type="submit"
+          className="w-full bg-slate-800 text-white hover:bg-slate-700 py-2 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading || success}
+        >
+          {loading ? (
+            <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+          ) : (
+            "Register"
+          )}
+        </button>
       </FormContainer>
 
       <p className="text-sm text-center mt-3">
@@ -232,31 +223,6 @@ function RegisterPageContent({ onToggle }: AuthPageContentProps) {
         </button>
       </p>
     </div>
-  );
-}
-
-// Submit button component for Register
-function RegisterSubmitButton({
-  loading,
-  success,
-}: {
-  loading: boolean;
-  success: boolean;
-}) {
-  const handleSubmit = useFormSubmit();
-
-  return (
-    <button
-      onClick={handleSubmit}
-      className="w-full bg-slate-800 text-white hover:bg-slate-700 py-2 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      disabled={loading || success}
-    >
-      {loading ? (
-        <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-      ) : (
-        "Register"
-      )}
-    </button>
   );
 }
 
