@@ -1,339 +1,240 @@
-import { TLoginFormData, TRegisterFormData } from "@/types/auth";
-import { Loader2 } from "lucide-react";
-import { ChangeEvent, FormEvent, useState } from "react";
+"use client";
 
-interface AuthPageContentProps {
-  onToggle: () => void;
-}
+import LoginForm from "@/components/Pages/Auth/LoginForm";
+import RegisterForm from "@/components/Pages/Auth/RegisterForm";
+import {
+  Carousel,
+  CarouselApi,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel";
+import { cn } from "@/lib/utils";
+import {
+  loginValidationSchema,
+  registerValidationSchema,
+} from "@/schema/authSchema";
+import { userLogin } from "@/services/actions/userLogin";
+import { userRegister } from "@/services/actions/userRegister";
+import { AxiosError } from "axios";
+import Autoplay from "embla-carousel-autoplay";
+import { ArrowLeft } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { FieldValues } from "react-hook-form";
+import { toast } from "sonner";
 
-// Login Component
-function LoginPageContent({ onToggle }: AuthPageContentProps) {
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
-  const [formData, setFormData] = useState<TLoginFormData>({
-    identifier: "",
-    password: "",
-    remember: false,
-  });
+const carouselImages = [
+  {
+    id: 1,
+    image: "/assets/images/auth/auth1.jpg",
+    heading: "Find Your Sweet Home",
+    subtext: "Schedule visits in just a few clicks",
+  },
+  {
+    id: 2,
+    image: "/assets/images/auth/auth2.jpg",
+    heading: "Live Better With Families",
+    subtext: "Connect with people who match your lifestyle",
+  },
+  {
+    id: 3,
+    image: "/assets/images/auth/auth3.jpg",
+    heading: "Safe & Verified Listings",
+    subtext: "Find trusted homes in your city easily",
+  },
+];
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
+const AuthPageContent = () => {
+  const searchParams = useSearchParams();
+  const formType = searchParams.get("type");
+  const [loading, setLoading] = useState(false);
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
+  const [count, setCount] = useState(0);
+  const [error, setError] = useState("");
+  const [isLogin, setIsLogin] = useState(formType !== "register");
+  const router = useRouter();
 
-  const handleLogin = async (e: FormEvent) => {
-    e.preventDefault();
-    try {
-      setLoading(true);
-      setError("");
+  useEffect(() => {
+    if (!api) return;
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+    setCount(api.scrollSnapList().length);
+    setCurrent(api.selectedScrollSnap());
 
-      console.log("Login successful:", formData);
-      alert("Login successful! Welcome back.");
-    } catch (err) {
-      setError("Login failed. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap());
+    });
+  }, [api]);
 
-  return (
-    <div className="w-full max-w-sm space-y-5">
-      <div className="text-left">
-        <h2 className="text-2xl font-semibold text-gray-800">
-          Welcome Back to Almunji!
-          <br />
-          <span className="text-xl">Your Living Solutions</span>
-        </h2>
-        <p className="text-sm text-gray-500 mt-2">Sign in to your account</p>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded text-sm">
-          {error}
-        </div>
-      )}
-
-      <div className="space-y-4">
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-gray-700">
-            Your Email or Username
-          </label>
-          <input
-            name="identifier"
-            type="text"
-            value={formData.identifier}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-800"
-          />
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-gray-700">Password</label>
-          <input
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-800"
-          />
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between mt-3 mb-2 space-x-6">
-        <div className="flex items-center text-xs text-gray-500">
-          <input
-            type="checkbox"
-            name="remember"
-            checked={formData.remember}
-            onChange={handleChange}
-            className="mr-2"
-          />
-          <p>Remember Me</p>
-        </div>
-        <button
-          type="button"
-          className="text-xs text-slate-800 underline cursor-pointer font-semibold"
-        >
-          Forgot Password?
-        </button>
-      </div>
-
-      <button
-        onClick={handleLogin}
-        className="w-full bg-slate-800 text-white hover:bg-slate-700 py-2 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        disabled={loading}
-      >
-        {loading ? (
-          <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-        ) : (
-          "Login"
-        )}
-      </button>
-
-      <p className="text-sm text-center mt-3">
-        Don&apos;t have an account?{" "}
-        <button
-          type="button"
-          onClick={onToggle}
-          className="text-slate-800 underline cursor-pointer font-semibold"
-        >
-          Register
-        </button>
-      </p>
-    </div>
-  );
-}
-
-// Register Component
-function RegisterPageContent({ onToggle }: AuthPageContentProps) {
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
-  const [success, setSuccess] = useState<boolean>(false);
-  const [formData, setFormData] = useState<TRegisterFormData>({
-    name: "",
-    email: "",
-    username: "",
-    password: "",
-    confirmPassword: "",
-    agreeTerms: false,
-  });
-
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
-
-  const handleRegister = async (e: FormEvent) => {
-    e.preventDefault();
-    try {
-      setLoading(true);
-      setError("");
-      setSuccess(false);
-
-      // Validation
-      if (formData.password !== formData.confirmPassword) {
-        setError("Passwords do not match");
-        setLoading(false);
-        return;
-      }
-
-      if (!formData.agreeTerms) {
-        setError("Please agree to the Terms & Conditions");
-        setLoading(false);
-        return;
-      }
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      console.log("Registration successful:", formData);
-      setSuccess(true);
-
-      // Auto-switch to login after 2 seconds
-      setTimeout(() => {
-        onToggle();
-      }, 2000);
-    } catch (err) {
-      setError("Registration failed. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="w-full max-w-sm space-y-5">
-      <div className="text-left">
-        <h2 className="text-2xl font-semibold text-gray-800">
-          Join Almunji Today!
-          <br />
-          <span className="text-xl">Your Living Solutions</span>
-        </h2>
-        <p className="text-sm text-gray-500 mt-2">Create your account</p>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded text-sm">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="bg-green-50 border border-green-200 text-green-600 px-3 py-2 rounded text-sm">
-          Registration successful! Redirecting to login...
-        </div>
-      )}
-
-      <div className="space-y-4">
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-gray-700">Full Name</label>
-          <input
-            name="name"
-            type="text"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-800"
-          />
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-gray-700">
-            Email Address
-          </label>
-          <input
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-800"
-          />
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-gray-700">Username</label>
-          <input
-            name="username"
-            type="text"
-            value={formData.username}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-800"
-          />
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-gray-700">Password</label>
-          <input
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-800"
-          />
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-gray-700">
-            Confirm Password
-          </label>
-          <input
-            name="confirmPassword"
-            type="password"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-800"
-          />
-        </div>
-      </div>
-
-      <div className="flex items-center mt-3 mb-2 text-xs text-gray-500">
-        <input
-          type="checkbox"
-          name="agreeTerms"
-          checked={formData.agreeTerms}
-          onChange={handleChange}
-          className="mr-2"
-        />
-        <p>I agree to the Terms & Conditions</p>
-      </div>
-
-      <button
-        onClick={handleRegister}
-        className="w-full bg-slate-800 text-white hover:bg-slate-700 py-2 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        disabled={loading || success}
-      >
-        {loading ? (
-          <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-        ) : (
-          "Register"
-        )}
-      </button>
-
-      <p className="text-sm text-center mt-3">
-        Already have an account?{" "}
-        <button
-          type="button"
-          onClick={onToggle}
-          className="text-slate-800 underline cursor-pointer font-semibold"
-        >
-          Login
-        </button>
-      </p>
-    </div>
-  );
-}
-
-// Main Auth Page
-export default function AuthPage() {
-  const [isLogin, setIsLogin] = useState<boolean>(true);
-
-  const toggleAuthMode = () => {
+  const toggleForm = () => {
+    const newType = isLogin ? "register" : "login";
+    router.replace(`/auth?type=${newType}`);
     setIsLogin(!isLogin);
+    setError("");
+  };
+
+  const handleLogin = async (values: FieldValues) => {
+    try {
+      setLoading(true);
+      const res = await userLogin(values);
+      // console.log(res);
+      if (res?.data?.token) {
+        toast.success(res?.message);
+        router.push("/");
+        setLoading(false);
+      } else {
+        setError(res.message);
+      }
+    } catch {
+      setError("Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (data: FieldValues) => {
+    try {
+      setLoading(true);
+      const res = await userRegister(data);
+      if (res?.data?.id) {
+        toast.success(res.message);
+        router.push("/");
+        setLoading(false);
+      }
+      if (res?.success === false) {
+        setError(res?.message || "Registration failed!");
+        setLoading(false);
+      }
+    } catch (err) {
+      if (err instanceof AxiosError) {
+        const errorMessage =
+          err.response?.data?.message || "Registration failed";
+        setError(errorMessage);
+      } else {
+        setError("Unexpected error");
+      }
+      setLoading(false);
+    } finally {
+      setLoading(true);
+    }
+  };
+
+  const handleTestLogin = async (role: "admin" | "user") => {
+    const credentials =
+      role === "admin"
+        ? {
+            identifier: `${process.env.NEXT_PUBLIC_ADMIN_EMAIL}`,
+            password: `${process.env.NEXT_PUBLIC_ADMIN_PASSWORD}`,
+          }
+        : {
+            identifier: `${process.env.NEXT_PUBLIC_USER_EMAIL}`,
+            password: `${process.env.NEXT_PUBLIC_USER_PASSWORD}`,
+          };
+    handleLogin(credentials);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-50 to-slate-100 p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+    <div className="w-screen h-screen grid grid-cols-1 lg:grid-cols-2 overflow-x-hidden">
+      {/* Carousel Section - Hidden on mobile/tablet */}
+      <div className="w-full h-full relative hidden lg:block">
+        {/* Carousel */}
+        <Carousel
+          className="w-full h-full"
+          plugins={[Autoplay({ delay: 5000, stopOnInteraction: false })]}
+          opts={{ align: "start", loop: true }}
+          setApi={setApi}
+        >
+          <CarouselContent className="h-full">
+            {carouselImages.map((item) => (
+              <CarouselItem
+                key={item.id}
+                className="relative w-full h-full shrink-0 grow-0 basis-full"
+              >
+                <Image
+                  src={item.image}
+                  alt={`Slide ${item.id}`}
+                  fill
+                  className="object-cover"
+                  priority
+                />
+                <div className="absolute inset-0 bg-[#0D1B2A]/50 z-10" />
+                <div className="relative w-full h-full min-h-screen">
+                  {/* Logo and Back to Home Link */}
+                  <div className="absolute top-10 left-10 z-40">
+                    <Link href="/" className="text-2xl font-bold">
+                      <div className="flex items-center gap-2">
+                        <Image
+                          src="/assets/images/logo/white.png"
+                          alt="ApartSol Logo"
+                          width={50}
+                          height={50}
+                          className="object-contain"
+                          priority
+                        />
+
+                        <span className="flex flex-col leading-4 items-center">
+                          <span className="text-white">APARTSOL</span>
+                          <span className="text-xs text-gray-300 tracking-wide pt-1">
+                            LIVING SOLUTIONS
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 text-white text-sm lg:text-base font-medium mt-2 hover:text-gray-300">
+                        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                        <span>Back to Home</span>
+                      </div>
+                    </Link>
+                  </div>
+
+                  <div className="absolute bottom-28 left-6 lg:left-10 text-white space-y-2 z-20">
+                    <h2 className="text-3xl font-bold">{item.heading}</h2>
+                    <p className="text-sm">{item.subtext}</p>
+                  </div>
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+
+          <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex gap-2 z-30">
+            {Array.from({ length: count }).map((_, index) => (
+              <button
+                key={index}
+                onClick={() => api?.scrollTo(index)}
+                className={cn(
+                  "transition-all duration-300 rounded-full bg-white/80",
+                  current === index ? "w-8 h-1.5" : "w-3 h-1.5 opacity-50"
+                )}
+              />
+            ))}
+          </div>
+        </Carousel>
+      </div>
+
+      {/* Form Section */}
+      <div className="flex justify-center items-center bg-white px-6 sm:px-10 overflow-y-auto">
         {isLogin ? (
-          <LoginPageContent onToggle={toggleAuthMode} />
+          <LoginForm
+            onSubmit={handleLogin}
+            schema={loginValidationSchema}
+            error={error}
+            toggle={toggleForm}
+            onTestLogin={handleTestLogin}
+            loading={loading}
+          />
         ) : (
-          <RegisterPageContent onToggle={toggleAuthMode} />
+          <RegisterForm
+            onSubmit={handleRegister}
+            schema={registerValidationSchema}
+            error={error}
+            toggle={toggleForm}
+            loading={loading}
+          />
         )}
       </div>
     </div>
   );
-}
+};
+
+export default AuthPageContent;
