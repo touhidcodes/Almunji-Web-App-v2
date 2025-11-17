@@ -1,5 +1,7 @@
 "use client";
 
+import LoginForm from "@/components/pages/Auth/LoginForm";
+import RegisterForm from "@/components/pages/Auth/RegisterForm";
 import {
   loginValidationSchema,
   registerValidationSchema,
