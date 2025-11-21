@@ -1,9 +1,11 @@
 "use client";
 
-import FormContainer from "@/components/Forms/FormContainer";
+import FormContainer from "@/components/forms/FormContainer";
+import FormInput from "@/components/forms/FormInput";
 import { Button } from "@/components/ui/button";
+import { loginValidationSchema } from "@/schema/authSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, FormInput, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { FieldValues } from "react-hook-form";
 import { z } from "zod";
@@ -40,7 +42,7 @@ const LoginForm = ({
 
       <FormContainer
         onSubmit={onSubmit}
-        resolver={zodResolver(schema)}
+        resolver={zodResolver(loginValidationSchema)}
         defaultValues={{ identifier: "", password: "" }}
       >
         <div className="space-y-4">

@@ -1,15 +1,16 @@
 // components/Auth/RegisterForm.tsx
 "use client";
 
+import FormContainer from "@/components/forms/FormContainer";
+import FormInput from "@/components/forms/FormInput";
+import FormSelect from "@/components/forms/FormSelect";
 import { Button } from "@/components/ui/button";
+import { registerValidationSchema } from "@/schema/authSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FieldValues } from "react-hook-form";
-import FormContainer from "@/components/Forms/FormContainer";
-import FormInput from "@/components/Forms/FormInput";
-import Link from "next/link";
-import { z } from "zod";
-import FormSelect from "@/components/Forms/FormSelect";
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
+import { FieldValues } from "react-hook-form";
+import { z } from "zod";
 
 interface RegisterFormProps {
   onSubmit: (values: FieldValues) => void;
@@ -43,7 +44,7 @@ const RegisterForm = ({
 
       <FormContainer
         onSubmit={onSubmit}
-        resolver={zodResolver(schema)}
+        resolver={zodResolver(registerValidationSchema)}
         defaultValues={{ username: "", email: "", role: "", password: "" }}
       >
         <div className="space-y-4">
