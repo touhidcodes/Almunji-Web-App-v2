@@ -1,14 +1,12 @@
-// components/Auth/LoginForm.tsx
 "use client";
 
+import FormContainer from "@/components/Forms/FormContainer";
 import { Button } from "@/components/ui/button";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FieldValues } from "react-hook-form";
-import FormContainer from "@/components/Forms/FormContainer";
-import FormInput from "@/components/Forms/FormInput";
+import { ArrowRight, FormInput, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { FieldValues } from "react-hook-form";
 import { z } from "zod";
-import { ArrowRight, Loader2 } from "lucide-react";
 
 interface LoginFormProps {
   onSubmit: (values: FieldValues) => void;
