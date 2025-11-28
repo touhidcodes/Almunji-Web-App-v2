@@ -5,26 +5,21 @@ import FormInput from "@/components/forms/FormInput";
 import { Button } from "@/components/ui/button";
 import { registerValidationSchema } from "@/schema/authSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { FieldValues } from "react-hook-form";
-import { z } from "zod";
 
 interface RegisterFormProps {
   onSubmit: (values: FieldValues) => void;
-  schema: z.ZodSchema;
   error?: string;
   toggle: () => void;
-  onTestRegister: (type: "user" | "admin") => void;
   loading: boolean;
 }
 
 const RegisterForm = ({
   onSubmit,
-  schema,
   error,
   toggle,
-  onTestRegister,
   loading,
 }: RegisterFormProps) => {
   return (
@@ -76,25 +71,6 @@ const RegisterForm = ({
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Register"}
         </Button>
       </FormContainer>
-
-      <div className="flex justify-between">
-        <Button
-          variant="outline"
-          className="bg-transparent border-slate-600 hover:bg-slate-800 hover:text-white hover:border-white rounded-full px-6 py-2 font-medium transition-all duration-200 group"
-          onClick={() => onTestRegister("user")}
-        >
-          User Demo
-          <ArrowRight className="ml-1 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-        </Button>
-        <Button
-          variant="outline"
-          className="bg-transparent border-slate-600 hover:bg-slate-800 hover:text-white hover:border-white rounded-full px-6 py-2 font-medium transition-all duration-200 group"
-          onClick={() => onTestRegister("admin")}
-        >
-          Admin Demo
-          <ArrowRight className="ml-1 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-        </Button>
-      </div>
 
       <p className="text-sm text-center mt-3">
         Already have an account?{" "}
