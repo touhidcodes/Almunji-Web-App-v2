@@ -5,28 +5,18 @@ import FormInput from "@/components/forms/FormInput";
 import { Button } from "@/components/ui/button";
 import { loginValidationSchema } from "@/schema/authSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { FieldValues } from "react-hook-form";
-import { z } from "zod";
 
 interface LoginFormProps {
   onSubmit: (values: FieldValues) => void;
-  schema: z.ZodSchema;
   error?: string;
   toggle: () => void;
-  onTestLogin: (type: "user" | "admin") => void;
   loading: boolean;
 }
 
-const LoginForm = ({
-  onSubmit,
-  schema,
-  error,
-  toggle,
-  onTestLogin,
-  loading,
-}: LoginFormProps) => {
+const LoginForm = ({ onSubmit, error, toggle, loading }: LoginFormProps) => {
   return (
     <div className="w-full max-w-sm space-y-5">
       <div className="text-left">
@@ -81,24 +71,6 @@ const LoginForm = ({
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Login"}
         </Button>
       </FormContainer>
-      <div className="flex justify-between">
-        <Button
-          variant="outline"
-          className="bg-transparent border-slate-600 hover:bg-slate-800 hover:text-white hover:border-white rounded-full px-6 py-2 font-medium transition-all duration-200 group"
-          onClick={() => onTestLogin("user")}
-        >
-          User Login
-          <ArrowRight className="ml-1 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-        </Button>
-        <Button
-          variant="outline"
-          className="bg-transparent border-slate-600 hover:bg-slate-800 hover:text-white hover:border-white rounded-full px-6 py-2 font-medium transition-all duration-200 group"
-          onClick={() => onTestLogin("admin")}
-        >
-          Admin Login
-          <ArrowRight className="ml-1 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-        </Button>
-      </div>
 
       <p className="text-sm text-center mt-3">
         Don&apos;t have any account?{" "}
