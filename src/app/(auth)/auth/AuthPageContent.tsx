@@ -2,10 +2,6 @@
 
 import LoginForm from "@/components/pages/Auth/LoginForm";
 import RegisterForm from "@/components/pages/Auth/RegisterForm";
-import {
-  loginValidationSchema,
-  registerValidationSchema,
-} from "@/schema/authSchema";
 import { userLogin } from "@/services/actions/userLogin";
 import { userRegister } from "@/services/actions/userRegister";
 import { AxiosError } from "axios";
@@ -22,10 +18,9 @@ const AuthPageContent = () => {
   const [isLogin, setIsLogin] = useState(formType !== "register");
   const router = useRouter();
 
-  // Sync isLogin state with URL changes
   useEffect(() => {
     setIsLogin(formType !== "register");
-    setError(""); // Clear errors when switching forms
+    setError("");
   }, [formType]);
 
   const toggleForm = () => {
@@ -36,7 +31,7 @@ const AuthPageContent = () => {
   const handleLogin = async (values: FieldValues) => {
     try {
       setLoading(true);
-      setError(""); // Clear previous errors
+      setError("");
       const res = await userLogin(values);
 
       if (res?.data?.token) {
@@ -55,7 +50,7 @@ const AuthPageContent = () => {
   const handleRegister = async (data: FieldValues) => {
     try {
       setLoading(true);
-      setError(""); // Clear previous errors
+      setError("");
       const res = await userRegister(data);
 
       if (res?.data?.id) {
@@ -73,41 +68,23 @@ const AuthPageContent = () => {
         setError("Unexpected error");
       }
     } finally {
-      setLoading(false); // Fixed: was setLoading(true)
+      setLoading(false);
     }
-  };
-
-  const handleTestLogin = async (role: "admin" | "user") => {
-    const credentials =
-      role === "admin"
-        ? {
-            identifier: `${process.env.NEXT_PUBLIC_ADMIN_EMAIL}`,
-            password: `${process.env.NEXT_PUBLIC_ADMIN_PASSWORD}`,
-          }
-        : {
-            identifier: `${process.env.NEXT_PUBLIC_USER_EMAIL}`,
-            password: `${process.env.NEXT_PUBLIC_USER_PASSWORD}`,
-          };
-    handleLogin(credentials);
   };
 
   return (
     <div className="w-screen h-screen grid grid-cols-1 lg:grid-cols-2 overflow-x-hidden">
-      {/* Form Section */}
       <div className="flex justify-center items-center bg-white px-6 sm:px-10 overflow-y-auto">
         {isLogin ? (
           <LoginForm
             onSubmit={handleLogin}
-            schema={loginValidationSchema}
             error={error}
             toggle={toggleForm}
-            onTestLogin={handleTestLogin}
             loading={loading}
           />
         ) : (
           <RegisterForm
             onSubmit={handleRegister}
-            schema={registerValidationSchema}
             error={error}
             toggle={toggleForm}
             loading={loading}

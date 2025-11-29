@@ -26,12 +26,12 @@ const RegisterForm = ({
     <div className="w-full max-w-sm space-y-5">
       <div className="text-left">
         <h2 className="text-2xl font-semibold text-gray-800">
-          Welcome to ApartSol!
+          Welcome to Almunji!
           <br />
           <span>Create your account</span>
         </h2>
         <p className="text-sm text-gray-500 mt-2">
-          Register to enjoy all features of ApartSol
+          Explore more Surahs, Duas and Books
         </p>
       </div>
 
