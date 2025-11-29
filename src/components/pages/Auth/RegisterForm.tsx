@@ -28,11 +28,9 @@ const RegisterForm = ({
         <h2 className="text-2xl font-semibold text-gray-800">
           Welcome to Almunji!
           <br />
-          <span>Create your account</span>
+          <span>Explore more Surahs, Duas and Books</span>
         </h2>
-        <p className="text-sm text-gray-500 mt-2">
-          Explore more Surahs, Duas and Books
-        </p>
+        <p className="text-sm text-gray-500 mt-2">Create your account</p>
       </div>
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
