@@ -18,12 +18,10 @@ interface LoginFormProps {
 
 const LoginForm = ({ onSubmit, error, toggle, loading }: LoginFormProps) => {
   return (
-    <div className="w-full max-w-sm space-y-5">
-      <div className="text-left">
+    <div className="w-full max-w-sm space-y-5 mx-auto">
+      <div className="text-center">
         <h2 className="text-2xl font-semibold text-gray-800">
           Welcome Back to Almunji!
-          <br />
-          <span>Explore more Surahs, Duas and Books</span>
         </h2>
         <p className="text-sm text-gray-500 mt-2">Sign in to your account</p>
       </div>

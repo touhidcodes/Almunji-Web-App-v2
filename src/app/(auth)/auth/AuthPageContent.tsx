@@ -73,24 +73,22 @@ const AuthPageContent = () => {
   };
 
   return (
-    <div className="w-screen h-screen grid grid-cols-1 lg:grid-cols-2 overflow-x-hidden">
-      <div className="flex justify-center items-center bg-white px-6 sm:px-10 overflow-y-auto">
-        {isLogin ? (
-          <LoginForm
-            onSubmit={handleLogin}
-            error={error}
-            toggle={toggleForm}
-            loading={loading}
-          />
-        ) : (
-          <RegisterForm
-            onSubmit={handleRegister}
-            error={error}
-            toggle={toggleForm}
-            loading={loading}
-          />
-        )}
-      </div>
+    <div className="flex justify-center items-center">
+      {isLogin ? (
+        <LoginForm
+          onSubmit={handleLogin}
+          error={error}
+          toggle={toggleForm}
+          loading={loading}
+        />
+      ) : (
+        <RegisterForm
+          onSubmit={handleRegister}
+          error={error}
+          toggle={toggleForm}
+          loading={loading}
+        />
+      )}
     </div>
   );
 };
