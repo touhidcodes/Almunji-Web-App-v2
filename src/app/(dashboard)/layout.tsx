@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { PanelRightOpen } from "lucide-react";
+import Sidebar from "@/components/dashboard/Sidebar/SideBar";
+import DashboardAuthButton from "@/components/Shared/AuthButton/DashboardAuthButton";
+import DynamicBreadcrumb from "@/components/Shared/Breadcrumb/DynamicBreadcrumb";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import Sidebar from "@/components/Dashboard/SideBar/SideBar";
-import DynamicBreadcrumb from "@/components/Shared/Breadcrumb/DynamicBreadcrumb";
-import DashboardAuthButton from "@/components/Shared/AuthButton/DashboardAuthButton";
+import { PanelRightOpen } from "lucide-react";
+import { useState } from "react";
 
 export default function DashboardLayout({
   children,
@@ -49,4 +49,4 @@ export default function DashboardLayout({
       </div>
     </div>
   );
-          }
+}

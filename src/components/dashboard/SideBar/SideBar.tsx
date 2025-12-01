@@ -1,25 +1,25 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { Mail, MoreHorizontal, X } from "lucide-react";
-import Link from "next/link";
-import { useRef, useState } from "react";
-import { usePathname } from "next/navigation";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import Image from "next/image";
-import { getSidebarLinks } from "./SideBarLinks";
 import { useUserInfo } from "@/hooks/useUserInfo";
+import { cn } from "@/lib/utils";
+import { Mail, MoreHorizontal, X } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useRef, useState } from "react";
+import { getSidebarLinks } from "./SideBarLinks";
 
 type SidebarProps = {
   isCollapsed: boolean;
   onClose: () => void;
 };
 
-export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
+export default function SideBar({ isCollapsed, onClose }: SidebarProps) {
   const pathname = usePathname();
   const sidebarRef = useRef<HTMLDivElement>(null);
   const { user, loading } = useUserInfo();
@@ -64,7 +64,7 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
         )}
       >
         {/* Top header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
           {!isCollapsed ? (
             <>
               <Link href="/" className="text-lg font-semibold">

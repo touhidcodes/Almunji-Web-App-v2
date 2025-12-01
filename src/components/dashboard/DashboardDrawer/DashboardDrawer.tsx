@@ -1,16 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { Menu, Bell, UserCircle2, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   useGetSingleUserQuery,
   useGetUserWithProfileQuery,
 } from "@/redux/api/userApi";
-import SideBar from "../SideBar/SideBar";
 import clsx from "clsx";
-import AuthButton from "@/components/Shared/AuthButton/AuthButton";
+import { Bell, Menu, UserCircle2, X } from "lucide-react";
+import { useState } from "react";
+import Sidebar from "../Sidebar/SideBar";
 
 const drawerWidth = 300;
 
@@ -29,7 +28,7 @@ export default function DashboardDrawer({
     <div className="flex min-h-screen bg-[#EBF0F4]">
       {/* Sidebar - Desktop */}
       <aside className="hidden sm:block w-[300px] border-r">
-        <SideBar isCollapsed={false} onClose={() => {}} />
+        <Sidebar isCollapsed={false} onClose={() => {}} />
       </aside>
 
       {/* Sidebar - Mobile */}
