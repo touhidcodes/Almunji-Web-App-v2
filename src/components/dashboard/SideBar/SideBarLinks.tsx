@@ -2,14 +2,11 @@ import { authRole, TAuthRole } from "@/constants/authRoles";
 import {
   PersonStanding,
   HomeIcon,
-  ShoppingCart,
   LayoutDashboard,
-  Users,
   Star,
   KeyRound,
 } from "lucide-react";
 
-// Type definition for the sidebar item
 type SidebarGroup = {
   section: string;
   items: {

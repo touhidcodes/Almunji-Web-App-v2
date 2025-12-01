@@ -12,14 +12,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRef, useState } from "react";
-import { getSidebarLinks } from "./SideBarLinks";
+import { getSidebarLinks } from "./SidebarLinks";
 
 type SidebarProps = {
   isCollapsed: boolean;
   onClose: () => void;
 };
 
-export default function SideBar({ isCollapsed, onClose }: SidebarProps) {
+export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
   const pathname = usePathname();
   const sidebarRef = useRef<HTMLDivElement>(null);
   const { user, loading } = useUserInfo();
