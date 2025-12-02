@@ -1,5 +1,6 @@
 "use client";
 
+import AuthButton from "@/components/shared/AuthButton/AuthButton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -57,7 +58,7 @@ export default function DashboardDrawer({
             <X className="h-5 w-5" />
           </Button>
         </div>
-        <SideBar isCollapsed={false} onClose={() => setMobileOpen(false)} />
+        <Sidebar isCollapsed={false} onClose={() => setMobileOpen(false)} />
       </aside>
 
       {/* Main Content */}
