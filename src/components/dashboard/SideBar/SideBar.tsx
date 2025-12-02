@@ -58,8 +58,8 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
         className={cn(
           "z-50 bg-white h-full shadow-md flex flex-col transition-all duration-300 ease-in-out fixed inset-y-0 left-0",
           {
-            "w-64": !isCollapsed, // Expanded sidebar for all sizes if not collapsed
-            "lg:w-20 hidden lg:flex": isCollapsed, // Only show narrow sidebar on large screens
+            "w-64": !isCollapsed,
+            "lg:w-20 hidden lg:flex": isCollapsed,
           }
         )}
       >
@@ -68,7 +68,7 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
           {!isCollapsed ? (
             <>
               <Link href="/" className="text-lg font-semibold">
-                APARTSOL
+                Almunji
               </Link>
               <div className="relative flex items-center gap-3">
                 <Link href="/dashboard/messages">
