@@ -10,7 +10,7 @@ import {
 import clsx from "clsx";
 import { Bell, Menu, UserCircle2, X } from "lucide-react";
 import { useState } from "react";
-import Sidebar from "../Sidebar/SideBar";
+import Sidebar from "../Sidebar/Sidebar";
 
 export default function DashboardDrawer({
   children,
