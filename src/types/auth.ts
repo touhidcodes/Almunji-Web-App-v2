@@ -12,3 +12,11 @@ export interface TRegisterFormData {
   confirmPassword: string;
   agreeTerms: boolean;
 }
+
+export interface TUser {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+  role?: string;
+}
