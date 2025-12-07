@@ -1,8 +1,8 @@
 "use client";
 
 import Sidebar from "@/components/dashboard/Sidebar/SideBar";
-import DashboardAuthButton from "@/components/Shared/AuthButton/DashboardAuthButton";
-import DynamicBreadcrumb from "@/components/Shared/Breadcrumb/DynamicBreadcrumb";
+import DashboardAuthButton from "@/components/shared/AuthButton/DashboardAuthButton";
+import DynamicBreadcrumb from "@/components/shared/Breadcrumb/DynamicBreadcrumb";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { PanelRightOpen } from "lucide-react";
@@ -29,7 +29,7 @@ export default function DashboardLayout({
       <div
         className={cn(
           "flex flex-col flex-1 transition-all duration-300",
-          sidebarOpen ? "lg:ml-64" : "lg:ml-20" // match collapsed sidebar width (e.g., 20)
+          sidebarOpen ? "lg:ml-64" : "lg:ml-20"
         )}
       >
         {/* Header */}
