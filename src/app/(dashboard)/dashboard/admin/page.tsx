@@ -13,9 +13,59 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
+import { useState } from "react";
+
+// Type definitions
+interface MonthlyData {
+  month: string;
+  users: number;
+  readings: number;
+}
+
+interface SurahData {
+  name: string;
+  value: number;
+  color: string;
+}
+
+interface ActivityItem {
+  id: string;
+  type:
+    | "registration"
+    | "completion"
+    | "milestone"
+    | "feedback"
+    | "translation";
+  icon: typeof UserPlus;
+  iconBgColor: string;
+  iconColor: string;
+  title: string;
+  description: string;
+  timestamp: string;
+}
+
+interface StatCardProps {
+  icon: typeof Users;
+  title: string;
+  value: string;
+  change: string;
+  changeType: "positive" | "negative";
+}
+
+interface ChartProps {
+  data: MonthlyData[];
+}
+
+interface PieChartProps {
+  data: SurahData[];
+}
 
 const AlMunjiAdmin = () => {
-  const monthlyData = [
+  const [selectedTimeRange, setSelectedTimeRange] = useState<
+    "week" | "month" | "year"
+  >("month");
+
+  const monthlyData: MonthlyData[] = [
     { month: "Jan", users: 2400, readings: 12500 },
     { month: "Feb", users: 1398, readings: 10200 },
     { month: "Mar", users: 9800, readings: 45000 },
@@ -24,15 +74,74 @@ const AlMunjiAdmin = () => {
     { month: "Jun", users: 3800, readings: 24000 },
   ];
 
-  const surahData = [
+  const surahData: SurahData[] = [
     { name: "Al-Baqarah", value: 1200, color: "#10b981" },
     { name: "Ya-Sin", value: 980, color: "#06b6d4" },
     { name: "Al-Kahf", value: 850, color: "#8b5cf6" },
     { name: "Al-Mulk", value: 720, color: "#f59e0b" },
   ];
 
-  const StatCard = ({ icon: Icon, title, value, change, changeType }) => (
-    <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+  const recentActivities: ActivityItem[] = [
+    {
+      id: "1",
+      type: "registration",
+      icon: UserPlus,
+      iconBgColor: "bg-emerald-100",
+      iconColor: "text-emerald-600",
+      title: "New user registration",
+      description: "Ahmed Khan registered from Bangladesh",
+      timestamp: "5m ago",
+    },
+    {
+      id: "2",
+      type: "completion",
+      icon: BookOpen,
+      iconBgColor: "bg-blue-100",
+      iconColor: "text-blue-600",
+      title: "Surah completion",
+      description: "User completed reading Surah Al-Kahf",
+      timestamp: "12m ago",
+    },
+    {
+      id: "3",
+      type: "milestone",
+      icon: Heart,
+      iconBgColor: "bg-purple-100",
+      iconColor: "text-purple-600",
+      title: "Bookmark milestone",
+      description: "23,000+ bookmarks created this month",
+      timestamp: "1h ago",
+    },
+    {
+      id: "4",
+      type: "feedback",
+      icon: MessageSquare,
+      iconBgColor: "bg-orange-100",
+      iconColor: "text-orange-600",
+      title: "New feedback received",
+      description: 'User feedback: "Love the dark mode feature!"',
+      timestamp: "2h ago",
+    },
+    {
+      id: "5",
+      type: "translation",
+      icon: Globe,
+      iconBgColor: "bg-teal-100",
+      iconColor: "text-teal-600",
+      title: "New translation added",
+      description: "Bengali translation now available",
+      timestamp: "3h ago",
+    },
+  ];
+
+  const StatCard = ({
+    icon: Icon,
+    title,
+    value,
+    change,
+    changeType,
+  }: StatCardProps) => (
+    <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-gray-600">{title}</p>
@@ -53,12 +162,12 @@ const AlMunjiAdmin = () => {
     </div>
   );
 
-  const SimpleLineChart = ({ data }) => (
+  const SimpleLineChart = ({ data }: ChartProps) => (
     <div className="h-64 relative">
       <svg className="w-full h-64" viewBox="0 0 400 200">
         {[0, 1, 2, 3, 4].map((i) => (
           <line
-            key={i}
+            key={`gridline-${i}`}
             x1="50"
             y1={40 + i * 30}
             x2="350"
@@ -72,22 +181,22 @@ const AlMunjiAdmin = () => {
           fill="none"
           stroke="#10b981"
           strokeWidth="3"
-          points={monthlyData
+          points={data
             .map((d, i) => `${50 + i * 50},${170 - d.readings / 500}`)
             .join(" ")}
         />
-        {monthlyData.map((d, i) => (
+        {data.map((d, i) => (
           <circle
-            key={i}
+            key={`point-${i}`}
             cx={50 + i * 50}
             cy={170 - d.readings / 500}
             r="4"
             fill="#10b981"
           />
         ))}
-        {monthlyData.map((d, i) => (
+        {data.map((d, i) => (
           <text
-            key={i}
+            key={`label-${i}`}
             x={50 + i * 50}
             y="190"
             textAnchor="middle"
@@ -101,12 +210,12 @@ const AlMunjiAdmin = () => {
     </div>
   );
 
-  const SimpleBarChart = ({ data }) => (
+  const SimpleBarChart = ({ data }: ChartProps) => (
     <div className="h-64 relative">
       <svg className="w-full h-64" viewBox="0 0 400 200">
         {[0, 1, 2, 3, 4].map((i) => (
           <line
-            key={i}
+            key={`gridline-${i}`}
             x1="50"
             y1={40 + i * 30}
             x2="350"
@@ -116,9 +225,9 @@ const AlMunjiAdmin = () => {
             strokeDasharray="3,3"
           />
         ))}
-        {monthlyData.map((d, i) => (
+        {data.map((d, i) => (
           <rect
-            key={i}
+            key={`bar-${i}`}
             x={40 + i * 50}
             y={170 - d.users / 100}
             width="20"
@@ -127,9 +236,9 @@ const AlMunjiAdmin = () => {
             rx="2"
           />
         ))}
-        {monthlyData.map((d, i) => (
+        {data.map((d, i) => (
           <text
-            key={i}
+            key={`label-${i}`}
             x={50 + i * 50}
             y="190"
             textAnchor="middle"
@@ -143,7 +252,7 @@ const AlMunjiAdmin = () => {
     </div>
   );
 
-  const SimplePieChart = ({ data }) => {
+  const SimplePieChart = ({ data }: PieChartProps) => {
     const total = data.reduce((sum, item) => sum + item.value, 0);
     let angle = 0;
     return (
@@ -170,7 +279,7 @@ const AlMunjiAdmin = () => {
             const large = slice > 180 ? 1 : 0;
             return (
               <path
-                key={idx}
+                key={`slice-${idx}`}
                 d={`M 80 80 L ${x1} ${y1} A 30 30 0 ${large} 1 ${x2} ${y2} Z`}
                 fill={item.color}
               />
@@ -179,6 +288,21 @@ const AlMunjiAdmin = () => {
         </svg>
       </div>
     );
+  };
+
+  const handleExportReport = () => {
+    console.log("Exporting report...");
+    // Add export logic here
+  };
+
+  const handleViewAnalytics = () => {
+    console.log("Viewing analytics...");
+    // Add navigation logic here
+  };
+
+  const handleViewLogs = () => {
+    console.log("Viewing logs...");
+    // Add navigation logic here
   };
 
   return (
@@ -198,10 +322,17 @@ const AlMunjiAdmin = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <button className="p-2 text-gray-600 hover:text-emerald-600 transition-colors">
+              <button
+                className="p-2 text-gray-600 hover:text-emerald-600 transition-colors relative"
+                aria-label="Notifications"
+              >
                 <Bell className="w-6 h-6" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
-              <button className="p-2 text-gray-600 hover:text-emerald-600 transition-colors">
+              <button
+                className="p-2 text-gray-600 hover:text-emerald-600 transition-colors"
+                aria-label="Settings"
+              >
                 <Settings className="w-6 h-6" />
               </button>
             </div>
@@ -210,13 +341,47 @@ const AlMunjiAdmin = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900">
-            Admin Dashboard Overview
-          </h2>
-          <p className="text-gray-600">
-            Welcome back! Here's what's happening with Al-Munji today.
-          </p>
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">
+              Admin Dashboard Overview
+            </h2>
+            <p className="text-gray-600">
+              Welcome back! Here's what's happening with Al-Munji today.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setSelectedTimeRange("week")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                selectedTimeRange === "week"
+                  ? "bg-emerald-600 text-white"
+                  : "bg-white text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              Week
+            </button>
+            <button
+              onClick={() => setSelectedTimeRange("month")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                selectedTimeRange === "month"
+                  ? "bg-emerald-600 text-white"
+                  : "bg-white text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              Month
+            </button>
+            <button
+              onClick={() => setSelectedTimeRange("year")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                selectedTimeRange === "year"
+                  ? "bg-emerald-600 text-white"
+                  : "bg-white text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              Year
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -273,7 +438,10 @@ const AlMunjiAdmin = () => {
             <SimplePieChart data={surahData} />
             <div className="mt-4 space-y-2">
               {surahData.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between">
+                <div
+                  key={`surah-${idx}`}
+                  className="flex items-center justify-between"
+                >
                   <div className="flex items-center">
                     <div
                       className="w-3 h-3 rounded-full mr-2"
@@ -294,82 +462,36 @@ const AlMunjiAdmin = () => {
               Recent Platform Activities
             </h3>
             <div className="space-y-4">
-              <div className="flex items-start space-x-3">
-                <div className="bg-emerald-100 p-2 rounded-lg">
-                  <UserPlus className="w-4 h-4 text-emerald-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">
-                    New user registration
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Ahmed Khan registered from Bangladesh
-                  </p>
-                </div>
-                <span className="text-xs text-gray-400">5m ago</span>
-              </div>
-              <div className="flex items-start space-x-3">
-                <div className="bg-blue-100 p-2 rounded-lg">
-                  <BookOpen className="w-4 h-4 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">
-                    Surah completion
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    User completed reading Surah Al-Kahf
-                  </p>
-                </div>
-                <span className="text-xs text-gray-400">12m ago</span>
-              </div>
-              <div className="flex items-start space-x-3">
-                <div className="bg-purple-100 p-2 rounded-lg">
-                  <Heart className="w-4 h-4 text-purple-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">
-                    Bookmark milestone
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    23,000+ bookmarks created this month
-                  </p>
-                </div>
-                <span className="text-xs text-gray-400">1h ago</span>
-              </div>
-              <div className="flex items-start space-x-3">
-                <div className="bg-orange-100 p-2 rounded-lg">
-                  <MessageSquare className="w-4 h-4 text-orange-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">
-                    New feedback received
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    User feedback: "Love the dark mode feature!"
-                  </p>
-                </div>
-                <span className="text-xs text-gray-400">2h ago</span>
-              </div>
-              <div className="flex items-start space-x-3">
-                <div className="bg-teal-100 p-2 rounded-lg">
-                  <Globe className="w-4 h-4 text-teal-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">
-                    New translation added
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Bengali translation now available
-                  </p>
-                </div>
-                <span className="text-xs text-gray-400">3h ago</span>
-              </div>
+              {recentActivities.map((activity) => {
+                const Icon = activity.icon;
+                return (
+                  <div key={activity.id} className="flex items-start space-x-3">
+                    <div className={`${activity.iconBgColor} p-2 rounded-lg`}>
+                      <Icon className={`w-4 h-4 ${activity.iconColor}`} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">
+                        {activity.title}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {activity.description}
+                      </p>
+                    </div>
+                    <span className="text-xs text-gray-400">
+                      {activity.timestamp}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
 
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <button className="bg-white border border-gray-100 rounded-xl p-6 hover:shadow-md transition-shadow flex items-center justify-between">
+          <button
+            onClick={handleExportReport}
+            className="bg-white border border-gray-100 rounded-xl p-6 hover:shadow-md transition-shadow flex items-center justify-between"
+          >
             <div className="flex items-center space-x-3">
               <div className="bg-emerald-100 p-3 rounded-lg">
                 <Download className="w-5 h-5 text-emerald-600" />
@@ -380,7 +502,10 @@ const AlMunjiAdmin = () => {
               </div>
             </div>
           </button>
-          <button className="bg-white border border-gray-100 rounded-xl p-6 hover:shadow-md transition-shadow flex items-center justify-between">
+          <button
+            onClick={handleViewAnalytics}
+            className="bg-white border border-gray-100 rounded-xl p-6 hover:shadow-md transition-shadow flex items-center justify-between"
+          >
             <div className="flex items-center space-x-3">
               <div className="bg-blue-100 p-3 rounded-lg">
                 <Eye className="w-5 h-5 text-blue-600" />
@@ -391,7 +516,10 @@ const AlMunjiAdmin = () => {
               </div>
             </div>
           </button>
-          <button className="bg-white border border-gray-100 rounded-xl p-6 hover:shadow-md transition-shadow flex items-center justify-between">
+          <button
+            onClick={handleViewLogs}
+            className="bg-white border border-gray-100 rounded-xl p-6 hover:shadow-md transition-shadow flex items-center justify-between"
+          >
             <div className="flex items-center space-x-3">
               <div className="bg-purple-100 p-3 rounded-lg">
                 <Clock className="w-5 h-5 text-purple-600" />
