@@ -60,7 +60,7 @@ interface PieChartProps {
   data: SurahData[];
 }
 
-const AlMunjiAdmin = () => {
+const AdminDashboardOverview = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState<
     "week" | "month" | "year"
   >("month");
@@ -536,4 +536,4 @@ const AlMunjiAdmin = () => {
   );
 };
 
-export default AlMunjiAdmin;
+export default AdminDashboardOverview;
