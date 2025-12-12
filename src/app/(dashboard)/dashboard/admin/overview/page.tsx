@@ -157,7 +157,7 @@ const AdminDashboardOverview = () => {
             {change}
           </p>
         </div>
-        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-3 rounded-lg">
+        <div className="bg-linear-to-br from-emerald-500 to-teal-600 p-3 rounded-lg">
           <Icon className="w-6 h-6 text-white" />
         </div>
       </div>
@@ -313,7 +313,7 @@ const AdminDashboardOverview = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-linear-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
                 <BookOpen className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -349,7 +349,8 @@ const AdminDashboardOverview = () => {
               Admin Dashboard Overview
             </h2>
             <p className="text-gray-600">
-              Welcome back! Here's what's happening with Al-Munji today.
+              Welcome back! Here&apos;s what&apos;s happening with Al-Munji
+              today.
             </p>
           </div>
           <div className="flex gap-2">
