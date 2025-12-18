@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, ChangeEvent, FormEvent } from "react";
-import { BookOpen, Save, X, AlertCircle, Check } from "lucide-react";
+import { AlertCircle, BookOpen, Check, Save, X } from "lucide-react";
+import React, { ChangeEvent, FormEvent, useState } from "react";
 
-// Define interfaces for type safety
 interface FormData {
   surahNumber: string;
   surahName: string;
@@ -502,7 +501,7 @@ const CreateAyahPage: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Preview
               </h3>
-              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg p-6 border border-emerald-200">
+              <div className="bg-linear-to-r from-emerald-50 to-teal-50 rounded-lg p-6 border border-emerald-200">
                 {formData.surahName && formData.ayahNumber && (
                   <div className="text-sm text-emerald-700 font-medium mb-3">
                     {formData.surahName} - Ayah {formData.ayahNumber}

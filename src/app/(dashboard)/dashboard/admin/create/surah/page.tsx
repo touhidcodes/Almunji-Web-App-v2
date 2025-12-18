@@ -1,17 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
 import {
-  Book,
-  Save,
-  X,
   AlertCircle,
+  Book,
+  Calendar,
   Check,
   MapPin,
-  Calendar,
+  Save,
+  X,
 } from "lucide-react";
+import React, { useState } from "react";
 
-// Define interfaces for type safety
 interface SurahFormData {
   surahNumber: string;
   arabicName: string;
@@ -596,7 +595,7 @@ const CreateSurahPage: React.FC = () => {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
                   Preview
                 </h3>
-                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-6 border border-purple-200">
+                <div className="bg-linear-to-r from-purple-50 to-indigo-50 rounded-lg p-6 border border-purple-200">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
                     <div>
                       {formData.surahNumber && (

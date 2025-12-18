@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, ChangeEvent, FormEvent } from "react";
-import { Heart, Save, X, AlertCircle, Check } from "lucide-react";
+import { AlertCircle, Check, Heart, Save, X } from "lucide-react";
+import React, { ChangeEvent, FormEvent, useState } from "react";
 
-// Define interfaces for type safety
 interface FormData {
   title: string;
   arabicText: string;
@@ -528,7 +527,7 @@ const CreateDuaPage: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Preview
               </h3>
-              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-6 border border-purple-200">
+              <div className="bg-linear-to-r from-purple-50 to-indigo-50 rounded-lg p-6 border border-purple-200">
                 {formData.title && (
                   <div className="text-lg font-semibold text-purple-900 mb-2">
                     {formData.title}
