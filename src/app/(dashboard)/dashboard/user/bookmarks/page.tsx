@@ -1,22 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import {
-  BookOpen,
-  Heart,
-  Trash2,
-  Plus,
-  Search,
-  Play,
-  Star,
-  Clock,
-  Eye,
-  BookMarked,
-  Zap,
-  TrendingUp,
-} from "lucide-react";
-
-// shadcn/ui components
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -27,9 +11,23 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  BookMarked,
+  BookOpen,
+  Clock,
+  Eye,
+  Heart,
+  Play,
+  Plus,
+  Search,
+  Star,
+  Trash2,
+  TrendingUp,
+  Zap,
+} from "lucide-react";
+import React, { useState } from "react";
 
 interface Surah {
   id: number;
@@ -265,7 +263,7 @@ const DashboardBookmarkPage: React.FC = () => {
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <CardTitle className="text-lg flex items-center gap-2">
-              <span className="w-8 h-8 rounded-full bg-gradient-to-r from-emerald-500 to-blue-500 text-white text-sm font-bold flex items-center justify-center">
+              <span className="w-8 h-8 rounded-full bg-linear-to-r from-emerald-500 to-blue-500 text-white text-sm font-bold flex items-center justify-center">
                 {surah.chapter}
               </span>
               {surah.name}
@@ -460,7 +458,7 @@ const DashboardBookmarkPage: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       {/* Header */}
       <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
