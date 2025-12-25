@@ -65,7 +65,7 @@ const ManageDictionaryPage: React.FC = () => {
       {
         id: 1,
         word: "Ephemeral",
-        pronunciation: "/ɪˈfɛm(ə)r(ə)l/",
+        pronunciation: "",
         partOfSpeech: "adjective",
         definition: "Lasting for a very short time; transitory.",
         example:
@@ -78,7 +78,7 @@ const ManageDictionaryPage: React.FC = () => {
       {
         id: 2,
         word: "Serendipity",
-        pronunciation: "/ˌsɛr(ə)nˈdɪpɪti/",
+        pronunciation: "",
         partOfSpeech: "noun",
         definition:
           "The occurrence of events by chance in a happy or beneficial way.",
@@ -92,14 +92,14 @@ const ManageDictionaryPage: React.FC = () => {
       {
         id: 3,
         word: "Ameliorate",
-        pronunciation: "/əˈmiːlɪəreɪt/",
+        pronunciation: "",
         partOfSpeech: "verb",
         definition: "To make something bad or unsatisfactory better.",
         example:
           "The new policies were designed to ameliorate working conditions.",
         synonyms: "improve, enhance, better, upgrade",
         antonyms: "worsen, deteriorate, decline, degrade",
-        origin: "Latin melior 'better'",
+        origin: "Latin melior 'better",
         category: "Academic",
       },
     ];
