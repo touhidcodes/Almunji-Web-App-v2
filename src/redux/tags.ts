@@ -3,6 +3,7 @@ export enum tagTypes {
   user = "user",
   quran = "quran",
   surah = "surah",
+  para = "para",
   dictionary = "dictionary",
 }
 
