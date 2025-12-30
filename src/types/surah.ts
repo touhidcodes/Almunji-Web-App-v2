@@ -1,50 +1,24 @@
-// Type definitions
-export interface TChapterData {
-  id: string | number;
-  surahName: string;
-  surahNameArabic: string;
-  surahNameArabicLong: string;
-  surahNameTranslation: string;
-  revelationPlace: string;
+export type TSurah = {
+  id: string;
+  chapter: number;
   totalAyah: number;
-}
+  arabic: string;
+  english: string;
+  bangla?: string | null;
+  history?: string | null;
+  revelation: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
-export interface TSurah {
-  id: number;
-  number: number;
-  nameArabic: string;
-  nameEnglish: string;
-  nameTransliteration: string;
-  meaning: string;
-  totalAyahs: number;
-  revelation: "Meccan" | "Medinan";
-  revelationOrder: number | null;
-  mainThemes: string;
-  description: string;
-}
-
-export interface TNewSurah {
-  number: string;
-  nameArabic: string;
-  nameEnglish: string;
-  nameTransliteration: string;
-  meaning: string;
-  totalAyahs: string;
-  revelation: "Meccan" | "Medinan";
-  revelationOrder: string;
-  mainThemes: string;
-  description: string;
-}
-export interface TSurahData {
-  surahName: string;
-  surahNameArabic: string;
-  surahNameArabicLong: string;
-  surahNameTranslation: string;
-  revelationPlace: string;
+export type TCreateSurahPayload = {
+  chapter: number;
   totalAyah: number;
-  surahNo: number;
-  english: string[];
-  arabic1: string[];
-  arabic2: string[];
-  bengali: string[];
-}
+  arabic: string;
+  english: string;
+  bangla?: string;
+  history?: string;
+  revelation: string;
+};
+
+export type TUpdateSurahPayload = Partial<TCreateSurahPayload>;
