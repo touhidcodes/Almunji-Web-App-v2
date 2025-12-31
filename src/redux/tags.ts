@@ -4,6 +4,7 @@ export enum tagTypes {
   quran = "quran",
   surah = "surah",
   para = "para",
+  ayah = "ayah",
   dictionary = "dictionary",
 }
 
