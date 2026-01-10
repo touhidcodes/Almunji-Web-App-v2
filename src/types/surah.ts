@@ -22,3 +22,13 @@ export type TCreateSurahPayload = {
 };
 
 export type TUpdateSurahPayload = Partial<TCreateSurahPayload>;
+
+export interface TChapterData {
+  id: number;
+  surahName: string;
+  surahNameArabic: string;
+  surahNameArabicLong: string;
+  surahNameTranslation: string;
+  revelationPlace: string;
+  totalAyah: number;
+}
