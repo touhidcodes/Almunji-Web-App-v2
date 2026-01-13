@@ -1,78 +1,52 @@
 "use client";
 
-import {
-  AlertCircle,
-  Book,
-  Calendar,
-  Check,
-  MapPin,
-  Save,
-  X,
-} from "lucide-react";
+import { AlertCircle, Book, Calendar, Check, Save, X } from "lucide-react";
 import React, { useState } from "react";
 
+// Correct types matching your schema
+type TSurah = {
+  id: string;
+  chapter: number;
+  totalAyah: number;
+  arabic: string;
+  english: string;
+  bangla?: string | null;
+  history?: string | null;
+  revelation: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 interface SurahFormData {
-  surahNumber: string;
-  arabicName: string;
-  englishName: string;
-  transliteration: string;
-  meaning: string;
-  revelationType: "Meccan" | "Medinan" | "";
-  revelationPlace: "Mecca" | "Medina" | "";
-  revelationOrder: string;
-  totalAyahs: string;
-  totalWords: string;
-  totalLetters: string;
-  juzStart: string;
-  juzEnd: string;
-  hizbStart: string;
-  hizbEnd: string;
-  rukuhCount: string;
-  sajdahCount: string;
-  mainThemes: string;
-  introduction: string;
-  historicalContext: string;
-  tags: string;
+  chapter: string;
+  arabic: string;
+  english: string;
+  bangla: string;
+  totalAyah: string;
+  revelation: string;
+  history: string;
 }
 
 interface FormErrors {
   [key: string]: string;
 }
 
-type RevelationType = "Meccan" | "Medinan";
-type RevelationPlace = "Mecca" | "Medina";
-
 const CreateSurahPage: React.FC = () => {
   const [formData, setFormData] = useState<SurahFormData>({
-    surahNumber: "",
-    arabicName: "",
-    englishName: "",
-    transliteration: "",
-    meaning: "",
-    revelationType: "",
-    revelationPlace: "",
-    revelationOrder: "",
-    totalAyahs: "",
-    totalWords: "",
-    totalLetters: "",
-    juzStart: "",
-    juzEnd: "",
-    hizbStart: "",
-    hizbEnd: "",
-    rukuhCount: "",
-    sajdahCount: "",
-    mainThemes: "",
-    introduction: "",
-    historicalContext: "",
-    tags: "",
+    chapter: "",
+    arabic: "",
+    english: "",
+    bangla: "",
+    totalAyah: "",
+    revelation: "",
+    history: "",
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
 
-  const revelationTypes: RevelationType[] = ["Meccan", "Medinan"];
-  const revelationPlaces: RevelationPlace[] = ["Mecca", "Medina"];
+  const revelationTypes = ["Meccan", "Medinan"];
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -97,47 +71,31 @@ const CreateSurahPage: React.FC = () => {
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    const surahNumberValue = parseInt(formData.surahNumber, 10);
+    const chapterValue = parseInt(formData.chapter, 10);
     if (
-      !formData.surahNumber ||
-      isNaN(surahNumberValue) ||
-      surahNumberValue < 1 ||
-      surahNumberValue > 114
+      !formData.chapter ||
+      isNaN(chapterValue) ||
+      chapterValue < 1 ||
+      chapterValue > 114
     ) {
-      newErrors.surahNumber = "Surah number must be between 1 and 114";
+      newErrors.chapter = "Chapter number must be between 1 and 114";
     }
 
-    if (!formData.arabicName.trim()) {
-      newErrors.arabicName = "Arabic name is required";
+    if (!formData.arabic.trim()) {
+      newErrors.arabic = "Arabic name is required";
     }
 
-    if (!formData.englishName.trim()) {
-      newErrors.englishName = "English name is required";
+    if (!formData.english.trim()) {
+      newErrors.english = "English name is required";
     }
 
-    if (!formData.transliteration.trim()) {
-      newErrors.transliteration = "Transliteration is required";
+    if (!formData.revelation) {
+      newErrors.revelation = "Revelation type is required";
     }
 
-    if (!formData.revelationType) {
-      newErrors.revelationType = "Revelation type is required";
-    }
-
-    const totalAyahsValue = parseInt(formData.totalAyahs, 10);
-    if (!formData.totalAyahs || isNaN(totalAyahsValue) || totalAyahsValue < 1) {
-      newErrors.totalAyahs = "Total ayahs must be a positive number";
-    }
-
-    if (formData.revelationOrder) {
-      const revelationOrderValue = parseInt(formData.revelationOrder, 10);
-      if (
-        isNaN(revelationOrderValue) ||
-        revelationOrderValue < 1 ||
-        revelationOrderValue > 114
-      ) {
-        newErrors.revelationOrder =
-          "Revelation order must be between 1 and 114";
-      }
+    const totalAyahValue = parseInt(formData.totalAyah, 10);
+    if (!formData.totalAyah || isNaN(totalAyahValue) || totalAyahValue < 1) {
+      newErrors.totalAyah = "Total ayahs must be a positive number";
     }
 
     setErrors(newErrors);
@@ -153,9 +111,25 @@ const CreateSurahPage: React.FC = () => {
     setSubmitSuccess(false);
 
     try {
+      // Create the surah object matching TSurah type
+      const now = new Date().toISOString();
+      const newSurah: TSurah = {
+        id: Date.now().toString(),
+        chapter: parseInt(formData.chapter),
+        totalAyah: parseInt(formData.totalAyah),
+        arabic: formData.arabic,
+        english: formData.english,
+        bangla: formData.bangla || null,
+        revelation: formData.revelation,
+        history: formData.history || null,
+        createdAt: now,
+        updatedAt: now,
+      };
+
       // Simulate API call
       await new Promise<void>((resolve) => setTimeout(resolve, 1500));
 
+      console.log("Created Surah:", newSurah);
       setSubmitSuccess(true);
 
       // Reset form after successful submission
@@ -172,27 +146,13 @@ const CreateSurahPage: React.FC = () => {
 
   const resetFormData = (): void => {
     setFormData({
-      surahNumber: "",
-      arabicName: "",
-      englishName: "",
-      transliteration: "",
-      meaning: "",
-      revelationType: "",
-      revelationPlace: "",
-      revelationOrder: "",
-      totalAyahs: "",
-      totalWords: "",
-      totalLetters: "",
-      juzStart: "",
-      juzEnd: "",
-      hizbStart: "",
-      hizbEnd: "",
-      rukuhCount: "",
-      sajdahCount: "",
-      mainThemes: "",
-      introduction: "",
-      historicalContext: "",
-      tags: "",
+      chapter: "",
+      arabic: "",
+      english: "",
+      bangla: "",
+      totalAyah: "",
+      revelation: "",
+      history: "",
     });
   };
 
@@ -214,7 +174,7 @@ const CreateSurahPage: React.FC = () => {
   ) => (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">
-        {label} {required && "*"}
+        {label} {required && <span className="text-red-500">*</span>}
       </label>
       <input
         type={type}
@@ -247,7 +207,7 @@ const CreateSurahPage: React.FC = () => {
   ) => (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">
-        {label} {required && "*"}
+        {label} {required && <span className="text-red-500">*</span>}
       </label>
       <select
         name={name}
@@ -332,8 +292,8 @@ const CreateSurahPage: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {renderInputField(
-                  "surahNumber",
-                  "Surah Number",
+                  "chapter",
+                  "Chapter Number",
                   "number",
                   "1-114",
                   true,
@@ -341,7 +301,7 @@ const CreateSurahPage: React.FC = () => {
                   114
                 )}
                 {renderInputField(
-                  "totalAyahs",
+                  "totalAyah",
                   "Total Ayahs",
                   "number",
                   "7",
@@ -359,7 +319,7 @@ const CreateSurahPage: React.FC = () => {
 
               <div className="space-y-4">
                 {renderInputField(
-                  "arabicName",
+                  "arabic",
                   "Arabic Name",
                   "text",
                   "الفاتحة",
@@ -377,27 +337,19 @@ const CreateSurahPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {renderInputField(
-                    "englishName",
+                    "english",
                     "English Name",
                     "text",
-                    "The Opening",
+                    "Al-Fatihah",
                     true
                   )}
                   {renderInputField(
-                    "transliteration",
-                    "Transliteration",
+                    "bangla",
+                    "Bangla Name",
                     "text",
-                    "Al-Fatiha",
-                    true
+                    "আল-ফাতিহা"
                   )}
                 </div>
-
-                {renderInputField(
-                  "meaning",
-                  "Meaning",
-                  "text",
-                  "The Opening, The Opener"
-                )}
               </div>
             </div>
 
@@ -408,136 +360,13 @@ const CreateSurahPage: React.FC = () => {
                 Revelation Information
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {renderSelectField(
-                  "revelationType",
+                  "revelation",
                   "Revelation Type",
                   revelationTypes,
                   true,
                   "Select Type"
-                )}
-                {renderSelectField(
-                  "revelationPlace",
-                  "Revelation Place",
-                  revelationPlaces,
-                  false,
-                  "Select Place"
-                )}
-                {renderInputField(
-                  "revelationOrder",
-                  "Revelation Order",
-                  "number",
-                  "5",
-                  false,
-                  1,
-                  114
-                )}
-              </div>
-            </div>
-
-            {/* Statistics Section */}
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
-                Statistics
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {renderInputField(
-                  "totalWords",
-                  "Total Words",
-                  "number",
-                  "29",
-                  false,
-                  1
-                )}
-                {renderInputField(
-                  "totalLetters",
-                  "Total Letters",
-                  "number",
-                  "139",
-                  false,
-                  1
-                )}
-                {renderInputField(
-                  "sajdahCount",
-                  "Sajdah Count",
-                  "number",
-                  "0",
-                  false,
-                  0
-                )}
-              </div>
-            </div>
-
-            {/* Position Information Section */}
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2 flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-purple-600" />
-                Position Information
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-medium text-gray-800 mb-3">
-                    Juz (Para) Range
-                  </h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    {renderInputField(
-                      "juzStart",
-                      "Start Juz",
-                      "number",
-                      "1",
-                      false,
-                      1,
-                      30
-                    )}
-                    {renderInputField(
-                      "juzEnd",
-                      "End Juz",
-                      "number",
-                      "1",
-                      false,
-                      1,
-                      30
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-medium text-gray-800 mb-3">Hizb Range</h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    {renderInputField(
-                      "hizbStart",
-                      "Start Hizb",
-                      "number",
-                      "1",
-                      false,
-                      1,
-                      60
-                    )}
-                    {renderInputField(
-                      "hizbEnd",
-                      "End Hizb",
-                      "number",
-                      "1",
-                      false,
-                      1,
-                      60
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4">
-                {renderInputField(
-                  "rukuhCount",
-                  "Rukuh Count",
-                  "number",
-                  "1",
-                  false,
-                  1,
-                  undefined,
-                  { className: "w-full md:w-1/3" }
                 )}
               </div>
             </div>
@@ -545,125 +374,82 @@ const CreateSurahPage: React.FC = () => {
             {/* Content Section */}
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
-                Content & Themes
+                Historical Context
               </h3>
 
               <div className="space-y-4">
-                <div>
-                  {renderInputField(
-                    "mainThemes",
-                    "Main Themes",
-                    "text",
-                    "Prayer, Guidance, Praise of Allah"
-                  )}
-                  <p className="text-xs text-gray-500 mt-1">
-                    Separate themes with commas
-                  </p>
-                </div>
-
                 {renderTextAreaField(
-                  "introduction",
-                  "Introduction",
-                  3,
-                  "Brief introduction about this Surah..."
+                  "history",
+                  "History & Description",
+                  5,
+                  "Brief introduction and historical background about this Surah..."
                 )}
-
-                {renderTextAreaField(
-                  "historicalContext",
-                  "Historical Context",
-                  4,
-                  "Historical background and circumstances of revelation..."
-                )}
-
-                <div>
-                  {renderInputField(
-                    "tags",
-                    "Tags",
-                    "text",
-                    "opening, prayer, essential, daily"
-                  )}
-                  <p className="text-xs text-gray-500 mt-1">
-                    Separate tags with commas
-                  </p>
-                </div>
               </div>
             </div>
 
             {/* Preview Section */}
-            {(formData.arabicName || formData.englishName) && (
+            {(formData.arabic || formData.english) && (
               <div className="mb-8">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
                   Preview
                 </h3>
                 <div className="bg-linear-to-r from-purple-50 to-indigo-50 rounded-lg p-6 border border-purple-200">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-                    <div>
-                      {formData.surahNumber && (
+                    <div className="flex-1">
+                      {formData.chapter && (
                         <div className="text-sm text-purple-700 font-medium mb-1">
-                          Surah {formData.surahNumber}
+                          Chapter {formData.chapter}
                         </div>
                       )}
 
-                      <div className="flex items-center gap-4 mb-2">
-                        {formData.arabicName && (
+                      <div className="flex items-center gap-4 mb-2 flex-wrap">
+                        {formData.arabic && (
                           <div
                             className="text-2xl font-bold text-gray-900"
                             style={{ fontFamily: "Arial, sans-serif" }}
                           >
-                            {formData.arabicName}
+                            {formData.arabic}
                           </div>
                         )}
-                        {formData.englishName && (
+                        {formData.english && (
                           <div className="text-xl font-bold text-gray-800">
-                            {formData.englishName}
+                            {formData.english}
                           </div>
                         )}
                       </div>
 
-                      {formData.transliteration && (
-                        <div className="text-lg italic text-gray-600 mb-2">
-                          {formData.transliteration}
-                        </div>
-                      )}
-
-                      {formData.meaning && (
-                        <div className="text-sm text-gray-600">
-                          Meaning: {formData.meaning}
+                      {formData.bangla && (
+                        <div className="text-lg text-gray-600 mb-2">
+                          {formData.bangla}
                         </div>
                       )}
                     </div>
 
                     <div className="mt-4 md:mt-0 text-sm text-gray-600 space-y-1">
-                      {formData.revelationType && (
+                      {formData.revelation && (
                         <div className="flex items-center gap-1">
                           <span
                             className={`inline-block w-2 h-2 rounded-full ${
-                              formData.revelationType === "Meccan"
+                              formData.revelation === "Meccan"
                                 ? "bg-orange-400"
                                 : "bg-green-400"
                             }`}
                           ></span>
-                          {formData.revelationType}
+                          {formData.revelation}
                         </div>
                       )}
-                      {formData.totalAyahs && (
-                        <div>{formData.totalAyahs} Ayahs</div>
-                      )}
-                      {formData.juzStart && (
-                        <div>
-                          Juz {formData.juzStart}
-                          {formData.juzEnd &&
-                          formData.juzEnd !== formData.juzStart
-                            ? `-${formData.juzEnd}`
-                            : ""}
-                        </div>
+                      {formData.totalAyah && (
+                        <div>{formData.totalAyah} Ayahs</div>
                       )}
                     </div>
                   </div>
 
-                  {formData.introduction && (
-                    <div className="text-gray-700 leading-relaxed">
-                      {formData.introduction}
+                  {formData.history && (
+                    <div className="text-gray-700 leading-relaxed mt-4 pt-4 border-t border-purple-200">
+                      <p className="font-medium text-sm text-purple-700 mb-2">
+                        History & Context:
+                      </p>
+                      {formData.history}
                     </div>
                   )}
                 </div>
@@ -710,12 +496,11 @@ const CreateSurahPage: React.FC = () => {
           </h4>
           <ul className="text-amber-800 text-sm space-y-2">
             <li>• Ensure Arabic names are accurate and properly formatted</li>
-            <li>• Verify Surah number and total ayah count</li>
-            <li>• Include both English name and transliteration</li>
-            <li>• Specify revelation type (Meccan/Medinan) and order</li>
-            <li>• Add relevant themes and historical context</li>
-            <li>• Use descriptive tags for better categorization</li>
-            <li>• Double-check all numerical data (Juz, Hizb, statistics)</li>
+            <li>• Verify chapter number and total ayah count</li>
+            <li>• Include both English and Bangla names if available</li>
+            <li>• Specify revelation type (Meccan/Medinan)</li>
+            <li>• Add relevant historical context and description</li>
+            <li>• Double-check all numerical data before submission</li>
           </ul>
         </div>
 
