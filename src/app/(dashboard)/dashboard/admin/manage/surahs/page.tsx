@@ -1,98 +1,111 @@
 "use client";
 
-import React, { useState, useEffect, ChangeEvent } from "react";
 import {
-  Search,
-  Plus,
-  Edit,
-  Trash2,
   Book,
-  Save,
-  X,
+  Edit,
   MapPin,
-  Calendar,
+  Plus,
+  Save,
+  Search,
+  Trash2,
+  X,
 } from "lucide-react";
-import { TNewSurah, TSurah } from "@/types/surah";
+import React, { ChangeEvent, useEffect, useState } from "react";
+
+// Correct types matching your schema
+type TSurah = {
+  id: string;
+  chapter: number;
+  totalAyah: number;
+  arabic: string;
+  english: string;
+  bangla?: string | null;
+  history?: string | null;
+  revelation: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type TNewSurah = {
+  chapter: string;
+  totalAyah: string;
+  arabic: string;
+  english: string;
+  bangla: string;
+  history: string;
+  revelation: string;
+};
 
 const ManageSurahsPage: React.FC = () => {
   const [surahs, setSurahs] = useState<TSurah[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [selectedRevelation, setSelectedRevelation] = useState<
-    "all" | "Meccan" | "Medinan"
-  >("all");
+  const [selectedRevelation, setSelectedRevelation] = useState<string>("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [editingSurah, setEditingSurah] = useState<TSurah | null>(null);
   const [newSurah, setNewSurah] = useState<TNewSurah>({
-    number: "",
-    nameArabic: "",
-    nameEnglish: "",
-    nameTransliteration: "",
-    meaning: "",
-    totalAyahs: "",
+    chapter: "",
+    arabic: "",
+    english: "",
+    bangla: "",
+    totalAyah: "",
     revelation: "Meccan",
-    revelationOrder: "",
-    mainThemes: "",
-    description: "",
+    history: "",
   });
 
-  // Sample data - in a real app, this would come from an API
+  // Sample data
   useEffect(() => {
     const sampleSurahs: TSurah[] = [
       {
-        id: 1,
-        number: 1,
-        nameArabic: "الفاتحة",
-        nameEnglish: "Al-Fatihah",
-        nameTransliteration: "Al-Faatihah",
-        meaning: "The Opening",
-        totalAyahs: 7,
+        id: "1",
+        chapter: 1,
+        arabic: "الفاتحة",
+        english: "Al-Fatihah",
+        bangla: "আল-ফাতিহা",
+        totalAyah: 7,
         revelation: "Meccan",
-        revelationOrder: 5,
-        mainThemes: "Prayer, Praise of Allah, Guidance",
-        description:
+        history:
           "The opening chapter of the Quran, recited in every unit of prayer.",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       },
       {
-        id: 2,
-        number: 2,
-        nameArabic: "البقرة",
-        nameEnglish: "Al-Baqarah",
-        nameTransliteration: "Al-Baqarah",
-        meaning: "The Cow",
-        totalAyahs: 286,
+        id: "2",
+        chapter: 2,
+        arabic: "البقرة",
+        english: "Al-Baqarah",
+        bangla: "আল-বাকারা",
+        totalAyah: 286,
         revelation: "Medinan",
-        revelationOrder: 87,
-        mainThemes: "Laws, Stories of previous nations, Faith and disbelief",
-        description:
+        history:
           "The longest chapter of the Quran, containing many laws and stories.",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       },
       {
-        id: 3,
-        number: 3,
-        nameArabic: "آل عمران",
-        nameEnglish: "Ali Imran",
-        nameTransliteration: "Aali Imraan",
-        meaning: "The Family of Imran",
-        totalAyahs: 200,
+        id: "3",
+        chapter: 3,
+        arabic: "آل عمران",
+        english: "Ali Imran",
+        bangla: "আলে ইমরান",
+        totalAyah: 200,
         revelation: "Medinan",
-        revelationOrder: 89,
-        mainThemes: "Jesus, Mary, Unity of Allah, Battle of Uhud",
-        description:
+        history:
           "Discusses the stories of Jesus and Mary, and events from the Battle of Uhud.",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       },
       {
-        id: 4,
-        number: 114,
-        nameArabic: "الناس",
-        nameEnglish: "An-Nas",
-        nameTransliteration: "An-Naas",
-        meaning: "The People",
-        totalAyahs: 6,
+        id: "4",
+        chapter: 114,
+        arabic: "الناس",
+        english: "An-Nas",
+        bangla: "আন-নাস",
+        totalAyah: 6,
         revelation: "Meccan",
-        revelationOrder: 21,
-        mainThemes: "Protection from evil, Seeking refuge in Allah",
-        description:
+        history:
           "The final chapter of the Quran, seeking protection from evil whispers.",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       },
     ];
     setSurahs(sampleSurahs);
@@ -100,19 +113,23 @@ const ManageSurahsPage: React.FC = () => {
 
   const handleAddSurah = (): void => {
     if (
-      newSurah.number &&
-      newSurah.nameEnglish &&
-      newSurah.nameArabic &&
-      newSurah.totalAyahs
+      newSurah.chapter &&
+      newSurah.english &&
+      newSurah.arabic &&
+      newSurah.totalAyah
     ) {
+      const now = new Date().toISOString();
       const surah: TSurah = {
-        ...newSurah,
-        id: Date.now(),
-        number: parseInt(newSurah.number),
-        totalAyahs: parseInt(newSurah.totalAyahs),
-        revelationOrder: newSurah.revelationOrder
-          ? parseInt(newSurah.revelationOrder)
-          : null,
+        id: Date.now().toString(),
+        chapter: parseInt(newSurah.chapter),
+        totalAyah: parseInt(newSurah.totalAyah),
+        arabic: newSurah.arabic,
+        english: newSurah.english,
+        bangla: newSurah.bangla || null,
+        revelation: newSurah.revelation,
+        history: newSurah.history || null,
+        createdAt: now,
+        updatedAt: now,
       };
       setSurahs([...surahs, surah]);
       resetForm();
@@ -122,12 +139,13 @@ const ManageSurahsPage: React.FC = () => {
   const handleEditSurah = (surah: TSurah): void => {
     setEditingSurah(surah);
     setNewSurah({
-      ...surah,
-      number: surah.number.toString(),
-      totalAyahs: surah.totalAyahs.toString(),
-      revelationOrder: surah.revelationOrder
-        ? surah.revelationOrder.toString()
-        : "",
+      chapter: surah.chapter.toString(),
+      totalAyah: surah.totalAyah.toString(),
+      arabic: surah.arabic,
+      english: surah.english,
+      bangla: surah.bangla || "",
+      revelation: surah.revelation,
+      history: surah.history || "",
     });
     setIsAddModalOpen(true);
   };
@@ -136,13 +154,15 @@ const ManageSurahsPage: React.FC = () => {
     if (!editingSurah) return;
 
     const updatedSurah: TSurah = {
-      ...newSurah,
-      id: editingSurah.id,
-      number: parseInt(newSurah.number),
-      totalAyahs: parseInt(newSurah.totalAyahs),
-      revelationOrder: newSurah.revelationOrder
-        ? parseInt(newSurah.revelationOrder)
-        : null,
+      ...editingSurah,
+      chapter: parseInt(newSurah.chapter),
+      totalAyah: parseInt(newSurah.totalAyah),
+      arabic: newSurah.arabic,
+      english: newSurah.english,
+      bangla: newSurah.bangla || null,
+      revelation: newSurah.revelation,
+      history: newSurah.history || null,
+      updatedAt: new Date().toISOString(),
     };
     setSurahs(
       surahs.map((surah) =>
@@ -152,7 +172,7 @@ const ManageSurahsPage: React.FC = () => {
     resetForm();
   };
 
-  const handleDeleteSurah = (id: number): void => {
+  const handleDeleteSurah = (id: string): void => {
     if (window.confirm("Are you sure you want to delete this Surah?")) {
       setSurahs(surahs.filter((surah) => surah.id !== id));
     }
@@ -162,31 +182,26 @@ const ManageSurahsPage: React.FC = () => {
     setIsAddModalOpen(false);
     setEditingSurah(null);
     setNewSurah({
-      number: "",
-      nameArabic: "",
-      nameEnglish: "",
-      nameTransliteration: "",
-      meaning: "",
-      totalAyahs: "",
+      chapter: "",
+      arabic: "",
+      english: "",
+      bangla: "",
+      totalAyah: "",
       revelation: "Meccan",
-      revelationOrder: "",
-      mainThemes: "",
-      description: "",
+      history: "",
     });
   };
 
-  // Filter surahs based on search term and revelation period
+  // Filter surahs
   const filteredSurahs = surahs.filter((surah) => {
     const matchesSearch =
       !searchTerm ||
-      surah.nameEnglish.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      surah.nameArabic.includes(searchTerm) ||
-      surah.nameTransliteration
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      surah.meaning.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      surah.mainThemes.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      surah.number.toString().includes(searchTerm);
+      surah.english.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      surah.arabic.includes(searchTerm) ||
+      (surah.bangla && surah.bangla.includes(searchTerm)) ||
+      (surah.history &&
+        surah.history.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      surah.chapter.toString().includes(searchTerm);
 
     const matchesRevelation =
       selectedRevelation === "all" || surah.revelation === selectedRevelation;
@@ -194,11 +209,13 @@ const ManageSurahsPage: React.FC = () => {
     return matchesSearch && matchesRevelation;
   });
 
-  // Sort surahs by number
-  const sortedSurahs = [...filteredSurahs].sort((a, b) => a.number - b.number);
+  // Sort surahs by chapter
+  const sortedSurahs = [...filteredSurahs].sort(
+    (a, b) => a.chapter - b.chapter
+  );
 
   // Calculate stats
-  const totalAyahs = surahs.reduce((sum, surah) => sum + surah.totalAyahs, 0);
+  const totalAyahs = surahs.reduce((sum, surah) => sum + surah.totalAyah, 0);
   const meccanCount = surahs.filter((s) => s.revelation === "Meccan").length;
   const medinanCount = surahs.filter((s) => s.revelation === "Medinan").length;
 
@@ -227,13 +244,13 @@ const ManageSurahsPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Search and Filter Controls */}
+          {/* Search and Filter */}
           <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 mb-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
                 type="text"
-                placeholder="Search surahs by name, number, meaning, or themes..."
+                placeholder="Search surahs by name, number, or history..."
                 value={searchTerm}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
                   setSearchTerm(e.target.value)
@@ -244,9 +261,7 @@ const ManageSurahsPage: React.FC = () => {
             <select
               value={selectedRevelation}
               onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-                setSelectedRevelation(
-                  e.target.value as "all" | "Meccan" | "Medinan"
-                )
+                setSelectedRevelation(e.target.value)
               }
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
             >
@@ -299,25 +314,17 @@ const ManageSurahsPage: React.FC = () => {
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center space-x-3">
                   <div className="bg-emerald-600 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold">
-                    {surah.number}
+                    {surah.chapter}
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <div
-                      className={`px-2 py-1 rounded text-xs ${
-                        surah.revelation === "Meccan"
-                          ? "bg-purple-100 text-purple-800"
-                          : "bg-orange-100 text-orange-800"
-                      }`}
-                    >
-                      <MapPin className="h-3 w-3 inline mr-1" />
-                      {surah.revelation}
-                    </div>
-                    {surah.revelationOrder && (
-                      <div className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
-                        <Calendar className="h-3 w-3 inline mr-1" />
-                        Order: {surah.revelationOrder}
-                      </div>
-                    )}
+                  <div
+                    className={`px-2 py-1 rounded text-xs ${
+                      surah.revelation === "Meccan"
+                        ? "bg-purple-100 text-purple-800"
+                        : "bg-orange-100 text-orange-800"
+                    }`}
+                  >
+                    <MapPin className="h-3 w-3 inline mr-1" />
+                    {surah.revelation}
                   </div>
                 </div>
                 <div className="flex space-x-2">
@@ -345,24 +352,17 @@ const ManageSurahsPage: React.FC = () => {
                     className="text-2xl font-bold text-gray-800"
                     style={{ fontFamily: "Arial, sans-serif" }}
                   >
-                    {surah.nameArabic}
+                    {surah.arabic}
                   </p>
                 </div>
 
-                {/* English Names */}
+                {/* English & Bangla Names */}
                 <div>
                   <h3 className="text-lg font-bold text-gray-900">
-                    {surah.nameEnglish}
+                    {surah.english}
                   </h3>
-                  {surah.nameTransliteration && (
-                    <p className="text-sm text-gray-600 italic">
-                      {surah.nameTransliteration}
-                    </p>
-                  )}
-                  {surah.meaning && (
-                    <p className="text-sm text-emerald-600 font-medium">
-                      "{surah.meaning}"
-                    </p>
+                  {surah.bangla && (
+                    <p className="text-sm text-gray-600 mt-1">{surah.bangla}</p>
                   )}
                 </div>
 
@@ -370,36 +370,17 @@ const ManageSurahsPage: React.FC = () => {
                 <div className="flex items-center justify-between py-2 border-t border-gray-100">
                   <span className="text-sm text-gray-600">Total Ayahs:</span>
                   <span className="font-bold text-emerald-600">
-                    {surah.totalAyahs}
+                    {surah.totalAyah}
                   </span>
                 </div>
 
-                {/* Main Themes */}
-                {surah.mainThemes && (
+                {/* History */}
+                {surah.history && (
                   <div>
                     <p className="text-xs font-medium text-gray-600 mb-1">
-                      Main Themes:
+                      History:
                     </p>
-                    <div className="flex flex-wrap gap-1">
-                      {surah.mainThemes.split(",").map((theme, index) => (
-                        <span
-                          key={index}
-                          className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs"
-                        >
-                          {theme.trim()}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Description */}
-                {surah.description && (
-                  <div>
-                    <p className="text-xs font-medium text-gray-600 mb-1">
-                      Description:
-                    </p>
-                    <p className="text-sm text-gray-700">{surah.description}</p>
+                    <p className="text-sm text-gray-700">{surah.history}</p>
                   </div>
                 )}
               </div>
@@ -450,13 +431,13 @@ const ManageSurahsPage: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Surah Number *
+                        Chapter Number *
                       </label>
                       <input
                         type="number"
-                        value={newSurah.number}
+                        value={newSurah.chapter}
                         onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                          handleInputChange("number", e.target.value)
+                          handleInputChange("chapter", e.target.value)
                         }
                         placeholder="1"
                         min="1"
@@ -470,9 +451,9 @@ const ManageSurahsPage: React.FC = () => {
                       </label>
                       <input
                         type="number"
-                        value={newSurah.totalAyahs}
+                        value={newSurah.totalAyah}
                         onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                          handleInputChange("totalAyahs", e.target.value)
+                          handleInputChange("totalAyah", e.target.value)
                         }
                         placeholder="7"
                         min="1"
@@ -487,9 +468,9 @@ const ManageSurahsPage: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      value={newSurah.nameArabic}
+                      value={newSurah.arabic}
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                        handleInputChange("nameArabic", e.target.value)
+                        handleInputChange("arabic", e.target.value)
                       }
                       placeholder="الفاتحة"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-right"
@@ -504,9 +485,9 @@ const ManageSurahsPage: React.FC = () => {
                       </label>
                       <input
                         type="text"
-                        value={newSurah.nameEnglish}
+                        value={newSurah.english}
                         onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                          handleInputChange("nameEnglish", e.target.value)
+                          handleInputChange("english", e.target.value)
                         }
                         placeholder="Al-Fatihah"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
@@ -514,18 +495,15 @@ const ManageSurahsPage: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Transliteration
+                        Bangla Name
                       </label>
                       <input
                         type="text"
-                        value={newSurah.nameTransliteration}
+                        value={newSurah.bangla}
                         onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                          handleInputChange(
-                            "nameTransliteration",
-                            e.target.value
-                          )
+                          handleInputChange("bangla", e.target.value)
                         }
-                        placeholder="Al-Faatihah"
+                        placeholder="আল-ফাতিহা"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                       />
                     </div>
@@ -533,82 +511,31 @@ const ManageSurahsPage: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Meaning
+                      Revelation Period *
                     </label>
-                    <input
-                      type="text"
-                      value={newSurah.meaning}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                        handleInputChange("meaning", e.target.value)
+                    <select
+                      value={newSurah.revelation}
+                      onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+                        handleInputChange("revelation", e.target.value)
                       }
-                      placeholder="The Opening"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Revelation Period
-                      </label>
-                      <select
-                        value={newSurah.revelation}
-                        onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-                          handleInputChange(
-                            "revelation",
-                            e.target.value as "Meccan" | "Medinan"
-                          )
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                      >
-                        <option value="Meccan">Meccan</option>
-                        <option value="Medinan">Medinan</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Revelation Order
-                      </label>
-                      <input
-                        type="number"
-                        value={newSurah.revelationOrder}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                          handleInputChange("revelationOrder", e.target.value)
-                        }
-                        placeholder="5"
-                        min="1"
-                        max="114"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                      />
-                    </div>
+                    >
+                      <option value="Meccan">Meccan</option>
+                      <option value="Medinan">Medinan</option>
+                    </select>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Main Themes
-                    </label>
-                    <input
-                      type="text"
-                      value={newSurah.mainThemes}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                        handleInputChange("mainThemes", e.target.value)
-                      }
-                      placeholder="Prayer, Praise of Allah, Guidance (separate with commas)"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Description
+                      History
                     </label>
                     <textarea
-                      value={newSurah.description}
+                      value={newSurah.history}
                       onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-                        handleInputChange("description", e.target.value)
+                        handleInputChange("history", e.target.value)
                       }
-                      placeholder="Brief description of the surah's content and significance"
-                      rows={3}
+                      placeholder="Brief history and description of the surah"
+                      rows={4}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     />
                   </div>
@@ -624,10 +551,10 @@ const ManageSurahsPage: React.FC = () => {
                   <button
                     onClick={editingSurah ? handleUpdateSurah : handleAddSurah}
                     disabled={
-                      !newSurah.number ||
-                      !newSurah.nameEnglish ||
-                      !newSurah.nameArabic ||
-                      !newSurah.totalAyahs
+                      !newSurah.chapter ||
+                      !newSurah.english ||
+                      !newSurah.arabic ||
+                      !newSurah.totalAyah
                     }
                     className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg flex items-center space-x-2 transition-colors"
                   >
