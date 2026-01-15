@@ -1,6 +1,6 @@
 "use client";
 
-import { getCurrentUser } from "@/services/actions/getCurrentUser";
+import { getAuthUser } from "@/services/getAuthUser";
 import { TUser } from "@/types/auth";
 import { useEffect, useState } from "react";
 
@@ -10,8 +10,8 @@ export const useUserInfo = () => {
 
   useEffect(() => {
     const loadUser = async () => {
-      const result = await getCurrentUser();
-      setUser(result as TUser);
+      const result = await getAuthUser();
+      setUser(result);
       setLoading(false);
     };
     loadUser();

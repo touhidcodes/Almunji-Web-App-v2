@@ -1,9 +1,7 @@
 "use server";
 
-import jwt from "jsonwebtoken";
+import { jwtDecode } from "jwt-decode";
 import { cookies } from "next/headers";
-
-const JWT_SECRET = process.env.JWT_SECRET!;
 
 export async function getAuthUser() {
   const cookieStore = await cookies();
@@ -12,7 +10,7 @@ export async function getAuthUser() {
   if (!token) return null;
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwtDecode(token);
     return decoded as {
       userId: string;
       email: string;
