@@ -10,7 +10,6 @@ interface DecodedToken {
   [key: string]: unknown;
 }
 
-
 export const getUserInfo = () => {
   const authToken = getFromLocalStorage("accessToken");
   //   console.log(authToken);
