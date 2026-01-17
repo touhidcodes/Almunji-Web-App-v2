@@ -20,3 +20,9 @@ export interface TUser {
   email: string;
   role?: string;
 }
+
+export type TAuthUser = {
+  userId: string;
+  email: string;
+  role: string;
+};
