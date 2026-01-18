@@ -1,18 +1,18 @@
 import { Button } from "@/components/ui/button";
+import { useUserInfo } from "@/hooks/useUserInfo";
+import { userLogout } from "@/services/actions/logoutUser";
 import { LogOutIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-// import { userLogout } from "@/services/actions/logoutUser";
-// import { useUserInfo } from "@/hooks/useUserInfo";
 
 const DashboardAuthButton = () => {
   const router = useRouter();
-  //   const userInfo = useUserInfo();
+  const userInfo = useUserInfo();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogOut = async () => {
     setIsLoggingOut(true);
-    // await userLogout();
+    await userLogout();
     router.push("/");
   };
 

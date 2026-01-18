@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import React from "react";
 
-// Type definition
 interface TSurahData {
   arabic1: string[];
   bengali: string[];
