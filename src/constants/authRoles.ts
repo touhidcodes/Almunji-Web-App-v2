@@ -1,5 +1,6 @@
 export const authRole = {
   ADMIN: "ADMIN",
+  MODERATOR: "MODERATOR",
   USER: "USER",
 };
 
