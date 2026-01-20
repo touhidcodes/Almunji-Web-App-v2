@@ -59,7 +59,7 @@ type CategoryFilter =
   | "aqidah"
   | "other";
 
-const BooksPage: React.FC = () => {
+const ReadingsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
@@ -576,4 +576,4 @@ const BooksPage: React.FC = () => {
   );
 };
 
-export default BooksPage;
+export default ReadingsPage;
