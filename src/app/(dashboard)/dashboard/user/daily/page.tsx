@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, Calendar, Heart, Share2, Star } from "lucide-react";
 import { useState } from "react";
 
-export default function DailyQuranPage() {
+export default function DailyPage() {
   const [isFavorited, setIsFavorited] = useState(false);
 
   const today = new Date().toLocaleDateString("en-US", {
@@ -67,7 +67,7 @@ export default function DailyQuranPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50">
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Header */}
         <div className="text-center mb-8">
@@ -96,7 +96,7 @@ export default function DailyQuranPage() {
           {/* Daily Dua Tab */}
           <TabsContent value="dua" className="space-y-6">
             <Card className="border-emerald-200 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50 border-b">
+              <CardHeader className="bg-linear-to-r from-emerald-50 to-teal-50 border-b">
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-2xl text-emerald-800">
@@ -124,7 +124,7 @@ export default function DailyQuranPage() {
               </CardHeader>
               <CardContent className="space-y-6 pt-6">
                 {/* Arabic Text */}
-                <div className="text-center py-6 bg-gradient-to-br from-emerald-50 to-white rounded-lg border border-emerald-100">
+                <div className="text-center py-6 bg-linear-to-br from-emerald-50 to-white rounded-lg border border-emerald-100">
                   <p
                     className="text-3xl leading-loose text-gray-800 font-arabic"
                     dir="rtl"
@@ -195,7 +195,7 @@ export default function DailyQuranPage() {
           {/* Daily Tafsir Tab */}
           <TabsContent value="tafsir" className="space-y-6">
             <Card className="border-teal-200 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-teal-50 to-emerald-50 border-b">
+              <CardHeader className="bg-linear-to-r from-teal-50 to-emerald-50 border-b">
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-2xl text-teal-800">
@@ -212,7 +212,7 @@ export default function DailyQuranPage() {
               </CardHeader>
               <CardContent className="space-y-6 pt-6">
                 {/* Arabic Verse */}
-                <div className="text-center py-6 bg-gradient-to-br from-teal-50 to-white rounded-lg border border-teal-100">
+                <div className="text-center py-6 bg-linear-to-br from-teal-50 to-white rounded-lg border border-teal-100">
                   <p
                     className="text-3xl leading-loose text-gray-800 font-arabic"
                     dir="rtl"
