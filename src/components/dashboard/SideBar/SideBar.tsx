@@ -157,9 +157,7 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
               className="w-8 h-8 rounded-full"
             />
             <div className="text-sm">
-              <div className="font-medium">
-                {user ? user?.username : "shadcn"}
-              </div>
+              <div className="font-medium">{user ? user?.role : "shadcn"}</div>
               <div className="text-muted-foreground text-xs">
                 {user ? user?.email : "m@example.com"}
               </div>
@@ -180,7 +178,7 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
               </PopoverTrigger>
               <PopoverContent align="center" side="top" className="w-40 p-2">
                 <div className="text-sm font-medium">
-                  {user ? user?.username : "shadcn"}
+                  {user ? user?.role : "shadcn"}
                 </div>
                 <div className="text-xs text-muted-foreground mb-2">
                   {user ? user?.email : "m@example.com"}
