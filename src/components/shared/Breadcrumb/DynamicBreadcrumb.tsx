@@ -1,11 +1,11 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import {
   Breadcrumb,
   BreadcrumbLink,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { usePathname } from "next/navigation";
 
 const labelMap: Record<string, string> = {
   dashboard: "Dashboard",
@@ -20,7 +20,7 @@ export default function DynamicBreadcrumb() {
     .split("/")
     .filter((segment) => segment && segment !== "user" && segment !== "admin");
 
-  const breadcrumbs = pathSegments.map((segment, index) => {
+  const breadcrumbs = pathSegments.map((segment) => {
     const label =
       labelMap[segment] ||
       segment.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());

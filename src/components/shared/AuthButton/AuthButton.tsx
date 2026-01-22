@@ -20,7 +20,7 @@ const AuthButton = () => {
     router.push("/auth");
   };
 
-  if (isLoggingOut) {
+  if (isLoggingOut || loading) {
     return <TextLoading />;
   }
 

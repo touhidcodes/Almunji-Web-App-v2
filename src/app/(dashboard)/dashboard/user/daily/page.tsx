@@ -27,7 +27,7 @@ export default function DailyPage() {
     arabic:
       "رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ",
     transliteration:
-      "Rabbana atina fid-dunya hasanatan wa fil-akhirati hasanatan wa qina 'adhaban-nar",
+      "Rabbana atina fid-dunya hasanatan wa fil-akhirati hasanatan wa qina adhaban-nar",
     translation:
       "Our Lord, give us in this world [that which is] good and in the Hereafter [that which is] good and protect us from the punishment of the Fire.",
     reference: "Surah Al-Baqarah (2:201)",
@@ -40,7 +40,7 @@ export default function DailyPage() {
     surahNumber: 1,
     ayahNumber: 5,
     arabic: "إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ",
-    transliteration: "Iyyaka na'budu wa iyyaka nasta'een",
+    transliteration: "Iyyaka na budu wa iyyaka nasta'een",
     translation: "You alone we worship, and You alone we ask for help.",
     tafsir: [
       {
@@ -283,7 +283,7 @@ export default function DailyPage() {
                       variant="outline"
                       className="bg-purple-100 text-purple-700 border-purple-300"
                     >
-                      Today's Reflection
+                      Todays Reflection
                     </Badge>
                   </div>
                   <p className="text-gray-700 leading-relaxed italic">
