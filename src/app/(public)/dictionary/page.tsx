@@ -5,27 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useDebounce } from "@/hooks/useDebounce";
 import {
   useGetDictionarySuggestionsQuery,
   useGetDictionaryWordQuery,
 } from "@/redux/api/dictionaryApi";
 import { TWordDetails, TWordSuggestion } from "@/types/dictionary";
 import { Book, Loader2, Search, X } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
-export default function PersianBanglaDictionary() {
+export default function DictionaryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedWordId, setSelectedWordId] = useState<string | null>(null);
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
-  // Debounce search term (500ms delay)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm.trim());
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
+  // Use the reusable debounce hook
+  const debouncedSearchTerm = useDebounce(searchTerm.trim(), 500);
 
   // Fetch suggestions based on debounced search term
   const {
