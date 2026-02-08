@@ -80,7 +80,7 @@ const AboutPage = () => {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-emerald-600 to-teal-600">
+      <div className="bg-linear-to-br from-emerald-600 to-teal-600">
         <div className="max-w-6xl mx-auto px-4 py-24">
           <div className="text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl mb-6">
@@ -147,7 +147,7 @@ const AboutPage = () => {
                   "Building a global community",
                 ].map((item, index) => (
                   <div key={index} className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
                     <p className="text-slate-600">{item}</p>
                   </div>
                 ))}
@@ -158,7 +158,7 @@ const AboutPage = () => {
               </Button>
             </div>
             <div>
-              <div className="w-full h-80 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center text-white">
+              <div className="w-full h-80 bg-linear-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center text-white">
                 <div className="text-center">
                   <Heart className="h-16 w-16 mx-auto mb-4" />
                   <h3 className="text-2xl font-bold mb-2">
@@ -243,7 +243,7 @@ const AboutPage = () => {
             {teamMembers.map((member, index) => (
               <Card key={index} className="text-center border shadow-sm">
                 <CardContent className="p-6">
-                  <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                  <div className="w-20 h-20 bg-linear-to-br from-emerald-500 to-teal-600 rounded-full mx-auto mb-4 flex items-center justify-center">
                     <Users className="h-10 w-10 text-white" />
                   </div>
                   <h3 className="text-xl font-bold text-slate-800 mb-1">
@@ -264,7 +264,7 @@ const AboutPage = () => {
       </div>
 
       {/* CTA Section */}
-      <div className="py-16 bg-gradient-to-br from-emerald-600 to-teal-600">
+      <div className="py-16 bg-linear-to-br from-emerald-600 to-teal-600">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold text-white mb-4">
             Join Our Learning Community
