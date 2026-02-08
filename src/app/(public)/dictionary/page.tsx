@@ -27,7 +27,7 @@ export default function DictionaryPage() {
     isLoading: isSuggestionsLoading,
     isFetching: isSuggestionsFetching,
   } = useGetDictionarySuggestionsQuery(debouncedSearchTerm, {
-    skip: !debouncedSearchTerm, // Skip query if search term is empty
+    skip: !debouncedSearchTerm,
   });
 
   // Fetch selected word details by ID
