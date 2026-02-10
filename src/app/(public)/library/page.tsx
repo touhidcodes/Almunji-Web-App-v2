@@ -2,6 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { FEATURED_BOOKS } from "@/lib/demoBookData";
+import { TLibraryBook } from "@/types/book";
 import {
   Award,
   Bookmark,
@@ -31,26 +33,6 @@ import {
 import { useCallback, useMemo, useState } from "react";
 
 // Type definitions for better type safety
-interface Book {
-  id: number;
-  title: string;
-  author: string;
-  category: string;
-  format: string;
-  pages: number;
-  downloads: number;
-  rating: number;
-  reviews: number;
-  language: string;
-  publishYear: string;
-  description: string;
-  cover: string;
-  badge: string;
-  badgeColor: string;
-  fileSize: string;
-  difficulty: string;
-  readTime: string;
-}
 
 interface Category {
   name: string;
@@ -74,135 +56,6 @@ const CATEGORIES: Category[] = [
 ];
 
 const FORMATS = ["All", "PDF", "Audio Book", "Interactive", "Video"];
-
-const FEATURED_BOOKS: Book[] = [
-  {
-    id: 1,
-    title: "Tafseer Ibn Kathir - Complete",
-    author: "Imam Ibn Kathir",
-    category: "Quran & Tafseer",
-    format: "PDF",
-    pages: 4628,
-    downloads: 15420,
-    rating: 4.9,
-    reviews: 1234,
-    language: "Arabic/English",
-    publishYear: "Classical",
-    description:
-      "Complete commentary on the Holy Quran by the renowned Islamic scholar Ibn Kathir. Includes detailed explanations of verses with historical context.",
-    cover: "tafseer-cover",
-    badge: "Classical Text",
-    badgeColor: "from-emerald-500 to-teal-600",
-    fileSize: "45 MB",
-    difficulty: "Advanced",
-    readTime: "200+ hours",
-  },
-  {
-    id: 2,
-    title: "Sahih Al-Bukhari Collection",
-    author: "Imam Al-Bukhari",
-    category: "Hadith Collections",
-    format: "Interactive",
-    pages: 3200,
-    downloads: 12340,
-    rating: 4.9,
-    reviews: 987,
-    language: "Arabic/English/Urdu",
-    publishYear: "Classical",
-    description:
-      "The most authentic collection of Hadith with searchable interface and detailed chain of narration analysis.",
-    cover: "bukhari-cover",
-    badge: "Most Authentic",
-    badgeColor: "from-amber-500 to-orange-600",
-    fileSize: "38 MB",
-    difficulty: "Intermediate",
-    readTime: "150+ hours",
-  },
-  {
-    id: 3,
-    title: "The Sealed Nectar (Ar-Raheeq Al-Makhtum)",
-    author: "Safiur Rahman Mubarakpuri",
-    category: "Biography & Seerah",
-    format: "PDF",
-    pages: 635,
-    downloads: 28950,
-    rating: 4.8,
-    reviews: 2156,
-    language: "English",
-    publishYear: "1979",
-    description:
-      "Award-winning biography of Prophet Muhammad (PBUH) that won first prize in a worldwide competition on the Prophet's biography.",
-    cover: "sealed-nectar",
-    badge: "Award Winner",
-    badgeColor: "from-purple-500 to-violet-600",
-    fileSize: "12 MB",
-    difficulty: "Beginner",
-    readTime: "25 hours",
-  },
-  {
-    id: 4,
-    title: "Arabic Grammar for Beginners",
-    author: "Dr. Abdur Rahman",
-    category: "Arabic Language",
-    format: "Interactive",
-    pages: 420,
-    downloads: 8760,
-    rating: 4.7,
-    reviews: 543,
-    language: "English/Arabic",
-    publishYear: "2020",
-    description:
-      "Modern approach to learning Arabic grammar with interactive exercises and pronunciation guides.",
-    cover: "arabic-grammar",
-    badge: "Interactive",
-    badgeColor: "from-blue-500 to-indigo-600",
-    fileSize: "25 MB",
-    difficulty: "Beginner",
-    readTime: "40 hours",
-  },
-  {
-    id: 5,
-    title: "Fortress of the Muslim (Hisn al-Muslim)",
-    author: "Sa'id ibn Ali ibn Wahf Al-Qahtani",
-    category: "Spirituality & Ethics",
-    format: "Audio Book",
-    pages: 245,
-    downloads: 19870,
-    rating: 4.9,
-    reviews: 1678,
-    language: "Arabic/English",
-    publishYear: "1988",
-    description:
-      "Collection of authentic supplications and dhikr from the Quran and Sunnah for daily spiritual practice.",
-    cover: "fortress-muslim",
-    badge: "Daily Practice",
-    badgeColor: "from-green-500 to-emerald-600",
-    fileSize: "15 MB",
-    difficulty: "Beginner",
-    readTime: "8 hours",
-  },
-  {
-    id: 6,
-    title: "Islamic Finance Fundamentals",
-    author: "Dr. Omar Al-Muamalat",
-    category: "Islamic Finance",
-    format: "PDF",
-    pages: 380,
-    downloads: 4560,
-    rating: 4.6,
-    reviews: 298,
-    language: "English",
-    publishYear: "2023",
-    description:
-      "Comprehensive guide to Islamic banking, finance, and investment principles in the modern world.",
-    cover: "islamic-finance",
-    badge: "Modern",
-    badgeColor: "from-cyan-500 to-blue-600",
-    fileSize: "18 MB",
-    difficulty: "Intermediate",
-    readTime: "30 hours",
-  },
-];
 
 const LIBRARY_STATS = [
   { number: "324+", label: "Islamic Books", icon: BookOpen },
@@ -233,7 +86,13 @@ const RECENTLY_ADDED = [
 ];
 
 // Extracted BookCard component for better organization
-const BookCard = ({ book, viewMode }: { book: Book; viewMode: string }) => {
+const BookCard = ({
+  book,
+  viewMode,
+}: {
+  book: TLibraryBook;
+  viewMode: string;
+}) => {
   const formatIcon = {
     "Audio Book": Headphones,
     Interactive: Play,
