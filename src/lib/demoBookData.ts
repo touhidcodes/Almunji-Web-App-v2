@@ -1,4 +1,19 @@
-import { TBook, TLibraryBook } from "@/types/book";
+import { TBook, TBookCategory, TLibraryBook } from "@/types/book";
+import {
+  Award,
+  BookOpen,
+  Crown,
+  Globe,
+  Headphones,
+  Heart,
+  Languages,
+  Lightbulb,
+  Moon,
+  Play,
+  Shield,
+  Star,
+  TrendingUp,
+} from "lucide-react";
 
 export const books: TBook[] = [
   {
@@ -220,4 +235,48 @@ export const FEATURED_BOOKS: TLibraryBook[] = [
     difficulty: "Intermediate",
     readTime: "30 hours",
   },
+];
+
+export const RECENTLY_ADDED = [
+  {
+    title: "Principles of Islamic Jurisprudence",
+    author: "Dr. Mohammad Hashim Kamali",
+    category: "Fiqh",
+    date: "3 days ago",
+  },
+  {
+    title: "Women in Islam",
+    author: "Dr. Jamal Badawi",
+    category: "Contemporary Issues",
+    date: "1 week ago",
+  },
+  {
+    title: "The Prophet's Prayer Described",
+    author: "Shaykh Al-Albani",
+    category: "Spirituality",
+    date: "2 weeks ago",
+  },
+];
+
+export const CATEGORIES: TBookCategory[] = [
+  { name: "All", count: 324, icon: BookOpen },
+  { name: "Quran & Tafseer", count: 45, icon: Crown },
+  { name: "Hadith Collections", count: 38, icon: Shield },
+  { name: "Islamic History", count: 42, icon: Globe },
+  { name: "Arabic Language", count: 36, icon: Languages },
+  { name: "Fiqh & Jurisprudence", count: 29, icon: Award },
+  { name: "Spirituality & Ethics", count: 31, icon: Heart },
+  { name: "Biography & Seerah", count: 28, icon: Star },
+  { name: "Islamic Finance", count: 18, icon: TrendingUp },
+  { name: "Contemporary Issues", count: 22, icon: Lightbulb },
+  { name: "Children's Books", count: 35, icon: Moon },
+];
+
+export const FORMATS = ["All", "PDF", "Audio Book", "Interactive", "Video"];
+
+export const LIBRARY_STATS = [
+  { number: "324+", label: "Islamic Books", icon: BookOpen },
+  { number: "150+", label: "Audio Books", icon: Headphones },
+  { number: "50+", label: "Interactive Texts", icon: Play },
+  { number: "25+", label: "Languages", icon: Languages },
 ];

@@ -2,10 +2,15 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { FEATURED_BOOKS } from "@/lib/demoBookData";
+import {
+  CATEGORIES,
+  FEATURED_BOOKS,
+  FORMATS,
+  LIBRARY_STATS,
+  RECENTLY_ADDED,
+} from "@/lib/demoBookData";
 import { TLibraryBook } from "@/types/book";
 import {
-  Award,
   Bookmark,
   BookOpen,
   Clock,
@@ -14,78 +19,19 @@ import {
   Eye,
   FileText,
   Filter,
-  Globe,
   Grid3X3,
   Headphones,
   Heart,
-  Languages,
-  Lightbulb,
   List,
-  Moon,
   Play,
   Search,
   Shield,
   Sparkles,
   Star,
-  TrendingUp,
   X,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
-// Type definitions for better type safety
-
-interface Category {
-  name: string;
-  count: number;
-  icon: any;
-}
-
-// Extracted constants for better maintainability
-const CATEGORIES: Category[] = [
-  { name: "All", count: 324, icon: BookOpen },
-  { name: "Quran & Tafseer", count: 45, icon: Crown },
-  { name: "Hadith Collections", count: 38, icon: Shield },
-  { name: "Islamic History", count: 42, icon: Globe },
-  { name: "Arabic Language", count: 36, icon: Languages },
-  { name: "Fiqh & Jurisprudence", count: 29, icon: Award },
-  { name: "Spirituality & Ethics", count: 31, icon: Heart },
-  { name: "Biography & Seerah", count: 28, icon: Star },
-  { name: "Islamic Finance", count: 18, icon: TrendingUp },
-  { name: "Contemporary Issues", count: 22, icon: Lightbulb },
-  { name: "Children's Books", count: 35, icon: Moon },
-];
-
-const FORMATS = ["All", "PDF", "Audio Book", "Interactive", "Video"];
-
-const LIBRARY_STATS = [
-  { number: "324+", label: "Islamic Books", icon: BookOpen },
-  { number: "150+", label: "Audio Books", icon: Headphones },
-  { number: "50+", label: "Interactive Texts", icon: Play },
-  { number: "25+", label: "Languages", icon: Languages },
-];
-
-const RECENTLY_ADDED = [
-  {
-    title: "Principles of Islamic Jurisprudence",
-    author: "Dr. Mohammad Hashim Kamali",
-    category: "Fiqh",
-    date: "3 days ago",
-  },
-  {
-    title: "Women in Islam",
-    author: "Dr. Jamal Badawi",
-    category: "Contemporary Issues",
-    date: "1 week ago",
-  },
-  {
-    title: "The Prophet's Prayer Described",
-    author: "Shaykh Al-Albani",
-    category: "Spirituality",
-    date: "2 weeks ago",
-  },
-];
-
-// Extracted BookCard component for better organization
 const BookCard = ({
   book,
   viewMode,

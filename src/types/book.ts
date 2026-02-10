@@ -32,3 +32,9 @@ export interface TLibraryBook {
   difficulty: string;
   readTime: string;
 }
+
+export interface TBookCategory {
+  name: string;
+  count: number;
+  icon: any;
+}
