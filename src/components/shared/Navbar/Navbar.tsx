@@ -1,7 +1,5 @@
 "use client";
 
-import React, { useState } from "react";
-import { Book, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -11,6 +9,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Book, Menu } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -49,15 +50,19 @@ const Navbar = () => {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center space-x-3">
-            <Button
-              variant="ghost"
-              className="text-gray-600 hover:text-teal-600 font-medium"
-            >
-              Sign In
-            </Button>
-            <Button className="bg-teal-600 text-white hover:bg-teal-700 font-medium">
-              Sign Up
-            </Button>
+            <Link href="/auth?type=login">
+              <Button
+                variant="ghost"
+                className="text-gray-600 hover:text-teal-600 font-medium"
+              >
+                Sign In
+              </Button>
+            </Link>
+            <Link href="/auth?type=register">
+              <Button className="bg-teal-600 text-white hover:bg-teal-700 font-medium">
+                Sign Up
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
