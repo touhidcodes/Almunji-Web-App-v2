@@ -34,7 +34,7 @@ const LoginForm = ({ onSubmit, error, toggle, loading }: LoginFormProps) => {
         {/* Back to Home */}
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-indigo-600 transition-colors group"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-teal-600 transition-colors group"
         >
           <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
           Back to Home
@@ -43,10 +43,10 @@ const LoginForm = ({ onSubmit, error, toggle, loading }: LoginFormProps) => {
         {/* Header */}
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 text-white shadow-md shadow-indigo-200">
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-teal-600 text-white shadow-md shadow-teal-200">
               <Sparkles className="w-4 h-4" />
             </span>
-            <span className="text-xs font-semibold tracking-widest uppercase text-indigo-600">
+            <span className="text-xs font-semibold tracking-widest uppercase text-teal-600">
               Almunji
             </span>
           </div>
@@ -61,7 +61,7 @@ const LoginForm = ({ onSubmit, error, toggle, loading }: LoginFormProps) => {
         {/* Error */}
         {error && (
           <div className="flex items-start gap-2.5 rounded-lg bg-red-50 border border-red-100 px-4 py-3">
-            <span className="mt-0.5 flex-shrink-0 w-1.5 h-1.5 rounded-full bg-red-400" />
+            <span className="mt-0.5 shrink-0 w-1.5 h-1.5 rounded-full bg-red-400" />
             <p className="text-sm text-red-600">{error}</p>
           </div>
         )}
@@ -92,7 +92,7 @@ const LoginForm = ({ onSubmit, error, toggle, loading }: LoginFormProps) => {
             <label className="flex items-center gap-2 cursor-pointer group">
               <input
                 type="checkbox"
-                className="w-3.5 h-3.5 rounded border-gray-300 text-indigo-600 accent-indigo-600 cursor-pointer"
+                className="w-3.5 h-3.5 rounded border-gray-300 text-teal-600 accent-teal-600 cursor-pointer"
               />
               <span className="text-xs text-gray-500 group-hover:text-gray-700 transition-colors select-none">
                 Remember me
@@ -100,7 +100,7 @@ const LoginForm = ({ onSubmit, error, toggle, loading }: LoginFormProps) => {
             </label>
             <Link
               href="#"
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 underline underline-offset-2 decoration-indigo-300 transition-colors"
+              className="text-xs font-semibold text-teal-600 hover:text-teal-700 underline underline-offset-2 decoration-teal-300 transition-colors"
             >
               Forgot password?
             </Link>
@@ -110,7 +110,7 @@ const LoginForm = ({ onSubmit, error, toggle, loading }: LoginFormProps) => {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold rounded-xl shadow-md shadow-indigo-200 transition-all duration-150 flex items-center justify-center gap-2"
+            className="w-full h-11 bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white font-semibold rounded-xl shadow-md shadow-indigo-200 transition-all duration-150 flex items-center justify-center gap-2"
           >
             {loading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -136,7 +136,7 @@ const LoginForm = ({ onSubmit, error, toggle, loading }: LoginFormProps) => {
           <button
             type="button"
             onClick={toggle}
-            className="font-semibold text-indigo-600 hover:text-indigo-700 underline underline-offset-2 decoration-indigo-300 transition-colors"
+            className="font-semibold text-teal-600 hover:text-teal-700 underline underline-offset-2 decoration-teal-300 transition-colors"
           >
             Create one
           </button>
