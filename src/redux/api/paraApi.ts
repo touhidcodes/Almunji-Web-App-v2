@@ -6,19 +6,26 @@ import { baseServerApi } from "./baseApi";
 export const paraApi = baseServerApi.injectEndpoints({
   endpoints: (build) => ({
     // Public: get all paras
-    getAllParas: build.query<TApiResponse<TPara[]>, void>({
-      query: () => ({
-        url: "/para/all",
-        method: "GET",
-      }),
-      providesTags: [tagTypes.para],
-    }),
+    getAllParas: build.query<TApiResponse<TPara[]>, void | Record<string, any>>(
+      {
+        query: (arg) => ({
+          url: "/para",
+          method: "GET",
+          params: arg,
+        }),
+        providesTags: [tagTypes.para],
+      },
+    ),
 
     // Admin: get all paras
-    getAllParasByAdmin: build.query<TApiResponse<TPara[]>, void>({
-      query: () => ({
-        url: "/para/admin/all",
+    getAllParasByAdmin: build.query<
+      TApiResponse<TPara[]>,
+      void | Record<string, any>
+    >({
+      query: (arg) => ({
+        url: "/para/admin",
         method: "GET",
+        params: arg,
       }),
       providesTags: [tagTypes.para],
     }),
@@ -38,7 +45,7 @@ export const paraApi = baseServerApi.injectEndpoints({
       query: (payload) => ({
         url: "/para",
         method: "POST",
-        body: payload,
+        data: payload,
       }),
       invalidatesTags: [tagTypes.para],
     }),
@@ -51,17 +58,17 @@ export const paraApi = baseServerApi.injectEndpoints({
       query: ({ paraId, payload }) => ({
         url: `/para/${paraId}`,
         method: "PUT",
-        body: payload,
+        data: payload,
       }),
       invalidatesTags: (_result, _error, { paraId }) => [
         { type: tagTypes.para, id: paraId },
       ],
     }),
 
-    // Delete para (admin)
-    deletePara: build.mutation<TApiResponse<null>, string>({
+    // Soft delete para
+    softDeletePara: build.mutation<TApiResponse<null>, string>({
       query: (paraId) => ({
-        url: `/para/admin/${paraId}`,
+        url: `/para/${paraId}`,
         method: "DELETE",
       }),
       invalidatesTags: [tagTypes.para],
@@ -75,5 +82,5 @@ export const {
   useGetParaByIdQuery,
   useCreateParaMutation,
   useUpdateParaMutation,
-  useDeleteParaMutation,
+  useSoftDeleteParaMutation,
 } = paraApi;

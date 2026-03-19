@@ -10,10 +10,27 @@ import { baseServerApi } from "./baseApi";
 export const surahApi = baseServerApi.injectEndpoints({
   endpoints: (build) => ({
     // Get all surahs
-    getAllSurah: build.query<TApiResponse<TSurah[]>, void>({
-      query: () => ({
-        url: "/surah",
+    getAllSurah: build.query<
+      TApiResponse<TSurah[]>,
+      Record<string, any> | void
+    >({
+      query: (arg) => ({
+        url: "/surah/all",
         method: "GET",
+        params: arg,
+      }),
+      providesTags: [tagTypes.surah],
+    }),
+
+    // Get all surahs (admin view)
+    getAllSurahAdmin: build.query<
+      TApiResponse<TSurah[]>,
+      Record<string, any> | void
+    >({
+      query: (arg) => ({
+        url: "/surah/admin/all",
+        method: "GET",
+        params: arg,
       }),
       providesTags: [tagTypes.surah],
     }),
@@ -28,12 +45,13 @@ export const surahApi = baseServerApi.injectEndpoints({
         { type: tagTypes.surah, id: surahId },
       ],
     }),
+
     // Create surah
     createSurah: build.mutation<TApiResponse<TSurah>, TCreateSurahPayload>({
       query: (payload) => ({
         url: "/surah",
         method: "POST",
-        body: payload,
+        data: payload,
       }),
       invalidatesTags: [tagTypes.surah],
     }),
@@ -46,17 +64,17 @@ export const surahApi = baseServerApi.injectEndpoints({
       query: ({ surahId, payload }) => ({
         url: `/surah/${surahId}`,
         method: "PUT",
-        body: payload,
+        data: payload,
       }),
       invalidatesTags: (_result, _error, { surahId }) => [
         { type: tagTypes.surah, id: surahId },
       ],
     }),
 
-    // Delete surah
-    deleteSurah: build.mutation<TApiResponse<null>, string>({
+    // Hard delete surah
+    hardDeleteSurah: build.mutation<TApiResponse<null>, string>({
       query: (surahId) => ({
-        url: `/surah/${surahId}`,
+        url: `/surah/admin/${surahId}`,
         method: "DELETE",
       }),
       invalidatesTags: [tagTypes.surah],
@@ -66,8 +84,9 @@ export const surahApi = baseServerApi.injectEndpoints({
 
 export const {
   useGetAllSurahQuery,
+  useGetAllSurahAdminQuery,
   useGetSingleSurahQuery,
   useCreateSurahMutation,
   useUpdateSurahMutation,
-  useDeleteSurahMutation,
+  useHardDeleteSurahMutation,
 } = surahApi;

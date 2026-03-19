@@ -3,48 +3,40 @@ import { baseServerApi } from "./baseApi";
 
 export const userApi = baseServerApi.injectEndpoints({
   endpoints: (build) => ({
-    getAllUser: build.query({
-      query: () => ({
-        url: "/all-users",
-        method: "GET",
-      }),
-      providesTags: [tagTypes.user],
-    }),
-    getSingleUser: build.query({
+    getMe: build.query({
       query: () => ({
         url: "/user",
         method: "GET",
       }),
       providesTags: [tagTypes.user],
     }),
-    getUserWithProfile: build.query({
+    getProfile: build.query({
       query: () => ({
-        url: "/user-profile",
+        url: "/user/profile",
         method: "GET",
       }),
       providesTags: [tagTypes.user],
     }),
-    UpdateUserProfile: build.mutation({
+    getAllUsers: build.query({
+      query: () => ({
+        url: "/user/all",
+        method: "GET",
+      }),
+      providesTags: [tagTypes.user],
+    }),
+    updateProfile: build.mutation({
       query: (userData) => ({
-        url: "/profile",
+        url: "/user/profile",
         method: "PUT",
         data: userData,
       }),
       invalidatesTags: [tagTypes.user],
     }),
-    UpdateUserStatus: build.mutation({
-      query: ({ userId, updatedData }) => ({
-        url: `/status/${userId}`,
+    updateUserStatus: build.mutation({
+      query: ({ userId, data }) => ({
+        url: `/user/status/${userId}`,
         method: "PUT",
-        data: updatedData,
-      }),
-      invalidatesTags: [tagTypes.user],
-    }),
-    changePassword: build.mutation({
-      query: (passwordData) => ({
-        url: `/change-password`,
-        method: "POST",
-        data: passwordData,
+        data,
       }),
       invalidatesTags: [tagTypes.user],
     }),
@@ -52,10 +44,9 @@ export const userApi = baseServerApi.injectEndpoints({
 });
 
 export const {
-  useGetSingleUserQuery,
-  useGetUserWithProfileQuery,
-  useGetAllUserQuery,
-  useUpdateUserProfileMutation,
+  useGetMeQuery,
+  useGetProfileQuery,
+  useGetAllUsersQuery,
+  useUpdateProfileMutation,
   useUpdateUserStatusMutation,
-  useChangePasswordMutation,
 } = userApi;
