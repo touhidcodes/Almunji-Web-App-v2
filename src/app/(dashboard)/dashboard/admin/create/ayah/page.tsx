@@ -1,128 +1,56 @@
 "use client";
 
-import { AlertCircle, BookOpen, Check, Save, X } from "lucide-react";
-import React, { ChangeEvent, useState } from "react";
-
-interface FormData {
-  surahId: string;
-  paraId: string;
-  number: number;
-  arabic: string;
-  transliteration?: string | null;
-  bangla?: string | null;
-  english?: string | null;
-}
-
-interface FormErrors {
-  [key: string]: string;
-}
+import FormContainer from "@/components/forms/FormContainer";
+import FormInput from "@/components/forms/FormInput";
+import FormSelect from "@/components/forms/FormSelect";
+import FormTextarea from "@/components/forms/FormTextarea";
+import Loading from "@/components/shared/Loading/Loading";
+import { useCreateAyahMutation } from "@/redux/api/ayahApi";
+import { useGetAllParasQuery } from "@/redux/api/paraApi";
+import { useGetAllSurahQuery } from "@/redux/api/surahApi";
+import { AyahSchema } from "@/schema/ayahSchema";
+import { TCreateAyahPayload } from "@/types/ayah";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { BookOpen, Save } from "lucide-react";
+import React from "react";
+import { toast } from "sonner";
 
 const CreateAyahPage: React.FC = () => {
-  const [formData, setFormData] = useState<FormData>({
-    surahId: "",
-    paraId: "",
-    number: 0,
-    arabic: "",
-    transliteration: "",
-    bangla: "",
-    english: "",
-  });
+  const [createAyah, { isLoading: isSubmitting }] = useCreateAyahMutation();
+  const { data: surahsData, isLoading: surahsLoading } = useGetAllSurahQuery();
+  const { data: parasData, isLoading: parasLoading } = useGetAllParasQuery();
 
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
+  const surahOptions =
+    surahsData?.data?.map((surah) => ({
+      label: `${surah.chapter}. ${surah.english} (${surah.arabic})`,
+      value: surah.id,
+    })) || [];
 
-  const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ): void => {
-    const { name, value } = e.target;
-    setFormData((prev: FormData) => ({
-      ...prev,
-      [name]: name === "number" ? parseInt(value) || 0 : value,
-    }));
+  const paraOptions =
+    parasData?.data?.map((para) => ({
+      label: `Para ${para.number} - ${para.name}`,
+      value: para.id,
+    })) || [];
 
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors((prev: FormErrors) => ({
-        ...prev,
-        [name]: "",
-      }));
-    }
-  };
-
-  const validateForm = (): boolean => {
-    const newErrors: FormErrors = {};
-
-    if (!formData.surahId.trim()) {
-      newErrors.surahId = "Surah ID is required";
-    }
-
-    if (!formData.paraId.trim()) {
-      newErrors.paraId = "Para ID is required";
-    }
-
-    if (!formData.number || formData.number < 1) {
-      newErrors.number = "Valid ayah number is required";
-    }
-
-    if (!formData.arabic.trim()) {
-      newErrors.arabic = "Arabic text is required";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (): Promise<void> => {
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    setSubmitSuccess(false);
-
+  const onSubmit = async (data: TCreateAyahPayload) => {
     try {
-      // Simulate API call
-      await new Promise<void>((resolve) => setTimeout(resolve, 1500));
-
-      setSubmitSuccess(true);
-
-      // Reset form after successful submission
-      setTimeout(() => {
-        setFormData({
-          surahId: "",
-          paraId: "",
-          number: 0,
-          arabic: "",
-          transliteration: "",
-          bangla: "",
-          english: "",
-        });
-        setSubmitSuccess(false);
-      }, 2000);
-    } catch (error) {
-      console.error("Error submitting ayah:", error);
-    } finally {
-      setIsSubmitting(false);
+      const res = await createAyah(data).unwrap();
+      if (res.success) {
+        toast.success("Ayah created successfully!");
+      } else {
+        toast.error(res.message || "Failed to create ayah");
+      }
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Something went wrong!");
     }
   };
 
-  const handleReset = (): void => {
-    setFormData({
-      surahId: "",
-      paraId: "",
-      number: 0,
-      arabic: "",
-      transliteration: "",
-      bangla: "",
-      english: "",
-    });
-    setErrors({});
-    setSubmitSuccess(false);
-  };
+  if (surahsLoading || parasLoading) {
+    return <Loading />;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-6 font-poppins">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
@@ -138,20 +66,16 @@ const CreateAyahPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Success Message */}
-        {submitSuccess && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-center gap-2">
-            <Check className="h-5 w-5 text-green-600" />
-            <span className="text-green-800 font-medium">
-              Ayah created successfully!
-            </span>
-          </div>
-        )}
-
         {/* Main Form */}
         <div className="bg-white rounded-lg shadow-sm border">
           <div className="p-6">
-            <div>
+            <FormContainer
+              onSubmit={onSubmit}
+              resolver={zodResolver(AyahSchema)}
+              defaultValues={{
+                number: 1,
+              }}
+            >
               {/* Basic Information Section */}
               <div className="mb-8">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
@@ -159,72 +83,29 @@ const CreateAyahPage: React.FC = () => {
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Surah ID *
-                    </label>
-                    <input
-                      type="text"
-                      name="surahId"
-                      value={formData.surahId}
-                      onChange={handleInputChange}
-                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-                        errors.surahId ? "border-red-500" : "border-gray-300"
-                      }`}
-                      placeholder="surah-001"
-                    />
-                    {errors.surahId && (
-                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle className="h-4 w-4" />
-                        {errors.surahId}
-                      </p>
-                    )}
-                  </div>
+                  <FormSelect
+                    name="surahId"
+                    label="Surah *"
+                    options={surahOptions}
+                    placeholder="Select Surah"
+                    required
+                  />
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Para ID *
-                    </label>
-                    <input
-                      type="text"
-                      name="paraId"
-                      value={formData.paraId}
-                      onChange={handleInputChange}
-                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-                        errors.paraId ? "border-red-500" : "border-gray-300"
-                      }`}
-                      placeholder="para-001"
-                    />
-                    {errors.paraId && (
-                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle className="h-4 w-4" />
-                        {errors.paraId}
-                      </p>
-                    )}
-                  </div>
+                  <FormSelect
+                    name="paraId"
+                    label="Para *"
+                    options={paraOptions}
+                    placeholder="Select Para"
+                    required
+                  />
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Ayah Number *
-                    </label>
-                    <input
-                      type="number"
-                      name="number"
-                      value={formData.number}
-                      onChange={handleInputChange}
-                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-                        errors.number ? "border-red-500" : "border-gray-300"
-                      }`}
-                      placeholder="1"
-                      min="1"
-                    />
-                    {errors.number && (
-                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle className="h-4 w-4" />
-                        {errors.number}
-                      </p>
-                    )}
-                  </div>
+                  <FormInput
+                    name="number"
+                    label="Ayah Number *"
+                    type="number"
+                    placeholder="1"
+                    required
+                  />
                 </div>
               </div>
 
@@ -235,81 +116,42 @@ const CreateAyahPage: React.FC = () => {
                 </h3>
 
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Arabic Text *
-                    </label>
-                    <textarea
-                      name="arabic"
-                      value={formData.arabic}
-                      onChange={handleInputChange}
-                      rows={3}
-                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-right ${
-                        errors.arabic ? "border-red-500" : "border-gray-300"
-                      }`}
-                      placeholder="بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ"
-                      style={{
-                        fontFamily: "Arial, sans-serif",
-                        fontSize: "18px",
-                        lineHeight: "1.8",
-                      }}
-                    />
-                    {errors.arabic && (
-                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle className="h-4 w-4" />
-                        {errors.arabic}
-                      </p>
-                    )}
-                  </div>
+                  <FormTextarea
+                    name="arabic"
+                    label="Arabic Text *"
+                    rows={3}
+                    placeholder="بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ"
+                    className="text-right text-xl"
+                    required
+                  />
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Transliteration
-                    </label>
-                    <textarea
-                      name="transliteration"
-                      value={formData.transliteration || ""}
-                      onChange={handleInputChange}
-                      rows={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      placeholder="Bismillaahir Rahmaanir Raheem"
-                    />
-                  </div>
+                  <FormTextarea
+                    name="transliteration"
+                    label="Transliteration"
+                    rows={2}
+                    placeholder="Bismillaahir Rahmaanir Raheem"
+                  />
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      English Translation
-                    </label>
-                    <textarea
-                      name="english"
-                      value={formData.english || ""}
-                      onChange={handleInputChange}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      placeholder="In the name of Allah, the Most Gracious, the Most Merciful"
-                    />
-                  </div>
+                  <FormTextarea
+                    name="english"
+                    label="English Translation"
+                    rows={3}
+                    placeholder="In the name of Allah, the Most Gracious, the Most Merciful"
+                  />
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Bangla Translation
-                    </label>
-                    <textarea
-                      name="bangla"
-                      value={formData.bangla || ""}
-                      onChange={handleInputChange}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      placeholder="পরম করুণাময় অসীম দয়ালু আল্লাহর নামে"
-                    />
-                  </div>
+                  <FormTextarea
+                    name="bangla"
+                    label="Bangla Translation"
+                    rows={3}
+                    placeholder="পরম করুণাময় অসীম দয়ালু আল্লাহর নামে"
+                  />
                 </div>
               </div>
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200">
                 <button
-                  onClick={handleSubmit}
+                  type="submit"
                   disabled={isSubmitting}
                   className="flex items-center justify-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                 >
@@ -325,67 +167,9 @@ const CreateAyahPage: React.FC = () => {
                     </>
                   )}
                 </button>
-
-                <button
-                  onClick={handleReset}
-                  className="flex items-center justify-center gap-2 bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-                >
-                  <X className="h-4 w-4" />
-                  Reset Form
-                </button>
               </div>
-            </div>
+            </FormContainer>
           </div>
-
-          {/* Preview Section */}
-          {(formData.arabic || formData.english) && (
-            <div className="p-6 border-t border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Preview
-              </h3>
-              <div className="bg-linear-to-r from-emerald-50 to-teal-50 rounded-lg p-6 border border-emerald-200">
-                {formData.surahId && formData.number > 0 && (
-                  <div className="text-sm text-emerald-700 font-medium mb-3">
-                    {formData.surahId} - Ayah {formData.number}
-                    {formData.paraId && ` (Para: ${formData.paraId})`}
-                  </div>
-                )}
-
-                {formData.arabic && (
-                  <div
-                    className="text-right mb-4 text-xl leading-relaxed"
-                    style={{ fontFamily: "Arial, sans-serif" }}
-                  >
-                    {formData.arabic}
-                  </div>
-                )}
-
-                {formData.transliteration && (
-                  <div className="italic text-gray-600 mb-3 text-lg">
-                    {formData.transliteration}
-                  </div>
-                )}
-
-                {formData.english && (
-                  <div className="text-gray-800 text-lg leading-relaxed mb-3">
-                    <span className="font-medium text-sm text-gray-600">
-                      English:{" "}
-                    </span>
-                    {formData.english}
-                  </div>
-                )}
-
-                {formData.bangla && (
-                  <div className="text-gray-800 text-lg leading-relaxed">
-                    <span className="font-medium text-sm text-gray-600">
-                      বাংলা:{" "}
-                    </span>
-                    {formData.bangla}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Guidelines */}
@@ -399,7 +183,7 @@ const CreateAyahPage: React.FC = () => {
               • Provide clear and faithful translations in English and Bangla
             </li>
             <li>• Include transliteration to help with pronunciation</li>
-            <li>• Use proper Surah ID and Para ID references</li>
+            <li>• Use proper Surah and Para references</li>
             <li>• Verify Ayah numbers are correct</li>
             <li>• All required fields must be filled before submission</li>
           </ul>

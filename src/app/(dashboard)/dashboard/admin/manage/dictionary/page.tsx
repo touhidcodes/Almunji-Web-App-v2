@@ -1,350 +1,280 @@
 "use client";
+
+import FormContainer from "@/components/forms/FormContainer";
+import FormInput from "@/components/forms/FormInput";
+import FormTextarea from "@/components/forms/FormTextarea";
+import {
+  useGetAllWordsAdminQuery,
+  useSoftDeleteWordMutation,
+  useUpdateWordMutation,
+} from "@/redux/api/dictionaryApi";
+import { DictionarySchema } from "@/schema/dictionarySchema";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Book, Edit, Plus, Save, Search, Trash2, X } from "lucide-react";
-import React, { useEffect, useState } from "react";
-
-interface DictionaryEntry {
-  id?: string;
-  word: string;
-  pronunciation: string;
-  definition: string;
-  isDeleted?: boolean;
-}
-
-interface NewEntryForm {
-  word: string;
-  pronunciation: string;
-  definition: string;
-}
+import Link from "next/link";
+import React, { useState } from "react";
+import { toast } from "sonner";
 
 const ManageDictionaryPage: React.FC = () => {
-  const [entries, setEntries] = useState<DictionaryEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<DictionaryEntry | null>(
-    null
-  );
-  const [newEntry, setNewEntry] = useState<NewEntryForm>({
-    word: "",
-    pronunciation: "",
-    definition: "",
-  });
+  const [editingEntry, setEditingEntry] = useState<any>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  // Generate UUID v4
-  const generateUUID = (): string => {
-    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
-      /[xy]/g,
-      function (c) {
-        const r = (Math.random() * 16) | 0,
-          v = c === "x" ? r : (r & 0x3) | 0x8;
-        return v.toString(16);
-      }
-    );
-  };
+  // RTK Query
+  const { data: wordsData, isLoading: isLoadingWords } =
+    useGetAllWordsAdminQuery({
+      searchTerm,
+    });
 
-  // Sample data
-  useEffect(() => {
-    const sampleEntries: DictionaryEntry[] = [
-      {
-        id: generateUUID(),
-        word: "Ephemeral",
-        pronunciation: "/ɪˈfɛm(ə)r(ə)l/",
-        definition: "Lasting for a very short time; transitory.",
-        isDeleted: false,
-      },
-      {
-        id: generateUUID(),
-        word: "Serendipity",
-        pronunciation: "/ˌsɛrənˈdɪpɪti/",
-        definition:
-          "The occurrence of events by chance in a happy or beneficial way.",
-        isDeleted: false,
-      },
-      {
-        id: generateUUID(),
-        word: "Ameliorate",
-        pronunciation: "/əˈmiːliəreɪt/",
-        definition: "To make something bad or unsatisfactory better.",
-        isDeleted: false,
-      },
-    ];
-    setEntries(sampleEntries);
-  }, []);
+  const [updateWord, { isLoading: isUpdating }] = useUpdateWordMutation();
+  const [deleteWord] = useSoftDeleteWordMutation();
 
-  const handleAddEntry = (): void => {
-    if (newEntry.word && newEntry.definition && newEntry.pronunciation) {
-      const entry: DictionaryEntry = {
-        ...newEntry,
-        id: generateUUID(),
-        isDeleted: false,
-      };
-      setEntries([...entries, entry]);
-      resetForm();
-      setIsAddModalOpen(false);
-    }
-  };
-
-  const handleEditEntry = (entry: DictionaryEntry): void => {
+  const handleEditEntry = (entry: any): void => {
     setEditingEntry(entry);
-    setNewEntry({
-      word: entry.word,
-      pronunciation: entry.pronunciation,
-      definition: entry.definition,
-    });
-    setIsAddModalOpen(true);
+    setIsEditModalOpen(true);
   };
 
-  const handleUpdateEntry = (): void => {
-    if (!editingEntry) return;
-
-    const updatedEntry: DictionaryEntry = {
-      ...newEntry,
-      id: editingEntry.id,
-      isDeleted: editingEntry.isDeleted,
-    };
-
-    setEntries(
-      entries.map((entry) =>
-        entry.id === editingEntry.id ? updatedEntry : entry
-      )
-    );
-    resetForm();
-    setIsAddModalOpen(false);
-  };
-
-  const handleDeleteEntry = (id?: string): void => {
-    if (!id) return;
+  const handleDeleteEntry = async (id: string): Promise<void> => {
     if (window.confirm("Are you sure you want to delete this word?")) {
-      setEntries(
-        entries.map((entry) =>
-          entry.id === id ? { ...entry, isDeleted: true } : entry
-        )
-      );
+      try {
+        await deleteWord(id).unwrap();
+        toast.success("Word deleted successfully");
+      } catch (error: any) {
+        toast.error(error?.data?.message || "Failed to delete word");
+      }
     }
   };
 
-  const resetForm = (): void => {
-    setEditingEntry(null);
-    setNewEntry({
-      word: "",
-      pronunciation: "",
-      definition: "",
-    });
+  const onUpdateSubmit = async (data: any) => {
+    if (!editingEntry) return;
+    try {
+      const res = await updateWord({
+        id: editingEntry.id,
+        data: data,
+      }).unwrap();
+      if (res.success) {
+        toast.success("Word updated successfully");
+        setIsEditModalOpen(false);
+        setEditingEntry(null);
+      }
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to update word");
+    }
   };
 
-  const resetModal = (): void => {
-    setIsAddModalOpen(false);
-    resetForm();
-  };
-
-  const filteredEntries = entries.filter((entry) => {
-    if (entry.isDeleted) return false;
-
-    const matchesSearch =
-      !searchTerm ||
-      entry.word.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.definition.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.pronunciation.toLowerCase().includes(searchTerm.toLowerCase());
-
-    return matchesSearch;
-  });
-
-  const handleInputChange = (
-    field: keyof NewEntryForm,
-    value: string
-  ): void => {
-    setNewEntry((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const isFormValid = (): boolean => {
-    return !!(newEntry.word && newEntry.definition && newEntry.pronunciation);
-  };
+  const wordsList = wordsData?.data || [];
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center space-x-3">
-            <Book className="h-8 w-8 text-indigo-600" />
-            <h1 className="text-3xl font-bold text-gray-800">
-              Manage Dictionary
-            </h1>
+    <div className="min-h-screen bg-gray-50 p-6 font-poppins">
+      <div className="max-w-6xl mx-auto">
+        {/* Header Section */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-center gap-5">
+            <div className="bg-indigo-600 p-4 rounded-2xl shadow-lg shadow-indigo-200">
+              <Book className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Manage Dictionary
+              </h1>
+              <p className="text-gray-500 font-medium mt-1">
+                Refine and expand the Almunji lexicon
+              </p>
+            </div>
           </div>
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+          <Link
+            href="/dashboard/admin/create/dictionary"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-xl shadow-indigo-100 active:scale-95 font-bold"
           >
-            <Plus className="h-5 w-5" />
-            <span>Add Word</span>
-          </button>
+            <Plus className="h-6 w-6" />
+            <span>Add New Word</span>
+          </Link>
         </div>
 
-        {/* Search Controls */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+        {/* Search & Stats Bar */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8 flex flex-col md:flex-row items-center gap-4">
+          <div className="flex-1 relative w-full group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors h-6 w-6" />
             <input
               type="text"
-              placeholder="Search words, definitions, pronunciation..."
+              placeholder="Search words, definitions, or pronunciation..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all outline-none font-medium"
             />
           </div>
-
-          {/* Stats */}
-          <div className="mt-4 text-sm text-gray-600">
-            Showing {filteredEntries.length} of{" "}
-            {entries.filter((e) => !e.isDeleted).length} words
+          <div className="px-6 py-4 bg-indigo-50 rounded-2xl border border-indigo-100 flex items-center gap-3">
+            <span className="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm leading-none">
+              {wordsList.length}
+            </span>
+            <span className="text-indigo-700 font-bold uppercase tracking-widest text-[10px]">
+              Total Terms
+            </span>
           </div>
         </div>
 
-        {/* Dictionary Entries List */}
-        <div className="space-y-4">
-          {filteredEntries.map((entry) => (
-            <div
-              key={entry.id}
-              className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="text-2xl font-bold text-indigo-900">
+        {/* List Content */}
+        {isLoadingWords ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="bg-white p-8 rounded-2xl border border-gray-100 animate-pulse h-48"
+              ></div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+            {wordsList.map((entry: any) => (
+              <div
+                key={entry.id}
+                className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 hover:shadow-xl hover:shadow-indigo-100/30 transition-all group flex flex-col"
+              >
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-black text-gray-900 group-hover:text-indigo-600 transition-colors mb-2">
                       {entry.word}
                     </h3>
-                    <span className="text-gray-500 text-sm">
-                      {entry.pronunciation}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-indigo-400 uppercase tracking-widest bg-indigo-50 px-2 py-1 rounded-md">
+                        Pronunciation
+                      </span>
+                      <span className="text-gray-500 font-medium italic">
+                        {entry.pronunciation}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                    <button
+                      onClick={() => handleEditEntry(entry)}
+                      className="p-3 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors shadow-sm bg-white"
+                      title="Edit Entry"
+                    >
+                      <Edit className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteEntry(entry.id)}
+                      className="p-3 text-rose-600 hover:bg-rose-50 rounded-xl transition-colors shadow-sm bg-white"
+                      title="Delete Entry"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </button>
                   </div>
                 </div>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => handleEditEntry(entry)}
-                    className="text-blue-600 hover:text-blue-800 p-1"
-                    title="Edit Word"
-                  >
-                    <Edit className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteEntry(entry.id)}
-                    className="text-red-600 hover:text-red-800 p-1"
-                    title="Delete Word"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </button>
+
+                <div className="flex-1 bg-gray-50/50 rounded-xl p-4 border border-gray-100 group-hover:border-indigo-100 transition-colors">
+                  <p className="text-gray-600 leading-relaxed font-medium line-clamp-3">
+                    {entry.definition}
+                  </p>
                 </div>
               </div>
+            ))}
 
-              <div className="space-y-3">
-                <div>
-                  <span className="font-semibold text-gray-700">
-                    Definition:{" "}
-                  </span>
-                  <span className="text-gray-600">{entry.definition}</span>
+            {wordsList.length === 0 && (
+              <div className="col-span-full bg-white rounded-3xl border border-dashed border-gray-200 p-24 text-center">
+                <div className="bg-indigo-50 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-8">
+                  <Book className="h-12 w-12 text-indigo-200" />
                 </div>
+                <h3 className="text-2xl font-black text-gray-900 mb-2">
+                  Lexicon Empty
+                </h3>
+                <p className="text-gray-500 mb-10 max-w-sm mx-auto font-medium">
+                  We couldn't find any terms matching your search. Why not
+                  define something new?
+                </p>
+                <Link
+                  href="/dashboard/admin/create/dictionary"
+                  className="bg-indigo-600 text-white px-10 py-5 rounded-2xl hover:bg-indigo-700 transition-all font-black shadow-xl shadow-indigo-100"
+                >
+                  Define First Word
+                </Link>
               </div>
-            </div>
-          ))}
+            )}
+          </div>
+        )}
 
-          {filteredEntries.length === 0 && (
-            <div className="bg-white rounded-lg shadow-md p-12 text-center">
-              <Book className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                No words found
-              </h3>
-              <p className="text-gray-500 mb-4">
-                {searchTerm
-                  ? "Try adjusting your search criteria."
-                  : "Start by adding your first word."}
-              </p>
-              {!searchTerm && (
+        {/* Edit Modal */}
+        {isEditModalOpen && editingEntry && (
+          <div className="fixed inset-0 bg-gray-900/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
+              <div className="p-8 border-b flex justify-between items-center bg-gray-50/50">
+                <div className="flex items-center gap-5">
+                  <div className="bg-indigo-600 text-white w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl shadow-lg">
+                    {editingEntry.word.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black text-gray-900">
+                      Edit Dictionary Term
+                    </h2>
+                    <p className="text-sm text-gray-500 font-bold uppercase tracking-wider">
+                      Modifying "{editingEntry.word}"
+                    </p>
+                  </div>
+                </div>
                 <button
-                  onClick={() => setIsAddModalOpen(true)}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="p-3 hover:bg-white hover:shadow-sm rounded-2xl transition-all group"
                 >
-                  Add First Word
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Add/Edit Modal */}
-        {isAddModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center p-6 border-b">
-                <h2 className="text-2xl font-bold text-gray-800">
-                  {editingEntry ? "Edit Word" : "Add New Word"}
-                </h2>
-                <button
-                  onClick={resetModal}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-6 w-6" />
+                  <X className="h-6 w-6 text-gray-400 group-hover:text-rose-500" />
                 </button>
               </div>
 
-              <div className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Word *
-                  </label>
-                  <input
-                    type="text"
-                    value={newEntry.word}
-                    onChange={(e) => handleInputChange("word", e.target.value)}
-                    placeholder="e.g., Ephemeral"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Pronunciation *
-                  </label>
-                  <input
-                    type="text"
-                    value={newEntry.pronunciation}
-                    onChange={(e) =>
-                      handleInputChange("pronunciation", e.target.value)
-                    }
-                    placeholder="e.g., /ɪˈfɛm(ə)r(ə)l/"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Definition *
-                  </label>
-                  <textarea
-                    value={newEntry.definition}
-                    onChange={(e) =>
-                      handleInputChange("definition", e.target.value)
-                    }
-                    placeholder="Enter the definition"
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-4 p-6 border-t bg-gray-50">
-                <button
-                  onClick={resetModal}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+              <div className="p-10 overflow-y-auto flex-1 custom-scrollbar">
+                <FormContainer
+                  onSubmit={onUpdateSubmit}
+                  resolver={zodResolver(DictionarySchema)}
+                  defaultValues={{
+                    word: editingEntry.word,
+                    pronunciation: editingEntry.pronunciation,
+                    definition: editingEntry.definition,
+                  }}
                 >
-                  Cancel
-                </button>
-                <button
-                  onClick={editingEntry ? handleUpdateEntry : handleAddEntry}
-                  disabled={!isFormValid()}
-                  className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-                >
-                  <Save className="h-4 w-4" />
-                  <span>{editingEntry ? "Update" : "Add"} Word</span>
-                </button>
+                  <div className="space-y-8">
+                    <FormInput
+                      name="word"
+                      label="Word Term *"
+                      placeholder="e.g. Ephemeral"
+                      required
+                    />
+
+                    <FormInput
+                      name="pronunciation"
+                      label="Phonetic Spelling *"
+                      placeholder="e.g. /ɪˈfɛm(ə)r(ə)l/"
+                      required
+                    />
+
+                    <FormTextarea
+                      name="definition"
+                      label="Comprehensive Definition *"
+                      placeholder="Explain the meaning and usage clearly..."
+                      rows={6}
+                      required
+                    />
+
+                    <div className="flex gap-4 pt-10 border-t border-gray-100 mt-4">
+                      <button
+                        type="button"
+                        onClick={() => setIsEditModalOpen(false)}
+                        className="flex-1 py-5 text-gray-500 font-black hover:bg-gray-50 rounded-2xl transition-colors uppercase tracking-widest text-xs"
+                      >
+                        Discard
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isUpdating}
+                        className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white py-5 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-xl shadow-indigo-100 font-black active:scale-[0.98] disabled:opacity-50"
+                      >
+                        {isUpdating ? (
+                          <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                        ) : (
+                          <Save className="h-6 w-6" />
+                        )}
+                        <span>Update Lexicon</span>
+                      </button>
+                    </div>
+                  </div>
+                </FormContainer>
               </div>
             </div>
           </div>
