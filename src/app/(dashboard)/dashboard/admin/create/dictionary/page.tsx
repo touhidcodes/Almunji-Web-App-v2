@@ -6,7 +6,7 @@ import FormTextarea from "@/components/forms/FormTextarea";
 import { useCreateWordMutation } from "@/redux/api/dictionaryApi";
 import { DictionarySchema } from "@/schema/dictionarySchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Book, Save } from "lucide-react";
+import { ArrowLeft, HelpCircle, Languages, Save, Sparkles } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 import { toast } from "sonner";
@@ -18,120 +18,171 @@ const CreateDictionaryPage: React.FC = () => {
     try {
       const res = await createWord(data).unwrap();
       if (res.success) {
-        toast.success("Dictionary entry created successfully!");
-      } else {
-        toast.error(res.message || "Failed to create entry");
+        toast.success("Lexical entry defined!", {
+          description:
+            "New word has been successfully cataloged in the dictionary.",
+        });
       }
     } catch (error: any) {
-      toast.error(error?.data?.message || "Something went wrong!");
+      toast.error(error?.data?.message || "Lexical synchronization failed!");
     }
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 font-poppins">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
+    <div className="min-h-screen bg-gray-50/50 p-6 lg:p-12 font-poppins">
+      <div className="max-w-5xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700">
+        {/* Header Navigation */}
+        <nav className="flex items-center justify-between pb-4 border-b border-gray-100">
           <Link
             href="/dashboard/admin/manage/dictionary"
-            className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-800 mb-4 transition-colors"
+            className="group flex items-center gap-2 text-gray-400 hover:text-indigo-600 font-black uppercase text-[10px] tracking-[0.2em] transition-all"
           >
-            <ArrowLeft className="h-5 w-5" />
-            <span>Back to Manage</span>
+            <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+            <span>Return to Repository</span>
           </Link>
-          <div className="flex items-center space-x-3">
-            <Book className="h-8 w-8 text-indigo-600" />
-            <h1 className="text-3xl font-bold text-gray-800">
-              Create New Dictionary Entry
+          <div className="flex items-center gap-2 text-[10px] font-black text-gray-300 uppercase tracking-widest leading-none">
+            <Sparkles className="h-3 w-3 text-indigo-400" />
+            Lexical Integrity Enforced
+          </div>
+        </nav>
+
+        {/* Hero Section */}
+        <header className="space-y-2">
+          <div className="flex items-center gap-4">
+            <div className="bg-indigo-600 p-3 rounded-2xl shadow-2xl shadow-indigo-100">
+              <Languages className="h-7 w-7 text-white" />
+            </div>
+            <h1 className="text-4xl lg:text-5xl font-black text-gray-900 tracking-tight">
+              Catalog Word
             </h1>
           </div>
-          <p className="text-gray-600 mt-2">
-            Add a new word to your dictionary with its pronunciation and
-            definition.
+          <p className="text-gray-500 font-medium max-w-lg text-sm leading-relaxed uppercase tracking-[0.1em]">
+            Expanding the linguistic bounds of the Almunji lexicon
           </p>
-        </div>
+        </header>
 
-        {/* Form Container */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-indigo-100">
-          <div className="p-8">
+        {/* Main Interface */}
+        <div className="bg-white rounded-[3rem] shadow-2xl shadow-gray-200/50 border border-gray-100 overflow-hidden relative">
+          <div className="absolute -top-24 -right-24 p-12 pointer-events-none opacity-[0.03] rotate-12">
+            <Languages className="h-[30rem] w-[30rem] text-indigo-900" />
+          </div>
+
+          <div className="p-10 lg:p-20 relative">
             <FormContainer
               onSubmit={onSubmit}
               resolver={zodResolver(DictionarySchema)}
             >
-              <div className="space-y-6">
-                <FormInput
-                  name="word"
-                  label="Word *"
-                  placeholder="e.g., Ephemeral"
-                  required
-                />
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-20">
+                {/* Structural Definitions */}
+                <aside className="lg:col-span-4 space-y-12">
+                  <div className="space-y-10">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1 w-10 bg-indigo-600 rounded-full"></div>
+                      <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.3em]">
+                        Lexical Base
+                      </h3>
+                    </div>
 
-                <FormInput
-                  name="pronunciation"
-                  label="Pronunciation *"
-                  placeholder="e.g., /ɪˈfɛm(ə)r(ə)l/"
-                  required
-                />
+                    <div className="space-y-8">
+                      <FormInput
+                        name="word"
+                        label="Lexical Unit (Word) *"
+                        placeholder="e.g., Ephemeral"
+                        className="h-14 bg-gray-50/50 border-gray-100 focus:bg-white rounded-2xl font-bold text-lg"
+                        required
+                      />
 
-                <FormTextarea
-                  name="definition"
-                  label="Definition *"
-                  placeholder="Enter the definition of the word"
-                  rows={6}
-                  required
-                />
+                      <FormInput
+                        name="pronunciation"
+                        label="Phonetic Guide *"
+                        placeholder="e.g., /ɪˈfɛm(ə)r(ə)l/"
+                        className="h-14 bg-gray-50/50 border-gray-100 focus:bg-white rounded-2xl font-medium"
+                        required
+                      />
+                    </div>
+                  </div>
 
-                {/* Form Actions */}
-                <div className="flex justify-between items-center pt-6 border-t border-gray-100">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg flex items-center space-x-2 transition-all font-medium shadow-md hover:shadow-lg active:scale-95"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                        <span>Creating...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-5 w-5" />
-                        <span>Create Entry</span>
-                      </>
-                    )}
-                  </button>
-                </div>
+                  {/* Lexical Protocol */}
+                  <div className="p-10 bg-gray-50/50 rounded-[2rem] border border-gray-100/50 space-y-6">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-white p-2 rounded-xl shadow-sm">
+                        <HelpCircle className="h-5 w-5 text-indigo-600" />
+                      </div>
+                      <span className="text-xs font-black text-gray-800 uppercase tracking-widest leading-none">
+                        Cataloging Protocol
+                      </span>
+                    </div>
+                    <ul className="space-y-4">
+                      {[
+                        "Use IPA notation",
+                        "Clear concision",
+                        "Accurate semantics",
+                      ].map((rule, i) => (
+                        <li
+                          key={i}
+                          className="flex items-center gap-3 text-[11px] font-bold text-gray-500 uppercase tracking-tight"
+                        >
+                          <div className="h-1.5 w-1.5 rounded-full bg-indigo-200 shadow-sm shadow-indigo-100"></div>
+                          {rule}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </aside>
+
+                {/* Semantics Hub */}
+                <main className="lg:col-span-8 flex flex-col justify-between">
+                  <div className="space-y-12">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1 w-10 bg-purple-500 rounded-full"></div>
+                      <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.3em]">
+                        Semantics
+                      </h3>
+                    </div>
+
+                    <FormTextarea
+                      name="definition"
+                      label="Conceptual Definition *"
+                      rows={10}
+                      placeholder="Articulate the semantic meaning and contextual boundaries of this word..."
+                      className="bg-gray-50/30 border-gray-100 rounded-3xl p-8 focus:bg-white leading-relaxed text-gray-700"
+                      required
+                    />
+                  </div>
+
+                  {/* Submission Logic */}
+                  <div className="pt-16 mt-16 border-t border-gray-50 flex flex-col sm:flex-row items-center justify-end gap-6">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full sm:w-auto px-16 py-6 bg-gray-900 hover:bg-black text-white rounded-[2rem] flex items-center justify-center gap-4 transition-all shadow-2xl shadow-indigo-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 font-black tracking-[0.2em] uppercase text-xs"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                          <span>Synchronizing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-5 w-5" />
+                          <span>Catalog Entry</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </main>
               </div>
             </FormContainer>
           </div>
         </div>
 
-        {/* Help Section */}
-        <div className="mt-8 bg-indigo-50 border border-indigo-100 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-indigo-900 mb-4 flex items-center gap-2">
-            <Book className="h-5 w-5" />
-            Tips for creating entries:
-          </h3>
-          <ul className="text-indigo-800 space-y-3">
-            <li className="flex items-start gap-2">
-              <span className="mt-1 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"></span>
-              All fields marked with * are required.
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-1 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"></span>
-              Use IPA (International Phonetic Alphabet) for pronunciation when
-              possible.
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-1 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"></span>
-              Keep definitions clear, concise, and accurate.
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-1 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"></span>
-              You can manage and edit entries later from the management page.
-            </li>
-          </ul>
-        </div>
+        {/* Infrastructure Audit */}
+        <footer className="flex flex-col items-center gap-4 py-12">
+          <div className="h-1 w-12 bg-gray-100 rounded-full"></div>
+          <p className="text-[10px] font-black uppercase text-gray-300 tracking-[0.5em]">
+            Almunji Linguistic Repository Index
+          </p>
+        </footer>
       </div>
     </div>
   );

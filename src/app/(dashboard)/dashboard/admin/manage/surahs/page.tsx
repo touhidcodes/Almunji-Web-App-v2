@@ -4,6 +4,7 @@ import FormContainer from "@/components/forms/FormContainer";
 import FormInput from "@/components/forms/FormInput";
 import FormSelect from "@/components/forms/FormSelect";
 import FormTextarea from "@/components/forms/FormTextarea";
+import { useDebounce } from "@/hooks/useDebounce";
 import {
   useDeleteSurahMutation,
   useGetAllSurahQuery,
@@ -32,9 +33,11 @@ const ManageSurahsPage: React.FC = () => {
   const [editingSurah, setEditingSurah] = useState<TSurah | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
 
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
   // RTK Query
   const { data: surahsData, isLoading: isLoadingSurahs } = useGetAllSurahQuery({
-    searchTerm,
+    searchTerm: debouncedSearchTerm,
     revelation: selectedRevelation || undefined,
   });
 

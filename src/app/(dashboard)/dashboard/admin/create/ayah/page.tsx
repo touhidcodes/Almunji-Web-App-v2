@@ -11,14 +11,16 @@ import { useGetAllSurahQuery } from "@/redux/api/surahApi";
 import { AyahSchema } from "@/schema/ayahSchema";
 import { TCreateAyahPayload } from "@/types/ayah";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BookOpen, Save } from "lucide-react";
+import { BookOpen, HelpCircle, Save, Sparkles } from "lucide-react";
 import React from "react";
 import { toast } from "sonner";
 
 const CreateAyahPage: React.FC = () => {
   const [createAyah, { isLoading: isSubmitting }] = useCreateAyahMutation();
-  const { data: surahsData, isLoading: surahsLoading } = useGetAllSurahQuery();
-  const { data: parasData, isLoading: parasLoading } = useGetAllParasQuery();
+  const { data: surahsData, isLoading: surahsLoading } = useGetAllSurahQuery(
+    {},
+  );
+  const { data: parasData, isLoading: parasLoading } = useGetAllParasQuery({});
 
   const surahOptions =
     surahsData?.data?.map((surah) => ({
@@ -28,7 +30,7 @@ const CreateAyahPage: React.FC = () => {
 
   const paraOptions =
     parasData?.data?.map((para) => ({
-      label: `Para ${para.number} - ${para.name}`,
+      label: `Para ${para.number} - ${para.english || para.arabic}`,
       value: para.id,
     })) || [];
 
@@ -36,12 +38,13 @@ const CreateAyahPage: React.FC = () => {
     try {
       const res = await createAyah(data).unwrap();
       if (res.success) {
-        toast.success("Ayah created successfully!");
-      } else {
-        toast.error(res.message || "Failed to create ayah");
+        toast.success("Ayah archived successfully!", {
+          description:
+            "New verse record has been permanently added to the ledger.",
+        });
       }
     } catch (error: any) {
-      toast.error(error?.data?.message || "Something went wrong!");
+      toast.error(error?.data?.message || "Transmission interrupted!");
     }
   };
 
@@ -50,25 +53,36 @@ const CreateAyahPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 font-poppins">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <BookOpen className="h-8 w-8 text-emerald-600" />
-            <h1 className="text-3xl font-bold text-gray-900">
-              Create New Ayah
-            </h1>
+    <div className="min-h-screen bg-gray-50/50 p-6 lg:p-12 font-poppins">
+      <div className="max-w-5xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700">
+        {/* Header - Minimalist Style */}
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-600 p-2.5 rounded-2xl shadow-xl shadow-emerald-100 flex items-center justify-center">
+                <BookOpen className="h-6 w-6 text-white" />
+              </div>
+              <h1 className="text-4xl font-black text-gray-900 tracking-tight">
+                Create Ayah
+              </h1>
+            </div>
+            <p className="text-gray-500 font-medium max-w-md text-sm leading-relaxed uppercase tracking-[0.1em]">
+              Precision archival of Quranic revelation
+            </p>
           </div>
-          <p className="text-gray-600">
-            Add a new Quranic verse to the database with complete details and
-            references.
-          </p>
-        </div>
+          <div className="flex items-center gap-3 px-6 py-3 bg-white border border-gray-100 rounded-2xl shadow-sm italic text-gray-400 text-xs font-bold uppercase">
+            <Sparkles className="h-4 w-4 text-emerald-400" />
+            Metadata integrity required
+          </div>
+        </header>
 
-        {/* Main Form */}
-        <div className="bg-white rounded-lg shadow-sm border">
-          <div className="p-6">
+        {/* Main Interface */}
+        <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-gray-200/50 border border-gray-100 overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-12 pointer-events-none opacity-5">
+            <BookOpen className="h-64 w-64 text-emerald-900" />
+          </div>
+
+          <div className="p-10 lg:p-16 relative">
             <FormContainer
               onSubmit={onSubmit}
               resolver={zodResolver(AyahSchema)}
@@ -76,118 +90,149 @@ const CreateAyahPage: React.FC = () => {
                 number: 1,
               }}
             >
-              {/* Basic Information Section */}
-              <div className="mb-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
-                  Basic Information
-                </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+                {/* Reference Controls */}
+                <aside className="lg:col-span-4 space-y-10 group">
+                  <div className="space-y-8">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="h-1 w-8 bg-emerald-600 rounded-full"></div>
+                      <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">
+                        Contextual Indexing
+                      </h3>
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <FormSelect
-                    name="surahId"
-                    label="Surah *"
-                    options={surahOptions}
-                    placeholder="Select Surah"
-                    required
-                  />
+                    <div className="space-y-6">
+                      <FormSelect
+                        name="surahId"
+                        label="Source Chapter (Surah) *"
+                        options={surahOptions}
+                        placeholder="Select Surah"
+                        required
+                      />
 
-                  <FormSelect
-                    name="paraId"
-                    label="Para *"
-                    options={paraOptions}
-                    placeholder="Select Para"
-                    required
-                  />
+                      <FormSelect
+                        name="paraId"
+                        label="Segment Unit (Para) *"
+                        options={paraOptions}
+                        placeholder="Select Para"
+                        required
+                      />
 
-                  <FormInput
-                    name="number"
-                    label="Ayah Number *"
-                    type="number"
-                    placeholder="1"
-                    required
-                  />
-                </div>
-              </div>
+                      <FormInput
+                        name="number"
+                        label="Verse Coordinates (Ayah) *"
+                        type="number"
+                        placeholder="1"
+                        required
+                      />
+                    </div>
+                  </div>
 
-              {/* Text Content Section */}
-              <div className="mb-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
-                  Text Content
-                </h3>
+                  {/* Operational Guide */}
+                  <div className="p-8 bg-gray-50 rounded-3xl border border-gray-100/50 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <HelpCircle className="h-4 w-4 text-emerald-600" />
+                      <span className="text-xs font-black text-gray-800 uppercase tracking-widest leading-none">
+                        Archivist Protocol
+                      </span>
+                    </div>
+                    <ul className="space-y-2">
+                      {[
+                        "Arabic script accuracy",
+                        "Refined translit",
+                        "Verse coordinate parity",
+                      ].map((rule, i) => (
+                        <li
+                          key={i}
+                          className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase tracking-tight"
+                        >
+                          <div className="h-1 w-1 rounded-full bg-emerald-200"></div>
+                          {rule}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </aside>
 
-                <div className="space-y-4">
-                  <FormTextarea
-                    name="arabic"
-                    label="Arabic Text *"
-                    rows={3}
-                    placeholder="بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ"
-                    className="text-right text-xl"
-                    required
-                  />
+                {/* Content Input Hub */}
+                <main className="lg:col-span-8 space-y-10">
+                  <div className="space-y-8">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="h-1 w-8 bg-teal-500 rounded-full"></div>
+                      <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">
+                        Revelation Data
+                      </h3>
+                    </div>
 
-                  <FormTextarea
-                    name="transliteration"
-                    label="Transliteration"
-                    rows={2}
-                    placeholder="Bismillaahir Rahmaanir Raheem"
-                  />
+                    <div className="grid gap-8">
+                      <FormTextarea
+                        name="arabic"
+                        label="Sacred Arabic Text *"
+                        rows={4}
+                        placeholder="Enter Arabic revelation..."
+                        className="text-right text-3xl font-arabic h-40 leading-[1.8] p-8 border-emerald-50 focus:border-emerald-500 focus:bg-emerald-50/20"
+                        required
+                      />
 
-                  <FormTextarea
-                    name="english"
-                    label="English Translation"
-                    rows={3}
-                    placeholder="In the name of Allah, the Most Gracious, the Most Merciful"
-                  />
+                      <FormTextarea
+                        name="transliteration"
+                        label="Phonetic Transliteration"
+                        rows={2}
+                        placeholder="Bismillaahir Rahmaanir Raheem..."
+                        className="italic font-medium text-gray-600 p-6"
+                      />
 
-                  <FormTextarea
-                    name="bangla"
-                    label="Bangla Translation"
-                    rows={3}
-                    placeholder="পরম করুণাময় অসীম দয়ালু আল্লাহর নামে"
-                  />
-                </div>
-              </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <FormTextarea
+                          name="english"
+                          label="English Interpretation"
+                          rows={4}
+                          placeholder="Global language meaning..."
+                          className="bg-gray-50/30 border-gray-100 p-6"
+                        />
+                        <FormTextarea
+                          name="bangla"
+                          label="Bangla Contextualization"
+                          rows={4}
+                          placeholder="Native context meaning..."
+                          className="bg-gray-50/30 border-gray-100 p-6"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex items-center justify-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                      Creating Ayah...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4" />
-                      Create Ayah
-                    </>
-                  )}
-                </button>
+                  {/* Submission Logic */}
+                  <div className="pt-12 border-t border-gray-50 flex flex-col sm:flex-row items-center justify-end gap-6">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full sm:w-auto px-12 py-5 bg-gray-900 hover:bg-black text-white rounded-[1.5rem] flex items-center justify-center gap-4 transition-all shadow-2xl shadow-gray-400/30 hover:shadow-black/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 font-black tracking-widest uppercase text-xs"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                          <span>Committing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-5 w-5" />
+                          <span>Archive Verse</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </main>
               </div>
             </FormContainer>
           </div>
         </div>
 
-        {/* Guidelines */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-6">
-          <h4 className="font-semibold text-blue-900 mb-3">
-            Guidelines for Adding Ayahs
-          </h4>
-          <ul className="text-blue-800 text-sm space-y-2">
-            <li>• Ensure Arabic text is accurate and properly formatted</li>
-            <li>
-              • Provide clear and faithful translations in English and Bangla
-            </li>
-            <li>• Include transliteration to help with pronunciation</li>
-            <li>• Use proper Surah and Para references</li>
-            <li>• Verify Ayah numbers are correct</li>
-            <li>• All required fields must be filled before submission</li>
-          </ul>
-        </div>
+        {/* System Message */}
+        <footer className="text-center pb-12">
+          <p className="text-[10px] font-black uppercase text-gray-300 tracking-[0.4em]">
+            Almunji Global Archival System • Established 2024
+          </p>
+        </footer>
       </div>
     </div>
   );

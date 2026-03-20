@@ -2,7 +2,7 @@ import z from "zod/v3";
 
 export const ParaSchema = z.object({
   id: z.string().uuid().optional(),
-  number: z.number().int().positive(),
+  number: z.coerce.number().int().positive(),
   arabic: z.string().min(1),
   english: z.string().optional(),
   bangla: z.string().optional(),
