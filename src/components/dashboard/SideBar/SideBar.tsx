@@ -22,26 +22,11 @@ type SidebarProps = {
 export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
   const pathname = usePathname();
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const { user, loading } = useUserInfo();
-  const [unreadCount, setUnreadCount] = useState<number>(0);
-
-  // const fetchUnreadCount = async () => {
-  //   try {
-  //     const res = await fetchWithAuth("/api/messages/unread", {
-  //       method: "GET",
-  //     });
-
-  //     const data = await res.json();
-  //     console.log(data);
-
-  //     if (res.ok && Array.isArray(data.data)) {
-  //       setUnreadCount(data.data.length);
-  //     }
-  //   } catch (err) {
-  //     console.error("Error fetching unread message count:", err);
-  //   }
-  // };
-
+  // const { user, loading } = useUserInfo();
+  const user = {
+    role: "ADMIN",
+    email: "admin@almunji.com",
+  };
   return (
     <>
       {/* Overlay shown only on mobile when sidebar is open */}
@@ -60,7 +45,7 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
           {
             "w-64": !isCollapsed,
             "lg:w-20 hidden lg:flex": isCollapsed,
-          }
+          },
         )}
       >
         {/* Top header */}
@@ -71,14 +56,7 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
                 Almunji
               </Link>
               <div className="relative flex items-center gap-3">
-                <Link href="/dashboard/messages">
-                  <Mail className="w-5 h-5" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-2 text-xs bg-red-600 text-white rounded-full px-1.5">
-                      {unreadCount}
-                    </span>
-                  )}
-                </Link>
+                <Mail className="w-5 h-5" />
               </div>
               <button
                 className="block lg:hidden"
@@ -90,14 +68,7 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
             </>
           ) : (
             <div className="relative py-1">
-              <Link href="/dashboard/messages">
-                <Mail className="w-5 h-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-2 text-xs bg-red-600 text-white rounded-full px-1.5">
-                    {unreadCount}
-                  </span>
-                )}
-              </Link>
+              <Mail className="w-5 h-5" />
             </div>
           )}
         </div>
@@ -129,7 +100,7 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
                         "flex items-center gap-3 px-4 py-2 text-sm font-medium hover:bg-muted transition",
                         pathname === item.href &&
                           "bg-secondary text-secondary-foreground",
-                        isCollapsed && "justify-center px-0"
+                        isCollapsed && "justify-center px-0",
                       )}
                     >
                       <item.icon className="w-5 h-5" />
@@ -142,7 +113,7 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
                   ))}
                 </nav>
               </div>
-            )
+            ),
           )}
         </div>
 

@@ -5,6 +5,12 @@ import {
   LayoutDashboard,
   Star,
   KeyRound,
+  FormInput,
+  FormInputIcon,
+  FilePlus2,
+  FilePen,
+  ChartPie,
+  User,
 } from "lucide-react";
 
 type SidebarGroup = {
@@ -24,7 +30,7 @@ export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
         {
           label: "Profile",
           href: "/dashboard/profile",
-          icon: PersonStanding,
+          icon: User,
         },
       ],
     },
@@ -47,9 +53,39 @@ export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
           section: "Main",
           items: [
             {
-              label: "Home",
+              label: "Overview",
               href: "/dashboard/admin/overview",
-              icon: LayoutDashboard,
+              icon: ChartPie,
+            },
+          ],
+        },
+        {
+          section: "Add",
+          items: [
+            {
+              label: "Add Para",
+              href: "/dashboard/admin/create/para",
+              icon: FilePlus2,
+            },
+            {
+              label: "Add Surah",
+              href: "/dashboard/admin/create/surah",
+              icon: FilePlus2,
+            },
+            {
+              label: "Add Ayah",
+              href: "/dashboard/admin/create/ayah",
+              icon: FilePlus2,
+            },
+            {
+              label: "Add Dua",
+              href: "/dashboard/admin/create/ayah",
+              icon: FilePlus2,
+            },
+            {
+              label: "Add Words",
+              href: "/dashboard/admin/create/dictionary",
+              icon: FilePlus2,
             },
           ],
         },
@@ -57,14 +93,29 @@ export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
           section: "Manage",
           items: [
             {
-              label: "Create Surah",
-              href: "/dashboard/admin/create/surah",
-              icon: HomeIcon,
+              label: "Manage Para",
+              href: "/dashboard/admin/manage/para",
+              icon: FilePen,
             },
             {
-              label: "Create Ayah",
-              href: "/dashboard/admin/create/ayah",
-              icon: HomeIcon,
+              label: "Manage Surah",
+              href: "/dashboard/admin/manage/surah",
+              icon: FilePen,
+            },
+            {
+              label: "Manage Ayah",
+              href: "/dashboard/admin/manage/ayah",
+              icon: FilePen,
+            },
+            {
+              label: "Manage Dua",
+              href: "/dashboard/admin/manage/ayah",
+              icon: FilePen,
+            },
+            {
+              label: "Manage Words",
+              href: "/dashboard/admin/manage/dictionary",
+              icon: FilePen,
             },
           ],
         },

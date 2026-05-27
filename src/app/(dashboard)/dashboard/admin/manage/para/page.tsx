@@ -3,7 +3,7 @@
 import FormContainer from "@/components/forms/FormContainer";
 import FormInput from "@/components/forms/FormInput";
 import {
-  useDeleteParaMutation,
+  useSoftDeleteParaMutation,
   useGetAllParasQuery,
   useUpdateParaMutation,
 } from "@/redux/api/paraApi";
@@ -26,7 +26,7 @@ const ManageParaPage: React.FC = () => {
   });
 
   const [updatePara, { isLoading: isUpdating }] = useUpdateParaMutation();
-  const [deletePara] = useDeleteParaMutation();
+  const [deletePara] = useSoftDeleteParaMutation();
 
   const handleEditPara = (para: TPara): void => {
     setEditingPara(para);

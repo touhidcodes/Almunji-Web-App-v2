@@ -2,8 +2,8 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 import { axiosBaseQuery } from "../../helpers/axios/axiosBaseQuery";
 import { tagTypesList } from "../tags";
 
-// const baseUrl = `http://localhost:5000/api`;
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL!;
+const baseUrl = `http://localhost:5000/api/v1`;
+// const baseUrl = process.env.NEXT_PUBLIC_BASE_URL!;
 console.log(baseUrl);
 
 const quranApiUrl = process.env.NEXT_PUBLIC_QURAN_API_URL!;

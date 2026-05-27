@@ -6,7 +6,7 @@ import FormSelect from "@/components/forms/FormSelect";
 import FormTextarea from "@/components/forms/FormTextarea";
 import { useDebounce } from "@/hooks/useDebounce";
 import {
-  useDeleteSurahMutation,
+  useHardDeleteSurahMutation,
   useGetAllSurahQuery,
   useUpdateSurahMutation,
 } from "@/redux/api/surahApi";
@@ -42,7 +42,7 @@ const ManageSurahsPage: React.FC = () => {
   });
 
   const [updateSurah, { isLoading: isUpdating }] = useUpdateSurahMutation();
-  const [deleteSurah] = useDeleteSurahMutation();
+  const [deleteSurah] = useHardDeleteSurahMutation();
 
   const handleEditSurah = (surah: TSurah): void => {
     setEditingSurah(surah);
