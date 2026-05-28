@@ -3,14 +3,11 @@
 import AuthButton from "@/components/shared/AuthButton/AuthButton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  useGetSingleUserQuery,
-  useGetUserWithProfileQuery,
-} from "@/redux/api/userApi";
 import clsx from "clsx";
 import { Bell, Menu, UserCircle2, X } from "lucide-react";
 import { useState } from "react";
 import Sidebar from "../Sidebar/SideBar";
+import { useGetMeQuery, useGetProfileQuery } from "@/redux/api/userApi";
 
 export default function DashboardDrawer({
   children,
@@ -18,8 +15,8 @@ export default function DashboardDrawer({
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { data: userData, isLoading } = useGetSingleUserQuery({});
-  const { data: userProfile } = useGetUserWithProfileQuery({});
+  const { data: userData, isLoading } = useGetMeQuery({});
+  const { data: userProfile } = useGetProfileQuery({});
   const placeholder =
     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQUOdfo4lewXJYT_2xPo_Xu2Lj6XPn78X9UJA&s";
 
@@ -36,14 +33,14 @@ export default function DashboardDrawer({
           "fixed inset-0 z-50 bg-black bg-opacity-40 sm:hidden transition-opacity",
           {
             hidden: !mobileOpen,
-          }
+          },
         )}
         onClick={() => setMobileOpen(false)}
       />
       <aside
         className={clsx(
           "fixed top-0 left-0 z-50 h-full w-[300px] bg-white border-r shadow-md transition-transform sm:hidden",
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
+          mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b">
