@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, Calendar, Heart, Share2, Star } from "lucide-react";
 import { useState } from "react";
 
-export default function DailyPage() {
+export default function DailyRecommendationPage() {
   const [isFavorited, setIsFavorited] = useState(false);
 
   const today = new Date().toLocaleDateString("en-US", {
