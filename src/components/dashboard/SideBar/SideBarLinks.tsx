@@ -11,6 +11,9 @@ import {
   FilePen,
   ChartPie,
   User,
+  KeySquare,
+  Logs,
+  Bookmark,
 } from "lucide-react";
 
 type SidebarGroup = {
@@ -40,7 +43,7 @@ export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
         {
           label: "Change Password",
           href: "/dashboard/change-password",
-          icon: KeyRound,
+          icon: KeySquare,
         },
       ],
     },
@@ -50,17 +53,22 @@ export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
     case authRole.ADMIN:
       return [
         {
-          section: "Main",
+          section: "Analytics",
           items: [
             {
               label: "Overview",
               href: "/dashboard/admin/overview",
               icon: ChartPie,
             },
+            {
+              label: "Logs",
+              href: "/dashboard/admin/logs",
+              icon: Logs,
+            },
           ],
         },
         {
-          section: "Add",
+          section: "Create",
           items: [
             {
               label: "Add Para",
@@ -125,12 +133,12 @@ export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
     case authRole.USER:
       return [
         {
-          section: "Main",
+          section: "Analytics",
           items: [
             {
-              label: "Home",
+              label: "Overview",
               href: "/dashboard/user/overview",
-              icon: LayoutDashboard,
+              icon: ChartPie,
             },
           ],
         },
@@ -138,9 +146,24 @@ export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
           section: "My Activity",
           items: [
             {
-              label: "Reviews",
+              label: "Saved Items",
               href: "/dashboard/user/bookmarks",
-              icon: Star,
+              icon: Bookmark,
+            },
+            {
+              label: "Daily Duas",
+              href: "/dashboard/user/daily",
+              icon: Bookmark,
+            },
+          ],
+        },
+        {
+          section: "Resources",
+          items: [
+            {
+              label: "Books",
+              href: "/dashboard/user/readings",
+              icon: Bookmark,
             },
           ],
         },
