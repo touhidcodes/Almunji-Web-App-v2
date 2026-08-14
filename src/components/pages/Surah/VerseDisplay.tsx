@@ -241,7 +241,7 @@ const VerseDisplay: React.FC<VerseDisplayProps> = ({
       {/* Arabic Font */}
       <style jsx>{`
         .font-arabic {
-          font-family: "Amiri", "Noto Naskh Arabic", "Traditional Arabic", serif;
+          font-family: var(--font-scheherazade), "Scheherazade New", "Amiri Quran", var(--font-amiri), "Amiri", "Noto Naskh Arabic", "Traditional Arabic", serif;
         }
       `}</style>
     </div>
