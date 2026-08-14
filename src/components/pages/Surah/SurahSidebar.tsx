@@ -31,9 +31,10 @@ const SurahSidebar: React.FC<SurahSidebarProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
 
   // Get current surah ID from pathname
-  const currentSurahId = pathname.startsWith("/surah/")
-    ? parseInt(pathname.split("/")[2])
-    : null;
+  const currentSurahId =
+    pathname.startsWith("/surahs/") || pathname.startsWith("/surah/")
+      ? parseInt(pathname.split("/")[2])
+      : null;
 
   // Filter chapters based on search
   const filteredChapters = useMemo(() => {
@@ -49,7 +50,7 @@ const SurahSidebar: React.FC<SurahSidebarProps> = ({
   }, [chapters, searchQuery]);
 
   const handleSurahClick = (chapterId: number) => {
-    router.push(`/surah/${chapterId}`);
+    router.push(`/surahs/${chapterId}`);
   };
 
   // Skeleton Loader
