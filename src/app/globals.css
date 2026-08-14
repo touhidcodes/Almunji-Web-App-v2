@@ -1,9 +1,16 @@
+@import url("https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Scheherazade+New:wght@400;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-arabic:
+    var(--font-scheherazade), "Amiri Quran", "Scheherazade New",
+    var(--font-amiri), "Amiri", var(--font-noto-naskh), "Noto Naskh Arabic",
+    serif;
+  --font-amiri:
+    var(--font-amiri), "Amiri", "Scheherazade New", "Noto Naskh Arabic", serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -108,6 +115,21 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+}
+
+.font-arabic,
+.font-quran {
+  font-family:
+    var(--font-scheherazade), "Scheherazade New", "Amiri Quran",
+    var(--font-amiri), "Amiri", var(--font-noto-naskh), "Noto Naskh Arabic",
+    "Traditional Arabic", serif;
+  font-feature-settings: "cv01", "cv02", "cv03", "liga";
+}
+
+.font-amiri {
+  font-family:
+    var(--font-amiri), "Amiri", var(--font-scheherazade), "Scheherazade New",
+    "Noto Naskh Arabic", serif;
 }
 
 @layer base {
