@@ -20,7 +20,7 @@ const Navbar = () => {
     { href: "/", label: "Home" },
     { href: "/surahs", label: "Quran" },
     { href: "/dictionary", label: "Dictionary" },
-    { href: "/about", label: "About us" },
+    { href: "/about", label: "About" },
   ];
 
   return (
