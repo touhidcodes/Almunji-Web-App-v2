@@ -1,4 +1,4 @@
-use client";
+"use client";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -245,7 +245,7 @@ export default function DictionaryPage() {
                                   {example}
                                 </p>
                               </div>
-                            )
+                            ),
                           )}
                         </div>
                       </div>
@@ -267,7 +267,7 @@ export default function DictionaryPage() {
                             >
                               {verse}
                             </Badge>
-                          )
+                          ),
                         )}
                       </div>
                     </div>
