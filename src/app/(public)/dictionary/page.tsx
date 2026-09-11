@@ -6,10 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useDebounce } from "@/hooks/useDebounce";
-import {
-  useGetDictionarySuggestionsQuery,
-  useGetDictionaryWordQuery,
-} from "@/redux/api/dictionaryApi";
+import { useGetDictionarySuggestionsQuery, useGetDictionaryWordQuery } from "@/redux/api/dictionaryApi";
 import { TWordDetails, TWordSuggestion } from "@/types/dictionary";
 import { Book, Loader2, Search, X } from "lucide-react";
 import React, { useState } from "react";
@@ -26,9 +23,12 @@ export default function DictionaryPage() {
     data: suggestionsData,
     isLoading: isSuggestionsLoading,
     isFetching: isSuggestionsFetching,
-  } = useGetDictionarySuggestionsQuery(debouncedSearchTerm, {
-    skip: !debouncedSearchTerm,
-  });
+  } = useGetDictionarySuggestionsQuery(
+    debouncedSearchTerm ? { search: debouncedSearchTerm } : null,
+    {
+      skip: !debouncedSearchTerm,
+    }
+  );
 
   // Fetch selected word details by ID
   const { data: wordDetailsData, isLoading: isWordDetailsLoading } =
