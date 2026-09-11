@@ -10,9 +10,9 @@ import {
 } from "@/redux/api/dictionaryApi";
 import { DictionarySchema } from "@/schema/dictionarySchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Book, Edit, Plus, Save, Search, Trash2, X } from "lucide-react";
+import { Book, Edit, Plus, Save, Search, Trash2, X, BookOpen } from "lucide-react";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 const ManageDictionaryPage: React.FC = () => {
@@ -26,8 +26,15 @@ const ManageDictionaryPage: React.FC = () => {
       searchTerm,
     });
 
+  console.log("Dictionary words data:", wordsData);
+
   const [updateWord, { isLoading: isUpdating }] = useUpdateWordMutation();
   const [deleteWord] = useSoftDeleteWordMutation();
+
+  // Extract words list - handle both response formats
+  const wordsList = Array.isArray(wordsData) 
+    ? wordsData 
+    : wordsData?.data || [];
 
   const handleEditEntry = (entry: any): void => {
     setEditingEntry(entry);
@@ -62,16 +69,14 @@ const ManageDictionaryPage: React.FC = () => {
     }
   };
 
-  const wordsList = wordsData?.data || [];
-
   return (
     <div className="min-h-screen bg-gray-50 p-6 font-poppins">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
             <div className="bg-indigo-600 p-4 rounded-2xl shadow-lg shadow-indigo-200">
-              <Book className="h-8 w-8 text-white" />
+              <BookOpen className="h-8 w-8 text-white" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
@@ -115,16 +120,16 @@ const ManageDictionaryPage: React.FC = () => {
 
         {/* List Content */}
         {isLoadingWords ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[1, 2, 3, 4].map((i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
                 key={i}
-                className="bg-white p-8 rounded-2xl border border-gray-100 animate-pulse h-48"
+                className="bg-white p-8 rounded-2xl border border-gray-100 animate-pulse h-64"
               ></div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {wordsList.map((entry: any) => (
               <div
                 key={entry.id}
@@ -135,14 +140,16 @@ const ManageDictionaryPage: React.FC = () => {
                     <h3 className="text-2xl font-black text-gray-900 group-hover:text-indigo-600 transition-colors mb-2">
                       {entry.word}
                     </h3>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-black text-indigo-400 uppercase tracking-widest bg-indigo-50 px-2 py-1 rounded-md">
-                        Pronunciation
-                      </span>
-                      <span className="text-gray-500 font-medium italic">
-                        {entry.pronunciation}
-                      </span>
-                    </div>
+                    {entry.pronunciation && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-indigo-400 uppercase tracking-widest bg-indigo-50 px-2 py-1 rounded-md">
+                          Pronunciation
+                        </span>
+                        <span className="text-gray-500 font-medium italic">
+                          {entry.pronunciation}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
                     <button
@@ -173,7 +180,7 @@ const ManageDictionaryPage: React.FC = () => {
             {wordsList.length === 0 && (
               <div className="col-span-full bg-white rounded-3xl border border-dashed border-gray-200 p-24 text-center">
                 <div className="bg-indigo-50 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-8">
-                  <Book className="h-12 w-12 text-indigo-200" />
+                  <BookOpen className="h-12 w-12 text-indigo-200" />
                 </div>
                 <h3 className="text-2xl font-black text-gray-900 mb-2">
                   Lexicon Empty
