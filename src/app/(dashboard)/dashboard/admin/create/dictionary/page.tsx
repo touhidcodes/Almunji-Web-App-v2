@@ -15,8 +15,16 @@ const CreateDictionaryPage: React.FC = () => {
   const [createWord, { isLoading: isSubmitting }] = useCreateWordMutation();
 
   const onSubmit = async (data: any) => {
+    // Map form data to API field names
+    const apiData = {
+      persianWord: data.word,
+      transliteration: data.pronunciation,
+      englishMeaning: data.definition,
+      banglaMeaning: data.meaning || '', // Make banglaMeaning required if needed
+    };
+    
     try {
-      const res = await createWord(data).unwrap();
+      const res = await createWord(apiData).unwrap();
       if (res.success) {
         toast.success("Word created successfully!", {
           description:

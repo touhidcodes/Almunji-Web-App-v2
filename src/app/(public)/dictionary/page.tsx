@@ -21,7 +21,7 @@ export default function DictionaryPage() {
     isLoading: isSuggestionsLoading,
     isFetching: isSuggestionsFetching,
   } = useGetDictionarySuggestionsQuery(
-    debouncedSearchTerm ? { search: debouncedSearchTerm } : null,
+    { search: debouncedSearchTerm },
     { skip: !debouncedSearchTerm }
   );
 
@@ -30,8 +30,34 @@ export default function DictionaryPage() {
       skip: !selectedWordId,
     });
 
-  const suggestions = (suggestionsData?.data as any[]) || [];
-  const selectedWord = (wordDetailsData?.data as any) || null;
+  const suggestions = (suggestionsData?.data as Array<{
+    id: string;
+    word?: string;
+    persianWord?: string;
+    pronunciation?: string;
+    transliteration?: string;
+    definition?: string;
+    banglaMeaning?: string;
+    englishMeaning?: string;
+    meaning?: string;
+    root?: string;
+    examples?: string[];
+    verses?: string[];
+  }>) || [];
+  const selectedWord = (wordDetailsData?.data as {
+    id: string;
+    word?: string;
+    persianWord?: string;
+    pronunciation?: string;
+    transliteration?: string;
+    definition?: string;
+    banglaMeaning?: string;
+    englishMeaning?: string;
+    meaning?: string;
+    root?: string;
+    examples?: string[];
+    verses?: string[];
+  }) || null;
 
   const handleWordSelect = (wordId: string) => {
     setSelectedWordId(wordId);
@@ -146,10 +172,10 @@ export default function DictionaryPage() {
                             : "hover:bg-gray-50 border border-transparent"
                         }`}
                       >
-                        <div className="font-semibold text-gray-900">{word.word}</div>
-                        {word.pronunciation && word.pronunciation !== "-" && (
+                        <div className="font-semibold text-gray-900">{word.word || word.persianWord}</div>
+                        {(word.pronunciation || word.transliteration) && (word.pronunciation !== "-" || word.transliteration !== "-") && (
                           <div className="text-xs text-gray-500 italic mt-1">
-                            {word.pronunciation}
+                            {word.pronunciation || word.transliteration}
                           </div>
                         )}
                         {word.definition && word.definition !== "-" && (
@@ -193,29 +219,28 @@ export default function DictionaryPage() {
                 <CardContent className="p-6 space-y-6">
                   <div className="border-b pb-4">
                     <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                      {selectedWord.word}
+                      {selectedWord.word || selectedWord.persianWord}
                     </h2>
-                    {selectedWord.pronunciation &&
-                      selectedWord.pronunciation !== "-" && (
+                    {(selectedWord.pronunciation || selectedWord.transliteration) &&
+                      (selectedWord.pronunciation !== "-" || selectedWord.transliteration !== "-") && (
                         <p className="text-lg text-gray-500 italic">
-                          {selectedWord.pronunciation}
+                          {selectedWord.pronunciation || selectedWord.transliteration}
                         </p>
                       )}
                   </div>
 
-                  {selectedWord.meaning && selectedWord.meaning !== "-" && (
+                  {(selectedWord.meaning || selectedWord.banglaMeaning) && (selectedWord.meaning !== "-" || selectedWord.banglaMeaning !== "-") && (
                     <div className="bg-teal-50 p-4 rounded-lg border border-teal-100">
                       <h3 className="text-xs font-semibold text-teal-600 uppercase tracking-wide mb-2">
                         Meaning
                       </h3>
                       <p className="text-lg text-teal-800 font-medium">
-                        {selectedWord.meaning}
+                        {selectedWord.meaning || selectedWord.banglaMeaning}
                       </p>
                     </div>
                   )}
 
-                  {selectedWord.definition &&
-                    selectedWord.definition !== "-" && (
+                  {selectedWord.definition && selectedWord.definition !== "-" && (
                       <div>
                         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                           Definition

@@ -26,8 +26,6 @@ const ManageDictionaryPage: React.FC = () => {
       searchTerm,
     });
 
-  console.log("Dictionary words data:", wordsData);
-
   const [updateWord, { isLoading: isUpdating }] = useUpdateWordMutation();
   const [deleteWord] = useSoftDeleteWordMutation();
 
@@ -35,6 +33,15 @@ const ManageDictionaryPage: React.FC = () => {
   const wordsList = Array.isArray(wordsData) 
     ? wordsData 
     : wordsData?.data || [];
+  
+  // Map API response to expected format for display
+  const mappedWordsList = wordsList.map((item: any) => ({
+    id: item.id,
+    word: item.persianWord || item.word || '',
+    pronunciation: item.transliteration || item.pronunciation || '',
+    definition: item.englishMeaning || item.definition || '',
+    meaning: item.banglaMeaning || item.meaning || '',
+  }));
 
   const handleEditEntry = (entry: any): void => {
     setEditingEntry(entry);
@@ -54,10 +61,19 @@ const ManageDictionaryPage: React.FC = () => {
 
   const onUpdateSubmit = async (data: any) => {
     if (!editingEntry) return;
+    
+    // Map form data to API field names
+    const apiData = {
+      persianWord: data.word,
+      transliteration: data.pronunciation,
+      englishMeaning: data.definition,
+      banglaMeaning: data.meaning || '', // Make banglaMeaning required if needed
+    };
+    
     try {
       const res = await updateWord({
         id: editingEntry.id,
-        data: data,
+        data: apiData,
       }).unwrap();
       if (res.success) {
         toast.success("Word updated successfully");
@@ -130,7 +146,7 @@ const ManageDictionaryPage: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {wordsList.map((entry: any) => (
+            {mappedWordsList.map((entry: any) => (
               <div
                 key={entry.id}
                 className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 hover:shadow-xl hover:shadow-indigo-100/30 transition-all group flex flex-col"
@@ -231,9 +247,10 @@ const ManageDictionaryPage: React.FC = () => {
                   onSubmit={onUpdateSubmit}
                   resolver={zodResolver(DictionarySchema)}
                   defaultValues={{
-                    word: editingEntry.word,
-                    pronunciation: editingEntry.pronunciation,
-                    definition: editingEntry.definition,
+                    word: editingEntry.word || editingEntry.persianWord,
+                    pronunciation: editingEntry.pronunciation || editingEntry.transliteration,
+                    definition: editingEntry.definition || editingEntry.englishMeaning,
+                    meaning: editingEntry.meaning || editingEntry.banglaMeaning,
                   }}
                 >
                   <div className="space-y-8">
