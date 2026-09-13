@@ -57,7 +57,7 @@ export default function DictionaryPage() {
     root?: string;
     examples?: string[];
     verses?: string[];
-  }) || null;
+  }) || null; 
 
   const handleWordSelect = (wordId: string) => {
     setSelectedWordId(wordId);
@@ -116,7 +116,7 @@ export default function DictionaryPage() {
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
             Persian → Bangla Dictionary
           </h1>
-          <p className="text-gray-600">ফার্সি থেকে বাংলা এবং ইংরেজি অভিধান</p>
+          <p className="text-gray-600">Persian to Bengali and English Dictionary</p>
         </div>
 
         <div className="grid lg:grid-cols-12 gap-6">
