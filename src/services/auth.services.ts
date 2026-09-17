@@ -7,7 +7,6 @@ import { decodedToken } from "@/utils/jwt-decode";
 
 interface DecodedToken {
   role?: string;
-  // Add other properties from your JWT token
   userId?: string;
   email?: string;
   exp?: number;
@@ -16,7 +15,6 @@ interface DecodedToken {
 
 export const getUserInfo = () => {
   const authToken = getFromLocalStorage("accessToken");
-  //   console.log(authToken);
   if (authToken) {
     const decodedData = decodedToken(authToken) as DecodedToken;
     return {
@@ -30,9 +28,7 @@ export const getUserInfo = () => {
 
 export const isLoggedIn = () => {
   const authToken = getFromLocalStorage("accessToken");
-  if (authToken) {
-    return !!authToken;
-  }
+  return !!authToken;
 };
 
 export const removeUser = () => {
@@ -41,8 +37,7 @@ export const removeUser = () => {
 
 export const getNewAccessToken = async () => {
   return await axiosInstance({
-    url: `${process.env.NEXT_PUBLIC_LOCAL_URL}/refresh-token`,
-    // url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/refresh-token`,
+    url: `${process.env.NEXT_PUBLIC_BASE_URL}/refresh-token`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     withCredentials: true,
