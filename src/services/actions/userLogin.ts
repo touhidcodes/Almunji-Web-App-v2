@@ -5,9 +5,8 @@ import { toast } from "sonner";
 import { setCookie } from "@/utils/nextCookies";
 
 export const userLogin = async (data: FieldValues) => {
-  // TODO: change URL before build
-  // const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/login`, {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_LOCAL_URL}/login`, {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5000/api/v1";
+  const res = await fetch(`${baseUrl}/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
