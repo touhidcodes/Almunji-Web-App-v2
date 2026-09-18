@@ -9,12 +9,17 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Book, Menu } from "lucide-react";
+import { Book, Menu, LogIn, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { useUserInfo } from "@/hooks/useUserInfo";
+import { userLogout } from "@/services/actions/logoutUser";
+import { useRouter } from "next/navigation";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, loading } = useUserInfo();
+  const router = useRouter();
 
   const navigationLinks = [
     { href: "/", label: "Home" },
@@ -23,11 +28,16 @@ const Navbar = () => {
     { href: "/about", label: "About" },
   ];
 
+  const handleLogout = async () => {
+    await userLogout();
+    router.push("/auth");
+    setIsOpen(false);
+  };
+
   return (
     <nav className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-teal-600 rounded flex items-center justify-center">
               <Book className="w-5 h-5 text-white" />
@@ -35,7 +45,6 @@ const Navbar = () => {
             <span className="text-xl font-bold text-gray-800">Almunji</span>
           </div>
 
-          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {navigationLinks.map((link) => (
               <a
@@ -48,24 +57,31 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center space-x-3">
-            <Link href="/auth?type=login">
-              <Button
-                variant="ghost"
-                className="text-gray-600 hover:text-teal-600 font-medium"
-              >
-                Sign In
+            {loading ? (
+              <div className="animate-pulse bg-gray-200 h-9 w-20 rounded"></div>
+            ) : user ? (
+              <Button onClick={handleLogout} variant="outline" className="font-medium">
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
               </Button>
-            </Link>
-            <Link href="/auth?type=register">
-              <Button className="bg-teal-600 text-white hover:bg-teal-700 font-medium">
-                Sign Up
-              </Button>
-            </Link>
+            ) : (
+              <>
+                <Link href="/auth?type=login">
+                  <Button variant="ghost" className="font-medium">
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/auth?type=register">
+                  <Button className="bg-teal-600 text-white hover:bg-teal-700 font-medium">
+                    Sign Up
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
-          {/* Mobile Menu Button */}
           <div className="md:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
@@ -81,7 +97,7 @@ const Navbar = () => {
                         <Book className="w-5 h-5 text-white" />
                       </div>
                       <span className="text-xl font-bold text-gray-800">
-                        QuranHub
+                        Almunji
                       </span>
                     </div>
                   </SheetTitle>
@@ -101,12 +117,26 @@ const Navbar = () => {
                     </a>
                   ))}
                   <div className="border-t pt-4 space-y-2">
-                    <Button variant="outline" className="w-full">
-                      Sign In
-                    </Button>
-                    <Button className="w-full bg-teal-600 hover:bg-teal-700">
-                      Sign Up
-                    </Button>
+                    {loading ? (
+                      <div className="animate-pulse bg-gray-200 h-10 w-full rounded"></div>
+                    ) : user ? (
+                      <Button onClick={handleLogout} variant="outline" className="w-full font-medium">
+                        Logout
+                      </Button>
+                    ) : (
+                      <>
+                        <Link href="/auth?type=login">
+                          <Button variant="outline" className="w-full font-medium">
+                            Sign In
+                          </Button>
+                        </Link>
+                        <Link href="/auth?type=register">
+                          <Button className="w-full bg-teal-600 hover:bg-teal-700 font-medium">
+                            Sign Up
+                          </Button>
+                        </Link>
+                      </>
+                    )}
                   </div>
                 </div>
               </SheetContent>
