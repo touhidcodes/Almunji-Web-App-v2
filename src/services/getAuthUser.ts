@@ -1,12 +1,9 @@
-"use server";
-
 import { jwtDecode } from "jwt-decode";
-import { cookies } from "next/headers";
+import { getClientCookie } from "@/utils/clientCookies";
 
 export async function getAuthUser() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("accessToken")?.value;
-
+  const token = getClientCookie("accessToken");
+  
   if (!token) return null;
 
   try {

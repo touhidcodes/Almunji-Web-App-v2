@@ -1,6 +1,6 @@
 import { FieldValues } from "react-hook-form";
 import { toast } from "sonner";
-import { setCookie } from "@/utils/nextCookies";
+import { setClientCookie } from "@/utils/clientCookies";
 
 export const userLogin = async (data: FieldValues) => {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5000/api/v1";
@@ -21,7 +21,7 @@ export const userLogin = async (data: FieldValues) => {
   }
 
   if (userInfo.data?.token) {
-    setCookie("accessToken", userInfo.data.token);
+    setClientCookie("accessToken", userInfo.data.token);
     toast.success("Login successful!");
   }
 

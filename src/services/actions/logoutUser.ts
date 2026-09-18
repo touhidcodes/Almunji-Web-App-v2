@@ -1,20 +1,7 @@
-"use server";
-
-import { cookies } from "next/headers";
+import { removeClientCookie } from "@/utils/clientCookies";
 
 export const userLogout = async () => {
-  const cookieStore = await cookies();
-
-  cookieStore.set("accessToken", "", {
-    path: "/",
-    maxAge: 0,
-  });
-
-  cookieStore.set("refreshToken", "", {
-    path: "/",
-    maxAge: 0,
-  });
-
-  // You can optionally return something
+  removeClientCookie("accessToken");
+  removeClientCookie("refreshToken");
   return { success: true };
 };
