@@ -1,5 +1,3 @@
-// "use server";
-
 import { FieldValues } from "react-hook-form";
 import { toast } from "sonner";
 import { setCookie } from "@/utils/nextCookies";
@@ -18,11 +16,13 @@ export const userLogin = async (data: FieldValues) => {
   const userInfo = await res.json();
 
   if (userInfo.success === false) {
-    toast.error(userInfo.message);
+    toast.error(userInfo.message || "Login failed");
+    return userInfo;
   }
 
-  if (userInfo.data.token) {
+  if (userInfo.data?.token) {
     setCookie("accessToken", userInfo.data.token);
+    toast.success("Login successful!");
   }
 
   return userInfo;
