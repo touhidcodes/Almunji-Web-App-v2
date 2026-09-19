@@ -21,8 +21,6 @@ const Navbar = () => {
   const { user, loading } = useUserInfo();
   const router = useRouter();
 
-  console.log(user);
-
   const navigationLinks = [
     { href: "/", label: "Home" },
     { href: "/surahs", label: "Quran" },
