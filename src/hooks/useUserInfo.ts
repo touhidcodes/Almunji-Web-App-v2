@@ -1,15 +1,15 @@
-import { getAuthUser } from "@/services/getAuthUser";
-import { TAuthUser } from "@/types/auth";
+import { getUserInfo } from "@/services/actions/getUserInfo";
+import { UserInfo } from "@/services/actions/getUserInfo";
 import { useEffect, useState } from "react";
 
 export const useUserInfo = () => {
-  const [user, setUser] = useState<TAuthUser | null>(null);
+  const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const result = await getAuthUser();
+        const result = await getUserInfo();
         setUser(result);
       } catch (error) {
         setUser(null);
