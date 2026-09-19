@@ -9,7 +9,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Book, Menu, LogIn, LogOut } from "lucide-react";
+import { Book, Menu, LogIn, LogOut, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useUserInfo } from "@/hooks/useUserInfo";
@@ -27,6 +27,13 @@ const Navbar = () => {
     { href: "/dictionary", label: "Dictionary" },
     { href: "/about", label: "About" },
   ];
+
+  const getDashboardLink = () => {
+    if (!user) return null;
+    if (user.role === "ADMIN") return "/dashboard/admin/overview";
+    if (user.role === "MODERATOR") return "/dashboard/moderator/overview";
+    return "/dashboard/user/overview";
+  };
 
   const handleLogout = async () => {
     await userLogout();
@@ -55,6 +62,14 @@ const Navbar = () => {
                 {link.label}
               </a>
             ))}
+            {user && (
+              <Link href={getDashboardLink() || "#"}>
+                <Button variant="ghost" className="font-medium">
+                  <LayoutDashboard className="w-4 h-4 mr-2" />
+                  Dashboard
+                </Button>
+              </Link>
+            )}
           </div>
 
           <div className="hidden md:flex items-center space-x-3">
@@ -116,6 +131,14 @@ const Navbar = () => {
                       {link.label}
                     </a>
                   ))}
+                  {user && (
+                    <Link href={getDashboardLink() || "#"} onClick={() => setIsOpen(false)}>
+                      <div className="flex items-center space-x-2 text-lg font-medium text-teal-600 p-2 rounded-lg hover:bg-teal-50">
+                        <LayoutDashboard className="w-5 h-5" />
+                        <span>Dashboard</span>
+                      </div>
+                    </Link>
+                  )}
                   <div className="border-t pt-4 space-y-2">
                     {loading ? (
                       <div className="animate-pulse bg-gray-200 h-10 w-full rounded"></div>
