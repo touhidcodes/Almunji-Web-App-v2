@@ -113,7 +113,7 @@ const CreateDuaPage: React.FC = () => {
                   <div className="pt-12 border-t border-gray-100 flex justify-end">
                     <button type="submit" disabled={isSubmitting} className="w-full sm:w-auto px-12 py-6 bg-teal-600 hover:bg-teal-700 text-white rounded-xl flex items-center justify-center gap-4 shadow-xl shadow-teal-200 font-bold uppercase text-sm">
                       {isSubmitting ? <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div> : <Save className="h-5 w-5" />}
-                      <span>Commit Dua</span>
+                      <span>Create Dua</span>
                     </button>
                   </div>
                 </main>
