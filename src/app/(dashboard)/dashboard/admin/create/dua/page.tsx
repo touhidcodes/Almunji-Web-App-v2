@@ -8,8 +8,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { DuaSchema } from "@/schema/duaSchema";
 import { ArrowLeft, Book, Save, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 import { toast } from "sonner";
+import FormTags from "@/components/forms/FormTags";
 
 const CreateDuaPage: React.FC = () => {
   const [createDua, { isLoading: isSubmitting }] = useCreateDuaMutation();
@@ -70,6 +70,12 @@ const CreateDuaPage: React.FC = () => {
                     <div className="space-y-6">
                       <FormInput name="name" label="Dua Name *" placeholder="Dua name" required />
                       <FormInput name="reference" label="Reference" placeholder="Book/reference" />
+                      <FormTags
+                        name="tags"
+                        label="Tags"
+                        placeholder="Type a tag and press Enter..."
+                        description="Add tags such as morning, protection, travel, prayer, etc."
+                       />
                     </div>
                   </div>
                   <div className="p-8 bg-teal-50/50 rounded-2xl border border-teal-100/50 space-y-4">

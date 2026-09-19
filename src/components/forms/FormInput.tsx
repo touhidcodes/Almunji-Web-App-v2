@@ -41,6 +41,7 @@ const FormInput = ({
             type={type}
             placeholder={placeholder || label}
             className={cn(
+              "focus-visible:border-teal-500 focus-visible:ring-teal-100 focus-visible:ring-2",
               className || "w-full bg-secondary shadow-none",
               error && "border-destructive focus-visible:ring-destructive"
             )}

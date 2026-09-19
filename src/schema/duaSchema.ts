@@ -8,6 +8,6 @@ export const DuaSchema = z.object({
   bangla: z.string().min(1),
   english: z.string().optional(),
   reference: z.string().optional(),
-  tags: z.string().optional(),
+  tags: z.array(z.string()).optional(),
   isDeleted: z.boolean().optional(),
 });
