@@ -4,8 +4,8 @@ import FormContainer from "@/components/forms/FormContainer";
 import FormInput from "@/components/forms/FormInput";
 import FormTextarea from "@/components/forms/FormTextarea";
 import { useCreateAyahMutation } from "@/redux/api/ayahApi";
-import { TCreateAyahPayload } from "@/types/ayah";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AyahSchema } from "@/schema/ayahSchema";
 import { ArrowLeft, Book, Save, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -14,7 +14,7 @@ import { toast } from "sonner";
 const CreateAyahPage: React.FC = () => {
   const [createAyah, { isLoading: isSubmitting }] = useCreateAyahMutation();
 
-  const onSubmit = async (data: TCreateAyahPayload) => {
+  const onSubmit = async (data: any) => {
     try {
       const res = await createAyah(data).unwrap();
       if (res.success) {
@@ -59,7 +59,7 @@ const CreateAyahPage: React.FC = () => {
           </div>
 
           <div className="p-10 lg:p-16 relative">
-            <FormContainer onSubmit={onSubmit} resolver={zodResolver(TCreateAyahPayload)} defaultValues={{ number: 1 }}>
+            <FormContainer onSubmit={onSubmit} resolver={zodResolver(AyahSchema)} defaultValues={{ number: 1 }}>
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                 <aside className="lg:col-span-4 space-y-10">
                   <div className="space-y-8">

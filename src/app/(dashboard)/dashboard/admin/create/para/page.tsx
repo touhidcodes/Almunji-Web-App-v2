@@ -4,8 +4,8 @@ import FormContainer from "@/components/forms/FormContainer";
 import FormInput from "@/components/forms/FormInput";
 import FormTextarea from "@/components/forms/FormTextarea";
 import { useCreateParaMutation } from "@/redux/api/paraApi";
-import { TCreateParaPayload } from "@/types/para";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ParaSchema } from "@/schema/paraSchema";
 import { ArrowLeft, Book, Save, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -14,7 +14,7 @@ import { toast } from "sonner";
 const CreateParaPage: React.FC = () => {
   const [createPara, { isLoading: isSubmitting }] = useCreateParaMutation();
 
-  const onSubmit = async (data: TCreateParaPayload) => {
+  const onSubmit = async (data: any) => {
     try {
       const res = await createPara(data).unwrap();
       if (res.success) {
@@ -59,7 +59,7 @@ const CreateParaPage: React.FC = () => {
           </div>
 
           <div className="p-10 lg:p-16 relative">
-            <FormContainer onSubmit={onSubmit} resolver={zodResolver(TCreateParaPayload)} defaultValues={{ number: 1 }}>
+            <FormContainer onSubmit={onSubmit} resolver={zodResolver(ParaSchema)} defaultValues={{ number: 1 }}>
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                 <aside className="lg:col-span-4 space-y-10">
                   <div className="space-y-8">
