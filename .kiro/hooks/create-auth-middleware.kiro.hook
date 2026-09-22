@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Create Auth Middleware",
+  "description": "Create authorization middleware for route protection",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": ""
+  }
+}
