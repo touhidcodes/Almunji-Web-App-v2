@@ -14,6 +14,8 @@ import {
   KeySquare,
   Logs,
   Bookmark,
+  BookOpen,
+  Globe,
 } from "lucide-react";
 
 type SidebarGroup = {
@@ -87,12 +89,27 @@ export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
             },
             {
               label: "Add Dua",
-              href: "/dashboard/admin/create/ayah",
+              href: "/dashboard/admin/create/dua",
               icon: FilePlus2,
             },
             {
               label: "Add Words",
               href: "/dashboard/admin/create/dictionary",
+              icon: FilePlus2,
+            },
+            {
+              label: "Add Blog",
+              href: "/dashboard/admin/create/blog",
+              icon: FilePlus2,
+            },
+            {
+              label: "Add Category",
+              href: "/dashboard/admin/create/category",
+              icon: FilePlus2,
+            },
+            {
+              label: "Add Book",
+              href: "/dashboard/admin/create/book",
               icon: FilePlus2,
             },
           ],
@@ -107,23 +124,118 @@ export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
             },
             {
               label: "Manage Surah",
-              href: "/dashboard/admin/manage/surah",
+              href: "/dashboard/admin/manage/surahs",
               icon: FilePen,
             },
             {
               label: "Manage Ayah",
-              href: "/dashboard/admin/manage/ayah",
+              href: "/dashboard/admin/manage/ayahs",
               icon: FilePen,
             },
             {
               label: "Manage Dua",
-              href: "/dashboard/admin/manage/ayah",
+              href: "/dashboard/admin/manage/dua",
               icon: FilePen,
             },
             {
               label: "Manage Words",
               href: "/dashboard/admin/manage/dictionary",
               icon: FilePen,
+            },
+            {
+              label: "Manage Blog",
+              href: "/dashboard/admin/manage/blog",
+              icon: FilePen,
+            },
+            {
+              label: "Manage Category",
+              href: "/dashboard/admin/manage/category",
+              icon: FilePen,
+            },
+            {
+              label: "Manage Book",
+              href: "/dashboard/admin/manage/book",
+              icon: FilePen,
+            },
+            {
+              label: "Manage Users",
+              href: "/dashboard/admin/manage/users",
+              icon: User,
+            },
+            {
+              label: "Permissions",
+              href: "/dashboard/admin/permissions",
+              icon: KeyRound,
+            },
+          ],
+        },
+        ...defaultItems,
+      ];
+
+    case authRole.MODERATOR:
+      return [
+        {
+          section: "Analytics",
+          items: [
+            {
+              label: "Overview",
+              href: "/dashboard/moderator/overview",
+              icon: ChartPie,
+            },
+          ],
+        },
+        {
+          section: "Content Management",
+          items: [
+            {
+              label: "Dictionary",
+              href: "/dashboard/moderator/dictionary",
+              icon: Globe,
+            },
+            {
+              label: "Duas",
+              href: "/dashboard/moderator/manage/dua",
+              icon: BookOpen,
+            },
+            {
+              label: "Surahs",
+              href: "/dashboard/moderator/manage/surahs",
+              icon: BookOpen,
+            },
+            {
+              label: "Para",
+              href: "/dashboard/moderator/manage/para",
+              icon: BookOpen,
+            },
+            {
+              label: "Ayahs",
+              href: "/dashboard/moderator/manage/ayahs",
+              icon: BookOpen,
+            },
+            {
+              label: "Tafsir",
+              href: "/dashboard/moderator/manage/tafsir",
+              icon: BookOpen,
+            },
+            {
+              label: "Books",
+              href: "/dashboard/moderator/manage/book",
+              icon: BookOpen,
+            },
+            {
+              label: "Categories",
+              href: "/dashboard/moderator/manage/category",
+              icon: BookOpen,
+            },
+            {
+              label: "Blog",
+              href: "/dashboard/moderator/manage/blog",
+              icon: FilePen,
+            },
+            {
+              label: "Bookmarks",
+              href: "/dashboard/moderator/manage/bookmarks",
+              icon: Bookmark,
             },
           ],
         },
