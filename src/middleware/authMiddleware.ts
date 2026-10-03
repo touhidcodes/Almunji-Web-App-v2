@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtDecode } from "jwt-decode";
-import { getClientCookie } from "@/utils/clientCookies";
 
 interface DecodedToken {
   role?: string;
@@ -24,7 +23,9 @@ const moderatorOnlyRoutes = [
 
 export function authMiddleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  const token = getClientCookie("accessToken");
+  
+  // Get cookie from Next.js request (server-side)
+  const token = request.cookies.get("accessToken")?.value;
 
   // Public routes don't need auth
   if (!protectedRoutes.some((route) => path.startsWith(route))) {

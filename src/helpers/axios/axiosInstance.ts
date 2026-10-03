@@ -1,5 +1,4 @@
 import axios from "axios";
-import { getNewAccessToken } from "@/services/auth.services";
 import { getCookie, setCookie } from "@/utils/nextCookies";
 
 // Create Axios instance
@@ -46,13 +45,20 @@ instance.interceptors.response.use(
       if (!isRefreshing) {
         isRefreshing = true;
         try {
-          const res = await getNewAccessToken();
-          const newToken = res?.data?.accessToken;
+          // Only refresh token on client-side
+          if (typeof window !== "undefined") {
+            const { getNewAccessToken } = await import("@/services/auth.services");
+            const res = await getNewAccessToken();
+            const newToken = res?.data?.accessToken;
 
-          if (newToken) {
-            await setCookie("refreshToken", newToken);
-            onRefreshed(newToken);
+            if (newToken) {
+              await setCookie("refreshToken", newToken);
+              onRefreshed(newToken);
+              isRefreshing = false;
+            }
+          } else {
             isRefreshing = false;
+            return Promise.reject(error);
           }
         } catch (err) {
           isRefreshing = false;
@@ -69,11 +75,6 @@ instance.interceptors.response.use(
       });
     }
 
-    // return Promise.reject({
-    //   statusCode: error?.response?.status || 500,
-    //   message: error?.response?.data?.message || "Something went wrong",
-    //   errorMessages: error?.response?.data?.message || [],
-    // });
     return Promise.reject(error);
   }
 );
