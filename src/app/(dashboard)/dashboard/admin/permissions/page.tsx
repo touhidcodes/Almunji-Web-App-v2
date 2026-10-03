@@ -1,18 +1,31 @@
 "use client";
 
-import { useGetAllPermissionsQuery } from "@/redux/api/permissionApi";
-import { Shield, Plus, Edit, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { useGetAllPermissionsQuery, useAssignBulkPermissionsMutation } from "@/redux/api/permissionApi";
+import { Shield, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 
-const ResourceList = ["SURAH", "PARA", "AYAH", "TAFSIR", "DICTIONARY", "BOOK", "BOOKCATEGORY", "BOOKCONTENT", "BLOG", "DUA", "USER", "PERMISSION", "BOOKMARK"];
-const ActionList = ["READ", "CREATE", "UPDATE", "DELETE"];
-
 export default function PermissionsPage() {
-  const [isAdding, setIsAdding] = useState(false);
+  const [selectedUser, setSelectedUser] = useState("");
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [assignBulkPermissions, { isLoading: isAssigning }] = useAssignBulkPermissionsMutation();
 
   const { data: permissionsData, isLoading } = useGetAllPermissionsQuery();
-  const permissions = permissionsData?.data || [];
+  
+  // Handle different response structures
+  const permissions = Array.isArray(permissionsData?.data) 
+    ? permissionsData.data 
+    : Array.isArray(permissionsData) 
+      ? permissionsData 
+      : [];
+
+  const handleTogglePermission = (permissionId: string) => {
+    setSelectedPermissions(prev =>
+      prev.includes(permissionId)
+        ? prev.filter(id => id !== permissionId)
+        : [...prev, permissionId]
+    );
+  };
 
   if (isLoading) {
     return (
@@ -24,7 +37,7 @@ export default function PermissionsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 font-poppins">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto space-y-6">
         <header className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Shield className="w-8 h-8 text-teal-600" />
@@ -33,18 +46,12 @@ export default function PermissionsPage() {
           <p className="text-gray-500">Manage permissions for different user roles</p>
         </header>
 
+        {/* Permissions List */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-4 border-b border-gray-100 flex items-center justify-between">
             <h2 className="font-semibold text-gray-700">
               All Permissions ({permissions.length})
             </h2>
-            <button
-              onClick={() => setIsAdding(!isAdding)}
-              className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Add Permission
-            </button>
           </div>
 
           <div className="divide-y divide-gray-100">
@@ -52,31 +59,101 @@ export default function PermissionsPage() {
               <div className="p-8 text-center text-gray-500">No permissions found</div>
             ) : (
               permissions.map((permission: any) => (
-                <div key={permission.id} className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-100">
+                <div key={permission.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="bg-green-50 p-2 rounded-lg">
-                      <Shield className="w-5 h-5 text-green-600" />
+                    <div className="bg-teal-50 p-2 rounded-lg">
+                      <Shield className="w-5 h-5 text-teal-600" />
                     </div>
                     <div>
                       <div className="font-medium text-gray-900">
                         {permission.resource} - {permission.action}
                       </div>
-                      <div className="text-xs text-gray-500">
-                        ID: {permission.id.slice(0, 8)}...
-                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
               ))
             )}
+          </div>
+        </div>
+
+        {/* Assign Permissions to User */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+            <h2 className="font-semibold text-gray-700 flex items-center gap-2">
+              <Users className="w-5 h-5 text-teal-600" />
+              Assign Permissions to User
+            </h2>
+          </div>
+          
+          <div className="p-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select User
+              </label>
+              <select
+                value={selectedUser}
+                onChange={(e) => setSelectedUser(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+              >
+                <option value="">Choose a user...</option>
+                <option value="user1">User 1</option>
+                <option value="user2">User 2</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Permissions
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {permissions.map((permission: any) => (
+                  <label
+                    key={permission.id}
+                    className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${
+                      selectedPermissions.includes(permission.id)
+                        ? "bg-teal-50 border-teal-200"
+                        : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedPermissions.includes(permission.id)}
+                      onChange={() => handleTogglePermission(permission.id)}
+                      className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
+                    />
+                    <span className="text-sm text-gray-700">
+                      {permission.resource}:{permission.action}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={async () => {
+                if (!selectedUser || selectedPermissions.length === 0) {
+                  toast.error("Please select a user and at least one permission");
+                  return;
+                }
+                
+                try {
+                  const res = await assignBulkPermissions({
+                    userId: selectedUser,
+                    permissionIds: selectedPermissions,
+                  }).unwrap();
+                  
+                  toast.success(`Assigned ${res.assigned || res.length || selectedPermissions.length} permissions successfully!`);
+                  setSelectedUser("");
+                  setSelectedPermissions([]);
+                } catch (error) {
+                  toast.error("Failed to assign permissions");
+                }
+              }}
+              disabled={!selectedUser || selectedPermissions.length === 0 || isAssigning}
+              className="w-full py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+            >
+              {isAssigning ? "Assigning..." : "Assign Selected Permissions"}
+            </button>
           </div>
         </div>
       </div>

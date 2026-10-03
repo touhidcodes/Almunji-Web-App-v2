@@ -26,6 +26,14 @@ export const permissionApi = baseServerApi.injectEndpoints({
       }),
       invalidatesTags: [tagTypes.user, tagTypes.permission],
     }),
+    assignBulkPermissions: build.mutation({
+      query: (data) => ({
+        url: "/permission/bulk-assign",
+        method: "POST",
+        data,
+      }),
+      invalidatesTags: [tagTypes.user, tagTypes.permission],
+    }),
     getUserPermissions: build.query({
       query: (userId) => ({
         url: `/permission/user/${userId}`,
@@ -55,6 +63,7 @@ export const {
   useCreatePermissionMutation,
   useGetAllPermissionsQuery,
   useAssignPermissionMutation,
+  useAssignBulkPermissionsMutation,
   useGetUserPermissionsQuery,
   useRemovePermissionMutation,
   useDeletePermissionMutation,

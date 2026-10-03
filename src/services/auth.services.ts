@@ -1,4 +1,3 @@
-import { instance as axiosInstance } from "@/helpers/axios/axiosInstance";
 import {
   getFromLocalStorage,
   removeFromLocalStorage,
@@ -36,11 +35,12 @@ export const removeUser = () => {
 };
 
 export const getNewAccessToken = async () => {
-  // Check if we're on the server
   if (typeof window === "undefined") {
     throw new Error("Token refresh only available on client");
   }
-  return await axiosInstance({
+  
+  const { instance } = await import("@/helpers/axios/axiosInstance");
+  return await instance({
     url: `${process.env.NEXT_PUBLIC_BASE_URL}/refresh-token`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
