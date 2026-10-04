@@ -7,13 +7,18 @@ import {
 import { tagTypes } from "../tags";
 import { baseServerApi } from "./baseApi";
 
+type TSurahQueryParams = {
+  page?: number;
+  limit?: number;
+  searchTerm?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+};
+
 export const surahApi = baseServerApi.injectEndpoints({
   endpoints: (build) => ({
     // Get all surahs
-    getAllSurah: build.query<
-      TApiResponse<TSurah[]>,
-      Record<string, any> | void
-    >({
+    getAllSurah: build.query<TApiResponse<TSurah[]>, TSurahQueryParams | void>({
       query: (arg) => ({
         url: "/surah/all",
         method: "GET",
@@ -25,7 +30,7 @@ export const surahApi = baseServerApi.injectEndpoints({
     // Get all surahs (admin view)
     getAllSurahAdmin: build.query<
       TApiResponse<TSurah[]>,
-      Record<string, any> | void
+      TSurahQueryParams | void
     >({
       query: (arg) => ({
         url: "/surah/admin/all",
@@ -59,7 +64,10 @@ export const surahApi = baseServerApi.injectEndpoints({
     // Update surah
     updateSurah: build.mutation<
       TApiResponse<TSurah>,
-      { surahId: string; payload: TUpdateSurahPayload }
+      {
+        surahId: string;
+        payload: TUpdateSurahPayload;
+      }
     >({
       query: ({ surahId, payload }) => ({
         url: `/surah/${surahId}`,
@@ -68,6 +76,7 @@ export const surahApi = baseServerApi.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, { surahId }) => [
         { type: tagTypes.surah, id: surahId },
+        { type: tagTypes.surah },
       ],
     }),
 

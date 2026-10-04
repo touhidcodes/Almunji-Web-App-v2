@@ -354,9 +354,7 @@ const CreateParaPage: React.FC = () => {
                           <Save className="h-5 w-5" />
                         )}
 
-                        <span>
-                          {isSubmitting ? "Creating..." : "Commit Section"}
-                        </span>
+                        <span>{isSubmitting ? "Creating..." : "Add Para"}</span>
                       </button>
                     </div>
                   </main>
@@ -365,6 +363,13 @@ const CreateParaPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Footer */}
+        <footer className="pb-12 text-center">
+          <p className="text-xs font-black uppercase tracking-widest text-gray-400">
+            Almunji Global Archival System • Section Services
+          </p>
+        </footer>
       </div>
     </div>
   );
