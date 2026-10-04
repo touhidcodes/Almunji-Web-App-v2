@@ -3,24 +3,30 @@ import { TCreateParaPayload, TPara, TUpdateParaPayload } from "@/types/para";
 import { tagTypes } from "../tags";
 import { baseServerApi } from "./baseApi";
 
+type TParaQueryParams = {
+  page?: number;
+  limit?: number;
+  searchTerm?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+};
+
 export const paraApi = baseServerApi.injectEndpoints({
   endpoints: (build) => ({
     // Public: get all paras
-    getAllParas: build.query<TApiResponse<TPara[]>, void | Record<string, any>>(
-      {
-        query: (arg) => ({
-          url: "/para",
-          method: "GET",
-          params: arg,
-        }),
-        providesTags: [tagTypes.para],
-      },
-    ),
+    getAllPara: build.query<TApiResponse<TPara[]>, TParaQueryParams | void>({
+      query: (arg) => ({
+        url: "/para",
+        method: "GET",
+        params: arg,
+      }),
+      providesTags: [tagTypes.para],
+    }),
 
     // Admin: get all paras
     getAllParasByAdmin: build.query<
       TApiResponse<TPara[]>,
-      void | Record<string, any>
+      TParaQueryParams | void
     >({
       query: (arg) => ({
         url: "/para/admin",
@@ -37,9 +43,13 @@ export const paraApi = baseServerApi.injectEndpoints({
         method: "GET",
       }),
       providesTags: (_result, _error, paraId) => [
-        { type: tagTypes.para, id: paraId },
+        {
+          type: tagTypes.para,
+          id: paraId,
+        },
       ],
     }),
+
     // Create para
     createPara: build.mutation<TApiResponse<TPara>, TCreateParaPayload>({
       query: (payload) => ({
@@ -53,7 +63,10 @@ export const paraApi = baseServerApi.injectEndpoints({
     // Update para
     updatePara: build.mutation<
       TApiResponse<TPara>,
-      { paraId: string; payload: TUpdateParaPayload }
+      {
+        paraId: string;
+        payload: TUpdateParaPayload;
+      }
     >({
       query: ({ paraId, payload }) => ({
         url: `/para/${paraId}`,
@@ -61,7 +74,13 @@ export const paraApi = baseServerApi.injectEndpoints({
         data: payload,
       }),
       invalidatesTags: (_result, _error, { paraId }) => [
-        { type: tagTypes.para, id: paraId },
+        {
+          type: tagTypes.para,
+          id: paraId,
+        },
+        {
+          type: tagTypes.para,
+        },
       ],
     }),
 
@@ -77,7 +96,7 @@ export const paraApi = baseServerApi.injectEndpoints({
 });
 
 export const {
-  useGetAllParasQuery,
+  useGetAllParaQuery,
   useGetAllParasByAdminQuery,
   useGetParaByIdQuery,
   useCreateParaMutation,

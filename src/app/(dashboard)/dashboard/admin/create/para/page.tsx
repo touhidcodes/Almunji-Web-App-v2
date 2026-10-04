@@ -3,17 +3,10 @@
 import FormContainer from "@/components/forms/FormContainer";
 import FormInput from "@/components/forms/FormInput";
 import FormTextarea from "@/components/forms/FormTextarea";
-
-import {
-  useCreateParaMutation,
-  useGetAllParasQuery,
-} from "@/redux/api/paraApi";
-
+import { useCreateParaMutation, useGetAllParaQuery } from "@/redux/api/paraApi";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ParaSchema } from "@/schema/paraSchema";
-
 import { ArrowLeft, Book, Save, Sparkles, CheckCircle2 } from "lucide-react";
-
 import Link from "next/link";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -27,9 +20,7 @@ type TApiError = {
 };
 
 const CreateParaPage: React.FC = () => {
-  const { data: parasData, isLoading: isLoadingParas } = useGetAllParasQuery(
-    {},
-  );
+  const { data: parasData, isLoading: isLoadingParas } = useGetAllParaQuery({});
 
   const [createPara, { isLoading: isSubmitting }] = useCreateParaMutation();
 

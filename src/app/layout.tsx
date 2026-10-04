@@ -37,6 +37,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${amiri.variable} ${scheherazade.variable} ${notoNaskh.variable}`}
     >
       <body className="antialiased">
