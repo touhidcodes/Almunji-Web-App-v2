@@ -209,7 +209,7 @@ const CreateBlogPage: React.FC = () => {
         {/* Footer */}
         <footer className="pb-12 text-center">
           <p className="text-xs font-black uppercase tracking-widest text-gray-400">
-            Almunji Blog Management System
+            Almunji Global Archival System • Blog Services
           </p>
         </footer>
       </div>
