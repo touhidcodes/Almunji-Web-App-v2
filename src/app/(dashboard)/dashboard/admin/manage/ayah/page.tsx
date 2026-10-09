@@ -1,455 +1,582 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Edit, Plus, Search, Trash2, X } from "lucide-react";
+import { toast } from "sonner";
+
 import FormContainer from "@/components/forms/FormContainer";
 import FormInput from "@/components/forms/FormInput";
 import FormSelect from "@/components/forms/FormSelect";
 import FormTextarea from "@/components/forms/FormTextarea";
 import { useDebounce } from "@/hooks/useDebounce";
+
 import {
   useGetAllAyahsQuery,
   useSoftDeleteAyahMutation,
   useUpdateAyahMutation,
 } from "@/redux/api/ayahApi";
-import { useGetAllParasQuery } from "@/redux/api/paraApi";
+import { useGetAllParaQuery } from "@/redux/api/paraApi";
 import { useGetAllSurahQuery } from "@/redux/api/surahApi";
-import { AyahSchema } from "@/schema/ayahSchema";
-import { TAyah, TUpdateAyahPayload } from "@/types/ayah";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  BookOpen,
-  Edit,
-  Eraser,
-  Filter,
-  Layers,
-  Plus,
-  Save,
-  Search,
-  Sparkles,
-  Trash2,
-  X,
-} from "lucide-react";
-import Link from "next/link";
-import React, { useState } from "react";
-import { toast } from "sonner";
 
-const ManageAyahsPage: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [selectedSurah, setSelectedSurah] = useState<string>("");
-  const [editingAyah, setEditingAyah] = useState<TAyah | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+import { AyahSchema } from "@/schema/ayahSchema";
+import type { TAyah, TUpdateAyahPayload } from "@/types/ayah";
+
+type RelatedSurah = {
+  id?: string;
+  chapter?: number;
+  arabic?: string;
+  english?: string;
+  bangla?: string;
+};
+
+type RelatedPara = {
+  id?: string;
+  number?: number;
+  arabic?: string;
+  english?: string;
+  bangla?: string;
+};
+
+type TAyahWithRelations = TAyah & {
+  surah?: RelatedSurah | null;
+  para?: RelatedPara | null;
+};
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "data" in error &&
+    typeof error.data === "object" &&
+    error.data !== null &&
+    "message" in error.data &&
+    typeof error.data.message === "string"
+  ) {
+    return error.data.message;
+  }
+
+  return fallback;
+};
+
+const ManageAyahsPage = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedSurah, setSelectedSurah] = useState("");
+  const [editingAyah, setEditingAyah] = useState<TAyahWithRelations | null>(
+    null,
+  );
+  const [deletingAyah, setDeletingAyah] = useState<TAyahWithRelations | null>(
+    null,
+  );
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  // RTK Query
   const { data: ayahsData, isLoading: isLoadingAyahs } = useGetAllAyahsQuery({
     searchTerm: debouncedSearchTerm,
     surahId: selectedSurah || undefined,
   });
 
   const { data: surahsData } = useGetAllSurahQuery({});
-  const { data: parasData } = useGetAllParasQuery({});
+  const { data: parasData } = useGetAllParaQuery({});
 
   const [updateAyah, { isLoading: isUpdating }] = useUpdateAyahMutation();
-  const [deleteAyah] = useSoftDeleteAyahMutation();
 
-  const handleEditAyah = (ayah: TAyah): void => {
-    setEditingAyah(ayah);
-    setIsEditModalOpen(true);
+  const [softDeleteAyah, { isLoading: isDeleting }] =
+    useSoftDeleteAyahMutation();
+
+  const ayahs = (ayahsData?.data ?? []) as TAyahWithRelations[];
+  const surahs = surahsData?.data ?? [];
+  const paras = parasData?.data ?? [];
+
+  const surahOptions = surahs.map((surah) => ({
+    label: `${surah.chapter}. ${surah.english || surah.arabic}`,
+    value: surah.id,
+  }));
+
+  const paraOptions = paras.map((para) => ({
+    label: `Para ${para.number} - ${para.english || para.arabic}`,
+    value: para.id,
+  }));
+
+  // Resolve Surah from the nested relation first.
+  const getSurah = (ayah: TAyahWithRelations) => {
+    return (
+      ayah.surah ?? surahs.find((surah) => surah.id === ayah.surahId) ?? null
+    );
   };
 
-  const handleDeleteAyah = async (id: string): Promise<void> => {
-    toast.error("Security Override Required", {
-      description: "Are you absolutely sure about this deletion?",
-      action: {
-        label: "Confirm Purge",
-        onClick: async () => {
-          try {
-            await deleteAyah(id).unwrap();
-            toast.success("Ayah purged from repository", {
-              description:
-                "The record has been moved to archival cold storage.",
-            });
-          } catch (error: any) {
-            toast.error(error?.data?.message || "Purge execution failed!");
-          }
-        },
-      },
-    });
+  // Resolve Para from the nested relation first.
+  const getPara = (ayah: TAyahWithRelations) => {
+    return ayah.para ?? paras.find((para) => para.id === ayah.paraId) ?? null;
   };
 
-  const onUpdateSubmit = async (data: TUpdateAyahPayload) => {
+  const getSurahLabel = (ayah: TAyahWithRelations) => {
+    const surah = getSurah(ayah);
+
+    if (!surah) return "Surah unavailable";
+
+    const number = surah.chapter;
+    const name = surah.english || surah.arabic || surah.bangla;
+
+    return `${number ? `${number}. ` : ""}${name || "Unnamed Surah"}`;
+  };
+
+  const getParaLabel = (ayah: TAyahWithRelations) => {
+    const para = getPara(ayah);
+
+    if (!para) return "Para unavailable";
+
+    const number = para.number;
+    const name = para.english || para.arabic || para.bangla;
+
+    return `Para ${number ?? ""}${name ? ` · ${name}` : ""}`.trim();
+  };
+
+  // The form uses relation IDs, so resolve them from the nested
+  // relation when the response does not provide the foreign key.
+  const getSurahId = (ayah: TAyahWithRelations): string => {
+    if (ayah.surahId) return ayah.surahId;
+
+    const relatedSurah = ayah.surah;
+
+    if (!relatedSurah) return "";
+
+    const matchedSurah = surahs.find(
+      (surah) =>
+        (relatedSurah.chapter !== undefined &&
+          surah.chapter === relatedSurah.chapter) ||
+        (!!relatedSurah.english && surah.english === relatedSurah.english),
+    );
+
+    return relatedSurah.id || matchedSurah?.id || "";
+  };
+
+  const getParaId = (ayah: TAyahWithRelations): string => {
+    if (ayah.paraId) return ayah.paraId;
+
+    const relatedPara = ayah.para;
+
+    if (!relatedPara) return "";
+
+    const matchedPara = paras.find(
+      (para) =>
+        (relatedPara.number !== undefined &&
+          para.number === relatedPara.number) ||
+        (!!relatedPara.english && para.english === relatedPara.english),
+    );
+
+    return relatedPara.id || matchedPara?.id || "";
+  };
+
+  const closeEditModal = () => {
+    setEditingAyah(null);
+  };
+
+  const handleUpdate = async (payload: TUpdateAyahPayload) => {
     if (!editingAyah) return;
+
     try {
-      const res = await updateAyah({
+      const response = await updateAyah({
         ayahId: editingAyah.id,
-        payload: data,
+        payload,
       }).unwrap();
-      if (res.success) {
-        toast.success("Metadata synchronization successful", {
-          description: "Transmission of revised verse data completed.",
-        });
-        setIsEditModalOpen(false);
-        setEditingAyah(null);
+
+      if (response.success) {
+        toast.success("Ayah updated successfully.");
+        closeEditModal();
       }
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Metadata transmission failed!");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Failed to update Ayah."));
     }
   };
 
-  const surahOptions =
-    surahsData?.data?.map((s) => ({
-      label: `${s.chapter}. ${s.english || s.arabic}`,
-      value: s.id,
-    })) || [];
+  const handleSoftDelete = async () => {
+    if (!deletingAyah) return;
 
-  const paraOptions =
-    parasData?.data?.map((p) => ({
-      label: `Para ${p.number} - ${p.english || p.arabic}`,
-      value: p.id,
-    })) || [];
+    try {
+      await softDeleteAyah(deletingAyah.id).unwrap();
+
+      toast.success("Ayah deleted successfully.");
+      setDeletingAyah(null);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Failed to delete Ayah."));
+    }
+  };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSelectedSurah("");
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50/50 p-6 lg:p-12 font-poppins">
-      <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700">
-        {/* Header Hub */}
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-          <div className="space-y-2">
-            <div className="flex items-center gap-4">
-              <div className="bg-emerald-600 p-3 rounded-[1.25rem] shadow-2xl shadow-emerald-100 flex items-center justify-center">
-                <Layers className="h-7 w-7 text-white" />
-              </div>
-              <h1 className="text-4xl lg:text-5xl font-black text-gray-900 tracking-tight">
-                Manage Repository
-              </h1>
-            </div>
-            <p className="text-gray-500 font-medium text-sm lg:text-base uppercase tracking-[0.2em] flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-emerald-400" />
-              Global Verse Archive System
+    <main className="min-h-screen bg-gray-50/70 p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl space-y-6">
+        {/* Page header */}
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+              Manage Ayahs
+            </h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Manage Quranic verses and their translations.
             </p>
           </div>
+
           <Link
             href="/dashboard/admin/create/ayah"
-            className="group px-8 py-5 bg-gray-900 hover:bg-black text-white rounded-[1.5rem] flex items-center justify-center gap-3 transition-all shadow-2xl shadow-gray-200 hover:scale-[1.02] active:scale-[0.98] font-black tracking-widest uppercase text-xs"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
           >
-            <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform duration-300" />
-            <span>Establish New Verse</span>
+            <Plus className="h-4 w-4" />
+            Create Ayah
           </Link>
         </header>
 
-        {/* Control Center */}
-        <div className="bg-white rounded-[2.5rem] shadow-xl shadow-gray-200/50 border border-gray-100 p-8 lg:p-10">
-          <div className="flex flex-col lg:flex-row gap-6">
-            <div className="flex-1 relative group">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-emerald-500 h-5 w-5 transition-colors" />
+        {/* Search and filters */}
+        <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(240px,1fr)_minmax(200px,0.7fr)_auto]">
+            <label className="relative block">
+              <span className="sr-only">Search Ayahs</span>
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+
               <input
-                type="text"
-                placeholder="Query by verse content or metadata coordinates..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-14 pr-6 py-5 bg-gray-50 border border-gray-100 rounded-[1.5rem] focus:ring-4 focus:ring-emerald-50 focus:bg-white transition-all outline-none font-medium placeholder:text-gray-300"
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Search Ayah text..."
+                className="w-full rounded-lg border border-gray-200 py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
               />
-            </div>
-            <div className="flex gap-4">
-              <div className="relative flex-1 lg:flex-none">
-                <Filter className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 pointer-events-none" />
-                <select
-                  value={selectedSurah}
-                  onChange={(e) => setSelectedSurah(e.target.value)}
-                  className="pl-12 pr-10 py-5 bg-gray-50 border border-gray-100 rounded-[1.5rem] focus:ring-4 focus:ring-emerald-50 outline-none appearance-none min-w-[240px] font-bold text-gray-600 text-sm cursor-pointer hover:bg-white transition-all uppercase tracking-widest"
-                >
-                  <option value="">All Revelations</option>
-                  {surahOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button
-                onClick={() => {
-                  setSearchTerm("");
-                  setSelectedSurah("");
-                }}
-                className="p-5 bg-gray-50 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-[1.5rem] transition-all"
-                title="Clear Protocol"
+            </label>
+
+            <label className="block">
+              <span className="sr-only">Filter by Surah</span>
+
+              <select
+                value={selectedSurah}
+                onChange={(event) => setSelectedSurah(event.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
               >
-                <Eraser className="h-5 w-5" />
+                <option value="">All Surahs</option>
+
+                {surahOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+            >
+              Clear filters
+            </button>
+          </div>
+        </section>
+
+        {/* Dynamic Ayah table */}
+        <section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 sm:px-5">
+            <h2 className="text-sm font-semibold text-gray-800">
+              Ayah Records
+            </h2>
+
+            <span className="text-xs text-gray-500">
+              {isLoadingAyahs ? "Loading..." : `${ayahs.length} records`}
+            </span>
+          </div>
+
+          {isLoadingAyahs ? (
+            <div className="space-y-3 p-4">
+              {[1, 2, 3].map((item) => (
+                <div
+                  key={item}
+                  className="h-16 animate-pulse rounded-lg bg-gray-100"
+                />
+              ))}
+            </div>
+          ) : ayahs.length === 0 ? (
+            <div className="px-4 py-16 text-center">
+              <h3 className="text-base font-semibold text-gray-800">
+                No Ayahs found
+              </h3>
+
+              <p className="mt-1 text-sm text-gray-500">
+                Try changing your search or filters.
+              </p>
+
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="mt-4 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+              >
+                Clear filters
               </button>
             </div>
-          </div>
-        </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[900px] text-left text-sm">
+                <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold">Number</th>
+                    <th className="px-4 py-3 font-semibold">Surah / Para</th>
+                    <th className="px-4 py-3 font-semibold">Arabic</th>
+                    <th className="px-4 py-3 font-semibold">Translation</th>
+                    <th className="px-4 py-3 text-right font-semibold">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
 
-        {/* Data Stream */}
-        {isLoadingAyahs ? (
-          <div className="grid grid-cols-1 gap-8">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="bg-white rounded-[2.5rem] border border-gray-100 p-10 animate-pulse h-64 shadow-sm"
-              >
-                <div className="flex justify-between items-start mb-8">
-                  <div className="h-8 w-40 bg-gray-100 rounded-xl"></div>
-                  <div className="h-8 w-20 bg-gray-100 rounded-xl"></div>
-                </div>
-                <div className="space-y-4">
-                  <div className="h-4 w-full bg-gray-50 rounded-lg"></div>
-                  <div className="h-4 w-3/4 bg-gray-50 rounded-lg ml-auto"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-10">
-            {ayahsData?.data?.map((ayah) => (
-              <div
-                key={ayah.id}
-                className="bg-white rounded-[3rem] shadow-xl shadow-gray-200/20 border border-gray-100 p-8 lg:p-12 hover:shadow-2xl hover:shadow-emerald-200/10 transition-all group relative overflow-hidden"
-              >
-                <div className="absolute top-0 left-0 w-2 h-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-
-                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-10">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="bg-emerald-600 text-white px-5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-emerald-100">
-                      Verse Coordinates {ayah.number}
-                    </span>
-                    <span className="bg-gray-100 text-gray-500 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                      <BookOpen className="h-3 w-3" />
-                      {ayah.surahId?.slice(0, 8)}...
-                    </span>
-                    <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest font-mono">
-                      UID: {ayah.id}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-all -translate-y-2 group-hover:translate-y-0">
-                    <button
-                      onClick={() => handleEditAyah(ayah)}
-                      className="p-4 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-2xl transition-all shadow-sm"
-                      title="Edit Verse"
+                <tbody className="divide-y divide-gray-100">
+                  {ayahs.map((ayah) => (
+                    <tr
+                      key={ayah.id}
+                      className="align-top transition hover:bg-gray-50/70"
                     >
-                      <Edit className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteAyah(ayah.id)}
-                      className="p-4 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-2xl transition-all shadow-sm"
-                      title="Purge Verse"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </button>
-                  </div>
-                </div>
+                      <td className="whitespace-nowrap px-4 py-4">
+                        <span className="inline-flex min-w-9 items-center justify-center rounded-md bg-emerald-50 px-2.5 py-1.5 font-semibold text-emerald-700">
+                          {ayah.number}
+                        </span>
+                      </td>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-                  <div className="lg:col-span-8 order-2 lg:order-1 space-y-8">
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <div className="h-1 w-6 bg-emerald-200 rounded-full"></div>
-                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">
-                          Interpretation
-                        </h4>
-                      </div>
-                      <p className="text-xl lg:text-2xl font-bold text-gray-900 leading-relaxed italic">
-                        &quot;{ayah.english}&quot;
-                      </p>
-                      {ayah.bangla && (
-                        <p className="text-gray-500 font-medium text-lg border-l-4 border-gray-100 pl-6 py-2">
-                          {ayah.bangla}
+                      <td className="max-w-[240px] px-4 py-4">
+                        <p className="font-medium text-gray-800">
+                          {getSurahLabel(ayah)}
                         </p>
-                      )}
-                    </div>
-                    {ayah.transliteration && (
-                      <div className="bg-gray-50/50 p-6 rounded-[1.5rem] border border-gray-100/50">
-                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-2">
-                          Phonetics
-                        </h4>
-                        <p className="text-gray-400 font-medium italic text-sm">
-                          {ayah.transliteration}
+
+                        <p className="mt-1 text-xs text-gray-500">
+                          {getParaLabel(ayah)}
                         </p>
-                      </div>
-                    )}
-                  </div>
+                      </td>
 
-                  <div className="lg:col-span-4 order-1 lg:order-2">
-                    <div className="text-right space-y-4">
-                      <p className="text-4xl lg:text-5xl font-arabic text-gray-900 leading-[1.8] drop-shadow-sm">
-                        {ayah.arabic}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+                      <td className="max-w-[280px] px-4 py-4">
+                        <p
+                          dir="rtl"
+                          className="line-clamp-3 text-right font-arabic text-xl leading-loose text-gray-900"
+                        >
+                          {ayah.arabic}
+                        </p>
+                      </td>
 
-            {ayahsData?.data?.length === 0 && (
-              <div className="bg-white rounded-[3rem] border-2 border-dashed border-gray-100 p-24 text-center">
-                <div className="bg-emerald-50 w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
-                  <Eraser className="h-10 w-10 text-emerald-200" />
-                </div>
-                <h3 className="text-3xl font-black text-gray-900 mb-4 tracking-tight">
-                  Zero Records Located
-                </h3>
-                <p className="text-gray-400 mb-10 max-w-sm mx-auto font-medium uppercase text-xs tracking-widest leading-loose">
-                  Your current protocol search yielded no data results in the
-                  repository master ledger.
-                </p>
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                  <button
-                    onClick={() => {
-                      setSearchTerm("");
-                      setSelectedSurah("");
-                    }}
-                    className="px-10 py-5 bg-gray-50 text-gray-500 rounded-[1.5rem] font-black uppercase text-xs tracking-widest hover:bg-gray-100 transition-all"
-                  >
-                    Reset Protocol
-                  </button>
-                  <Link
-                    href="/dashboard/admin/create/ayah"
-                    className="group px-10 py-5 bg-emerald-600 text-white rounded-[1.5rem] flex items-center gap-3 transition-all shadow-xl shadow-emerald-100 hover:bg-emerald-700 font-black uppercase text-xs tracking-widest"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Establish New Entry</span>
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+                      <td className="max-w-[360px] px-4 py-4">
+                        <p className="line-clamp-2 leading-6 text-gray-700">
+                          {ayah.english || "—"}
+                        </p>
 
-        {/* Redesigned Edit Modal */}
-        {isEditModalOpen && editingAyah && (
-          <div className="fixed inset-0 bg-gray-900/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col scale-in-center">
-              <div className="p-10 border-b flex justify-between items-center bg-gray-50/30">
-                <div className="flex items-center gap-5">
-                  <div className="bg-emerald-600 text-white w-14 h-14 rounded-3xl flex items-center justify-center font-black text-xl shadow-xl shadow-emerald-100">
-                    {editingAyah.number}
-                  </div>
-                  <div>
-                    <h2 className="text-3xl font-black text-gray-900 tracking-tight">
-                      Sync Metadata
-                    </h2>
-                    <p className="text-xs text-gray-400 font-black uppercase tracking-[0.2em] mt-1">
-                      Refining coordinates and revelation data
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="p-4 hover:bg-white hover:shadow-xl rounded-[1.25rem] transition-all group"
-                >
-                  <X className="h-6 w-6 text-gray-400 group-hover:text-rose-500" />
-                </button>
-              </div>
-
-              <div className="p-12 lg:p-16 overflow-y-auto flex-1 custom-scrollbar">
-                <FormContainer
-                  onSubmit={onUpdateSubmit}
-                  resolver={zodResolver(AyahSchema)}
-                  defaultValues={{
-                    surahId: editingAyah.surahId,
-                    paraId: editingAyah.paraId,
-                    number: editingAyah.number,
-                    arabic: editingAyah.arabic,
-                    transliteration: editingAyah.transliteration || "",
-                    english: editingAyah.english || "",
-                    bangla: editingAyah.bangla || "",
-                  }}
-                >
-                  <div className="space-y-12">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                      <FormSelect
-                        name="surahId"
-                        label="Reveal Source (Surah) *"
-                        options={surahOptions}
-                        required
-                      />
-                      <FormSelect
-                        name="paraId"
-                        label="Structural Unit (Para) *"
-                        options={paraOptions}
-                        required
-                      />
-                      <FormInput
-                        name="number"
-                        label="Coordinate (Ayah) *"
-                        type="number"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-10">
-                      <div className="flex items-center gap-2">
-                        <div className="h-1 w-8 bg-emerald-500 rounded-full"></div>
-                        <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">
-                          Sacred Text Archival
-                        </h3>
-                      </div>
-
-                      <FormTextarea
-                        name="arabic"
-                        label="Original Revelation Text *"
-                        rows={4}
-                        className="text-right text-4xl font-arabic h-48 leading-[1.8] p-10 bg-gray-50/30 border-gray-100 focus:bg-white focus:border-emerald-500 rounded-[2rem]"
-                        required
-                      />
-
-                      <FormTextarea
-                        name="transliteration"
-                        label="Phonetics Data"
-                        rows={2}
-                        className="bg-gray-50/30 border-gray-100 rounded-2xl italic font-medium p-6"
-                      />
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                        <FormTextarea
-                          name="english"
-                          label="English Linguistic Map"
-                          rows={4}
-                          className="bg-gray-50/30 border-gray-100 rounded-[2rem] p-8"
-                        />
-                        <FormTextarea
-                          name="bangla"
-                          label="Bangla Semantic Map"
-                          rows={4}
-                          className="bg-gray-50/30 border-gray-100 rounded-[2rem] p-8"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row justify-end gap-6 pt-12 border-t border-gray-50">
-                      <button
-                        type="button"
-                        onClick={() => setIsEditModalOpen(false)}
-                        className="px-10 py-5 text-gray-400 font-bold uppercase tracking-widest text-[10px] hover:text-rose-500 transition-colors"
-                      >
-                        Discard Revisions
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={isUpdating}
-                        className="px-16 py-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[1.5rem] flex items-center justify-center gap-3 transition-all shadow-2xl shadow-emerald-100 font-black tracking-widest uppercase text-xs disabled:opacity-50"
-                      >
-                        {isUpdating ? (
-                          <>
-                            <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                            <span>Syncing...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Save className="h-5 w-5" />
-                            <span>Confirm Metadata Sync</span>
-                          </>
+                        {ayah.bangla && (
+                          <p className="mt-1 line-clamp-2 text-xs leading-5 text-gray-500">
+                            {ayah.bangla}
+                          </p>
                         )}
-                      </button>
-                    </div>
-                  </div>
-                </FormContainer>
-              </div>
+
+                        {ayah.transliteration && (
+                          <p className="mt-1 line-clamp-1 text-xs italic text-gray-400">
+                            {ayah.transliteration}
+                          </p>
+                        )}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-4">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setEditingAyah(ayah)}
+                            aria-label={`Edit Ayah ${ayah.number}`}
+                            className="rounded-lg border border-gray-200 p-2 text-gray-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setDeletingAyah(ayah)}
+                            aria-label={`Delete Ayah ${ayah.number}`}
+                            className="rounded-lg border border-gray-200 p-2 text-gray-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
-        )}
+          )}
+        </section>
       </div>
-    </div>
+
+      {/* Edit modal */}
+      {editingAyah && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 p-3 backdrop-blur-sm sm:p-6"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeEditModal();
+            }
+          }}
+        >
+          <section className="flex max-h-[95vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <header className="flex items-center justify-between border-b border-gray-200 px-5 py-4 sm:px-6">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Edit Ayah
+                </h2>
+
+                <p className="mt-1 text-sm text-gray-500">
+                  Update the Ayah details below.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeEditModal}
+                aria-label="Close edit modal"
+                className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </header>
+
+            <div className="overflow-y-auto p-5 sm:p-6">
+              <FormContainer
+                key={editingAyah.id}
+                onSubmit={handleUpdate}
+                resolver={zodResolver(AyahSchema)}
+                defaultValues={{
+                  surahId: getSurahId(editingAyah),
+                  paraId: getParaId(editingAyah),
+                  number: editingAyah.number,
+                  arabic: editingAyah.arabic,
+                  transliteration: editingAyah.transliteration || "",
+                  english: editingAyah.english || "",
+                  bangla: editingAyah.bangla || "",
+                }}
+              >
+                <div className="space-y-5">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <FormSelect
+                      name="surahId"
+                      label="Surah"
+                      options={surahOptions}
+                      required
+                    />
+
+                    <FormSelect
+                      name="paraId"
+                      label="Para"
+                      options={paraOptions}
+                      required
+                    />
+
+                    <FormInput
+                      name="number"
+                      label="Ayah number"
+                      type="number"
+                      required
+                    />
+                  </div>
+
+                  <FormTextarea
+                    name="arabic"
+                    label="Arabic text"
+                    rows={4}
+                    required
+                    className="text-right font-arabic text-2xl leading-loose"
+                  />
+
+                  <FormTextarea
+                    name="transliteration"
+                    label="Transliteration"
+                    rows={2}
+                  />
+
+                  <FormTextarea
+                    name="english"
+                    label="English translation"
+                    rows={3}
+                  />
+
+                  <FormTextarea
+                    name="bangla"
+                    label="Bangla translation"
+                    rows={3}
+                  />
+
+                  <footer className="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
+                    <button
+                      type="button"
+                      onClick={closeEditModal}
+                      className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={isUpdating}
+                      className="rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isUpdating ? "Saving..." : "Save changes"}
+                    </button>
+                  </footer>
+                </div>
+              </FormContainer>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {/* Soft-delete confirmation */}
+      {deletingAyah && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 p-4 backdrop-blur-sm">
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-ayah-title"
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+          >
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
+              <Trash2 className="h-5 w-5" />
+            </div>
+
+            <h2
+              id="delete-ayah-title"
+              className="mt-4 text-lg font-semibold text-gray-900"
+            >
+              Delete Ayah?
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-gray-500">
+              Ayah {deletingAyah.number} from {getSurahLabel(deletingAyah)} will
+              be soft-deleted, not permanently removed from the database.
+            </p>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeletingAyah(null)}
+                disabled={isDeleting}
+                className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:opacity-60"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSoftDelete}
+                disabled={isDeleting}
+                className="rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+    </main>
   );
 };
 
