@@ -124,12 +124,12 @@ export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
             },
             {
               label: "Manage Surah",
-              href: "/dashboard/admin/manage/surahs",
+              href: "/dashboard/admin/manage/surah",
               icon: FilePen,
             },
             {
               label: "Manage Ayah",
-              href: "/dashboard/admin/manage/ayahs",
+              href: "/dashboard/admin/manage/ayah",
               icon: FilePen,
             },
             {
