@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CategoryFilter, TBook, ViewMode } from "@/types/book";
 import {
   Award,
   BookMarked,
@@ -29,42 +30,12 @@ import {
 } from "lucide-react";
 import React, { useState } from "react";
 
-interface Book {
-  id: string;
-  title: string;
-  author: string;
-  category: string;
-  progress: number;
-  totalPages: number;
-  currentPage: number;
-  totalChapters?: number;
-  currentChapter?: number;
-  lastRead: string;
-  lastReadDate: Date;
-  cover: string;
-  rating?: number;
-  readingTime: string;
-  isCompleted: boolean;
-  tags: string[];
-  description: string;
-}
-
-type ViewMode = "grid" | "list";
-type CategoryFilter =
-  | "all"
-  | "hadith"
-  | "tafsir"
-  | "seerah"
-  | "fiqh"
-  | "aqidah"
-  | "other";
-
 const ReadingsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
 
-  const books: Book[] = [
+  const books: TBook[] = [
     {
       id: "sahih-bukhari",
       title: "Sahih al-Bukhari",

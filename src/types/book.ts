@@ -1,5 +1,5 @@
 export interface TBook {
-  id: number;
+  id: number | string;
   title: string;
   author: string;
   description: string;
@@ -38,3 +38,33 @@ export interface TBookCategory {
   count: number;
   icon: any;
 }
+
+export interface Book {
+  id: string;
+  title: string;
+  author: string;
+  category: string;
+  progress: number;
+  totalPages: number;
+  currentPage: number;
+  totalChapters?: number;
+  currentChapter?: number;
+  lastRead: string;
+  lastReadDate: Date;
+  cover: string;
+  rating?: number;
+  readingTime: string;
+  isCompleted: boolean;
+  tags: string[];
+  description: string;
+}
+
+export type ViewMode = "grid" | "list";
+export type CategoryFilter =
+  | "all"
+  | "hadith"
+  | "tafsir"
+  | "seerah"
+  | "fiqh"
+  | "aqidah"
+  | "other";
