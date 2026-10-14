@@ -24,8 +24,8 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
 export default function ManageBookPage() {
   const [deleteBook] = useSoftDeleteBookMutation();
 
-  const { data: booksData, isLoading } = useGetAllBooksAdminQuery();
-  const books = booksData?.data || [];
+  const { data: booksData, isLoading } = useGetAllBooksAdminQuery({});
+  const books = (booksData?.data as TAdminBook[]) ?? [];
 
   const handleDelete = async (id: string) => {
     if (confirm("Delete this book?")) {
@@ -57,7 +57,7 @@ export default function ManageBookPage() {
             <div className="p-8 text-center text-gray-500">No books found</div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {books.map((b: TAdminBook) => (
+              {books.map((b) => (
                 <div key={b.id} className="flex items-center justify-between p-4">
                   <div>
                     <h3 className="font-semibold text-gray-900">{b.name}</h3>

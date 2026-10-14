@@ -30,8 +30,8 @@ export default function PermissionsPage() {
   const [assignBulkPermissions, { isLoading: isAssigning }] = useAssignBulkPermissionsMutation();
   const [removePermission] = useRemovePermissionMutation();
 
-  const { data: permissionsData, isLoading: permissionsLoading } = useGetAllPermissionsQuery();
-  const { data: usersData, isLoading: usersLoading } = useGetAllUsersQuery();
+  const { data: permissionsData, isLoading: permissionsLoading } = useGetAllPermissionsQuery(undefined);
+  const { data: usersData, isLoading: usersLoading } = useGetAllUsersQuery(undefined);
   
   // Fetch user's current permissions when user is selected
   const { data: userPermissionsData, isLoading: userPermissionsLoading } = useGetUserPermissionsQuery(selectedUser, { skip: !selectedUser });
