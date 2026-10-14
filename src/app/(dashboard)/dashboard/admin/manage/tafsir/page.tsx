@@ -25,7 +25,7 @@ export default function ManageTafsirPage() {
   const [deleteTafsir] = useSoftDeleteTafsirMutation();
 
   const { data: tafsirData, isLoading } = useGetAllTafsirAdminQuery();
-  const tafsirs = tafsirData?.data || [];
+  const tafsirs = (tafsirData?.data as TTafsir[]) ?? [];
 
   const handleDelete = async (id: string) => {
     if (confirm("Delete this tafsir?")) {
@@ -57,7 +57,7 @@ export default function ManageTafsirPage() {
             <div className="p-8 text-center text-gray-500">No tafsir found</div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {tafsirs.map((t: TTafsir) => (
+              {tafsirs.map((t) => (
                 <div key={t.id} className="flex items-center justify-between p-4">
                   <div>
                     <h3 className="font-semibold text-gray-900">{t.heading || "Tafsir"}</h3>
