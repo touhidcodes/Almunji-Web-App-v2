@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useGetAllPermissionsQuery, useAssignBulkPermissionsMutation, useGetUserPermissionsQuery, useRemovePermissionMutation } from "@/redux/api/permissionApi";
 import { useGetAllUsersQuery } from "@/redux/api/userApi";
+import type { UserPermission } from "@/types/user";
 import { Shield, Users, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,7 +43,7 @@ export default function PermissionsPage() {
   useEffect(() => {
     if (userPermissionsData?.data) {
       // Map the user permissions to permission IDs
-      const permIds = (userPermissionsData.data as any[]).map((up: any) => up.permission.id);
+      const permIds = (userPermissionsData.data as UserPermission[]).map((up) => up.permission!.id);
       setCurrentPermissions(permIds);
       setSelectedPermissions(permIds); // Initialize selection
     } else {

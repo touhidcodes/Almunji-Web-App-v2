@@ -1,3 +1,19 @@
+export type TTafsir = {
+  id: string;
+  ayahId: string;
+  heading?: string | null;
+  summaryBn?: string | null;
+  summaryEn?: string | null;
+  detailBn?: string | null;
+  detailEn?: string | null;
+  scholar?: string | null;
+  reference?: string | null;
+  tags?: string | null;
+  isDeleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type TTafsirQueryParams = {
   page?: number;
   limit?: number;

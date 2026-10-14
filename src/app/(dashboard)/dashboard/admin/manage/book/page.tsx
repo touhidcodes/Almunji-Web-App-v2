@@ -1,8 +1,25 @@
 "use client";
 
 import { useGetAllBooksAdminQuery, useSoftDeleteBookMutation } from "@/redux/api/bookApi";
+import type { TAdminBook } from "@/types/book";
 import { Book } from "lucide-react";
 import { toast } from "sonner";
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "data" in error &&
+    typeof (error as { data: unknown }).data === "object" &&
+    (error as { data: unknown }).data !== null &&
+    "message" in (error as { data: { message: unknown } }).data &&
+    typeof (error as { data: { message: unknown } }).data.message === "string"
+  ) {
+    return (error as { data: { message: string } }).data.message;
+  }
+  return fallback;
+};
+
 
 export default function ManageBookPage() {
   const [deleteBook] = useSoftDeleteBookMutation();
@@ -15,8 +32,8 @@ export default function ManageBookPage() {
       try {
         await deleteBook(id).unwrap();
         toast.success("Book deleted");
-      } catch (error: any) {
-        toast.error(error?.data?.message || "Failed to delete");
+      } catch (error: unknown) {
+        toast.error(getErrorMessage(error, "Failed to delete"));
       }
     }
   };
@@ -40,7 +57,7 @@ export default function ManageBookPage() {
             <div className="p-8 text-center text-gray-500">No books found</div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {books.map((b: any) => (
+              {books.map((b: TAdminBook) => (
                 <div key={b.id} className="flex items-center justify-between p-4">
                   <div>
                     <h3 className="font-semibold text-gray-900">{b.name}</h3>

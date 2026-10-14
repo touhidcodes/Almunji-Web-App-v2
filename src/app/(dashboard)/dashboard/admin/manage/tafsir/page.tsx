@@ -1,8 +1,25 @@
 "use client";
 
 import { useGetAllTafsirAdminQuery, useSoftDeleteTafsirMutation } from "@/redux/api/tafsirApi";
+import type { TTafsir } from "@/types/tafsir";
 import { BookOpen } from "lucide-react";
 import { toast } from "sonner";
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "data" in error &&
+    typeof (error as { data: unknown }).data === "object" &&
+    (error as { data: unknown }).data !== null &&
+    "message" in (error as { data: { message: unknown } }).data &&
+    typeof (error as { data: { message: unknown } }).data.message === "string"
+  ) {
+    return (error as { data: { message: string } }).data.message;
+  }
+  return fallback;
+};
+
 
 export default function ManageTafsirPage() {
   const [deleteTafsir] = useSoftDeleteTafsirMutation();
@@ -15,8 +32,8 @@ export default function ManageTafsirPage() {
       try {
         await deleteTafsir(id).unwrap();
         toast.success("Tafsir deleted");
-      } catch (error: any) {
-        toast.error(error?.data?.message || "Failed to delete");
+      } catch (error: unknown) {
+        toast.error(getErrorMessage(error, "Failed to delete"));
       }
     }
   };
@@ -40,7 +57,7 @@ export default function ManageTafsirPage() {
             <div className="p-8 text-center text-gray-500">No tafsir found</div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {tafsirs.map((t: any) => (
+              {tafsirs.map((t: TTafsir) => (
                 <div key={t.id} className="flex items-center justify-between p-4">
                   <div>
                     <h3 className="font-semibold text-gray-900">{t.heading || "Tafsir"}</h3>

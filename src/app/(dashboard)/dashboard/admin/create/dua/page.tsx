@@ -10,11 +10,30 @@ import { ArrowLeft, Book, Save, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import FormTags from "@/components/forms/FormTags";
+import type { z } from "zod/v3";
+
+type TDuaFormValues = z.infer<typeof DuaSchema>;
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "data" in error &&
+    typeof (error as { data: unknown }).data === "object" &&
+    (error as { data: unknown }).data !== null &&
+    "message" in (error as { data: { message: unknown } }).data &&
+    typeof (error as { data: { message: unknown } }).data.message === "string"
+  ) {
+    return (error as { data: { message: string } }).data.message;
+  }
+  return fallback;
+};
+
 
 const CreateDuaPage: React.FC = () => {
   const [createDua, { isLoading: isSubmitting }] = useCreateDuaMutation();
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: TDuaFormValues) => {
     try {
       const res = await createDua(data).unwrap();
       if (res.success) {
@@ -22,8 +41,8 @@ const CreateDuaPage: React.FC = () => {
           description: "Supplication has been added to the database.",
         });
       }
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Data synchronization failed!");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Data synchronization failed!"));
     }
   };
 

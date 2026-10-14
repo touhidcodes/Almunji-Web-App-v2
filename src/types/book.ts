@@ -1,3 +1,15 @@
+import type { ElementType } from "react";
+
+export interface TAdminBook {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  isDeleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface TBook {
   id: number | string;
   title: string;
@@ -36,7 +48,7 @@ export interface TLibraryBook {
 export interface TBookCategory {
   name: string;
   count: number;
-  icon: any;
+  icon: ElementType;
 }
 
 export interface Book {

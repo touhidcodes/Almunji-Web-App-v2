@@ -7,7 +7,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import z from "zod/v3";
 import { ArrowLeft, Save, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 import { toast } from "sonner";
 
 const CategorySchema = z.object({
@@ -16,10 +15,27 @@ const CategorySchema = z.object({
   isDeleted: z.boolean().optional(),
 });
 
+type TCategoryFormValues = z.infer<typeof CategorySchema>;
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "data" in error &&
+    typeof (error as { data: unknown }).data === "object" &&
+    (error as { data: unknown }).data !== null &&
+    "message" in (error as { data: { message: unknown } }).data &&
+    typeof (error as { data: { message: unknown } }).data.message === "string"
+  ) {
+    return (error as { data: { message: string } }).data.message;
+  }
+  return fallback;
+};
+
 const CreateCategoryPage: React.FC = () => {
   const [createCategory, { isLoading: isSubmitting }] = useCreateCategoryMutation();
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: TCategoryFormValues) => {
     try {
       const res = await createCategory(data).unwrap();
       if (res.success) {
@@ -27,8 +43,8 @@ const CreateCategoryPage: React.FC = () => {
           description: "Category has been added to the system.",
         });
       }
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Failed to create category!");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Failed to create category!"));
     }
   };
 
