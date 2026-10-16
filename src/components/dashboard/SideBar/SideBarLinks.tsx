@@ -16,6 +16,11 @@ import {
   Bookmark,
   BookOpen,
   Globe,
+  BookMarked,
+  Heart,
+  FolderOpen,
+  Users,
+  FileText,
 } from "lucide-react";
 
 type SidebarGroup = {
@@ -55,7 +60,7 @@ export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
     case authRole.ADMIN:
       return [
         {
-          section: "Analytics",
+          section: "Dashboard",
           items: [
             {
               label: "Overview",
@@ -63,9 +68,74 @@ export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
               icon: ChartPie,
             },
             {
-              label: "Logs",
+              label: "System Logs",
               href: "/dashboard/admin/logs",
               icon: Logs,
+            },
+          ],
+        },
+        {
+          section: "Quran Management",
+          items: [
+            {
+              label: "Paras",
+              href: "/dashboard/admin/manage/para",
+              icon: BookOpen,
+            },
+            {
+              label: "Surahs",
+              href: "/dashboard/admin/manage/surah",
+              icon: BookOpen,
+            },
+            {
+              label: "Ayahs",
+              href: "/dashboard/admin/manage/ayah",
+              icon: BookOpen,
+            },
+          ],
+        },
+        {
+          section: "Islamic Resources",
+          items: [
+            {
+              label: "Duas",
+              href: "/dashboard/admin/manage/dua",
+              icon: Heart,
+            },
+            {
+              label: "Dictionary",
+              href: "/dashboard/admin/manage/dictionary",
+              icon: Globe,
+            },
+            {
+              label: "Books",
+              href: "/dashboard/admin/manage/book",
+              icon: BookMarked,
+            },
+          ],
+        },
+        {
+          section: "Content Management",
+          items: [
+            {
+              label: "Blogs",
+              href: "/dashboard/admin/manage/blog",
+              icon: FileText,
+            },
+            {
+              label: "Categories",
+              href: "/dashboard/admin/manage/category",
+              icon: FolderOpen,
+            },
+          ],
+        },
+        {
+          section: "User Management",
+          items: [
+            {
+              label: "Users",
+              href: "/dashboard/admin/manage/users",
+              icon: Users,
             },
           ],
         },
@@ -93,7 +163,7 @@ export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
               icon: FilePlus2,
             },
             {
-              label: "Add Words",
+              label: "Add Dictionary Word",
               href: "/dashboard/admin/create/dictionary",
               icon: FilePlus2,
             },
@@ -114,68 +184,13 @@ export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
             },
           ],
         },
-        {
-          section: "Manage",
-          items: [
-            {
-              label: "Manage Para",
-              href: "/dashboard/admin/manage/para",
-              icon: FilePen,
-            },
-            {
-              label: "Manage Surah",
-              href: "/dashboard/admin/manage/surah",
-              icon: FilePen,
-            },
-            {
-              label: "Manage Ayah",
-              href: "/dashboard/admin/manage/ayah",
-              icon: FilePen,
-            },
-            {
-              label: "Manage Dua",
-              href: "/dashboard/admin/manage/dua",
-              icon: FilePen,
-            },
-            {
-              label: "Manage Words",
-              href: "/dashboard/admin/manage/dictionary",
-              icon: FilePen,
-            },
-            {
-              label: "Manage Blog",
-              href: "/dashboard/admin/manage/blog",
-              icon: FilePen,
-            },
-            {
-              label: "Manage Category",
-              href: "/dashboard/admin/manage/category",
-              icon: FilePen,
-            },
-            {
-              label: "Manage Book",
-              href: "/dashboard/admin/manage/book",
-              icon: FilePen,
-            },
-            {
-              label: "Manage Users",
-              href: "/dashboard/admin/manage/users",
-              icon: User,
-            },
-            {
-              label: "Permissions",
-              href: "/dashboard/admin/permissions",
-              icon: KeyRound,
-            },
-          ],
-        },
         ...defaultItems,
       ];
 
     case authRole.MODERATOR:
       return [
         {
-          section: "Analytics",
+          section: "Dashboard",
           items: [
             {
               label: "Overview",
@@ -185,26 +200,16 @@ export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
           ],
         },
         {
-          section: "Content Management",
+          section: "Quran Management",
           items: [
             {
-              label: "Dictionary",
-              href: "/dashboard/moderator/dictionary",
-              icon: Globe,
-            },
-            {
-              label: "Duas",
-              href: "/dashboard/moderator/manage/dua",
+              label: "Paras",
+              href: "/dashboard/moderator/manage/para",
               icon: BookOpen,
             },
             {
               label: "Surahs",
               href: "/dashboard/moderator/manage/surahs",
-              icon: BookOpen,
-            },
-            {
-              label: "Para",
-              href: "/dashboard/moderator/manage/para",
               icon: BookOpen,
             },
             {
@@ -217,18 +222,38 @@ export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
               href: "/dashboard/moderator/manage/tafsir",
               icon: BookOpen,
             },
+          ],
+        },
+        {
+          section: "Islamic Resources",
+          items: [
+            {
+              label: "Dictionary",
+              href: "/dashboard/moderator/dictionary",
+              icon: Globe,
+            },
+            {
+              label: "Duas",
+              href: "/dashboard/moderator/manage/dua",
+              icon: Heart,
+            },
             {
               label: "Books",
               href: "/dashboard/moderator/manage/book",
-              icon: BookOpen,
+              icon: BookMarked,
             },
+          ],
+        },
+        {
+          section: "Content Management",
+          items: [
             {
               label: "Categories",
               href: "/dashboard/moderator/manage/category",
-              icon: BookOpen,
+              icon: FolderOpen,
             },
             {
-              label: "Blog",
+              label: "Blogs",
               href: "/dashboard/moderator/manage/blog",
               icon: FilePen,
             },
@@ -245,7 +270,7 @@ export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
     case authRole.USER:
       return [
         {
-          section: "Analytics",
+          section: "Dashboard",
           items: [
             {
               label: "Overview",
@@ -265,7 +290,7 @@ export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
             {
               label: "Daily Duas",
               href: "/dashboard/user/daily",
-              icon: Bookmark,
+              icon: Heart,
             },
           ],
         },
@@ -275,7 +300,7 @@ export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
             {
               label: "Books",
               href: "/dashboard/user/readings",
-              icon: Bookmark,
+              icon: BookMarked,
             },
           ],
         },

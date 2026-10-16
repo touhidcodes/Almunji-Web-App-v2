@@ -771,7 +771,6 @@ export default function LogsPage() {
                       Timestamp
                     </th>
                     <th className="px-4 py-3.5 font-medium">Level</th>
-                    <th className="px-4 py-3.5 font-medium">Category</th>
                     <th className="px-4 py-3.5 font-medium">Message</th>
                     <th className="px-4 py-3.5 font-medium">Request</th>
                     <th className="px-4 py-3.5 font-medium">Status</th>
@@ -797,12 +796,6 @@ export default function LogsPage() {
                           className={`inline-flex rounded-md px-2 py-1 text-xs font-semibold capitalize ring-1 ring-inset ${levelStyles(log.level)}`}
                         >
                           {log.level}
-                        </span>
-                      </td>
-
-                      <td className="whitespace-nowrap px-4 py-4">
-                        <span className="rounded-md border px-2 py-1 text-xs font-medium">
-                          {log.category}
                         </span>
                       </td>
 
