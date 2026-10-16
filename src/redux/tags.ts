@@ -16,6 +16,7 @@ export enum tagTypes {
   tafsir = "tafsir",
   bookmark = "bookmark",
   dashboard = "dashboard",
+  logs = "logs",
 }
 
 export const tagTypesList = [
@@ -36,4 +37,5 @@ export const tagTypesList = [
   tagTypes.tafsir,
   tagTypes.bookmark,
   tagTypes.dashboard,
+  tagTypes.logs,
 ];
