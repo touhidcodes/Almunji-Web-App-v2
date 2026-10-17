@@ -13,38 +13,12 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
-
 import FormContainer from "@/components/forms/FormContainer";
 import FormInput from "@/components/forms/FormInput";
 import { useChangePasswordMutation } from "@/redux/api/authApi";
-
-const ChangePasswordSchema = z
-  .object({
-    currentPassword: z.string().min(1, "Current password is required"),
-    newPassword: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .max(128, "Password must not exceed 128 characters"),
-    confirmPassword: z.string().min(1, "Please confirm your new password"),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  })
-  .refine((data) => data.currentPassword !== data.newPassword, {
-    message: "New password must differ from your current password",
-    path: ["newPassword"],
-  });
-
-type TChangePasswordForm = z.infer<typeof ChangePasswordSchema>;
-
-type TApiError = {
-  data?: {
-    message?: string;
-  };
-  message?: string;
-};
+import { ChangePasswordSchema, TChangePasswordForm } from "@/schema/authSchema";
+import { TApiError } from "@/types/api";
+import { userLogout } from "@/services/actions/logoutUser";
 
 const ChangePasswordPage: React.FC = () => {
   const [changePassword, { isLoading }] = useChangePasswordMutation();
@@ -62,16 +36,16 @@ const ChangePasswordPage: React.FC = () => {
 
       if (result.success) {
         toast.success(result.message || "Password changed successfully.");
+
+        // Log out the user after changing the password.
+        await userLogout();
+        return;
       } else {
         toast.error(result.message || "Failed to change password.");
         return;
       }
-
-      // Never keep password values in the form after a successful update.
-      window.location.reload();
     } catch (error: unknown) {
       const apiError = error as TApiError;
-
       toast.error(
         apiError.data?.message ||
           apiError.message ||
@@ -159,7 +133,7 @@ const ChangePasswordPage: React.FC = () => {
                       onClick={() =>
                         setShowCurrentPassword((visible) => !visible)
                       }
-                      className="absolute right-3 top-[38px] rounded-md p-1 text-gray-400 transition hover:text-teal-600"
+                      className="absolute right-3 top-7 rounded-md p-1 text-gray-400 transition hover:text-teal-600"
                     >
                       {showCurrentPassword ? (
                         <EyeOff className="h-5 w-5" />
@@ -186,7 +160,7 @@ const ChangePasswordPage: React.FC = () => {
                           : "Show new password"
                       }
                       onClick={() => setShowNewPassword((visible) => !visible)}
-                      className="absolute right-3 top-[38px] rounded-md p-1 text-gray-400 transition hover:text-teal-600"
+                      className="absolute right-3 top-7 rounded-md p-1 text-gray-400 transition hover:text-teal-600"
                     >
                       {showNewPassword ? (
                         <EyeOff className="h-5 w-5" />
@@ -215,7 +189,7 @@ const ChangePasswordPage: React.FC = () => {
                       onClick={() =>
                         setShowConfirmPassword((visible) => !visible)
                       }
-                      className="absolute right-3 top-[38px] rounded-md p-1 text-gray-400 transition hover:text-teal-600"
+                      className="absolute right-3 top-7 rounded-md p-1 text-gray-400 transition hover:text-teal-600"
                     >
                       {showConfirmPassword ? (
                         <EyeOff className="h-5 w-5" />

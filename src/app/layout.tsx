@@ -2,6 +2,7 @@ import Providers from "@/providers/providers";
 import type { Metadata } from "next";
 import { Amiri, Noto_Naskh_Arabic, Scheherazade_New } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "sonner";
 
 const amiri = Amiri({
   weight: ["400", "700"],
@@ -42,6 +43,7 @@ export default function RootLayout({
     >
       <body className="antialiased">
         <Providers>{children}</Providers>
+        <Toaster position="top-right" richColors closeButton duration={3000} />
       </body>
     </html>
   );
