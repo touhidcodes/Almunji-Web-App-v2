@@ -2,14 +2,14 @@ import z from "zod/v3";
 import { UserRoleEnum, UserStatusEnum } from "./enums";
 
 export const UserProfileSchema = z.object({
-  id: z.string().uuid().optional(),
-  userId: z.string().uuid(),
-  name: z.string().min(1).optional(),
-  image: z.string().url().optional(),
-  bio: z.string().optional(),
-  profession: z.string().optional(),
-  address: z.string().optional(),
+  name: z.string().trim(),
+  image: z.string().trim(),
+  bio: z.string().trim(),
+  profession: z.string().trim(),
+  address: z.string().trim(),
 });
+
+export type TUserProfileForm = z.infer<typeof UserProfileSchema>;
 
 export const UserSchema = z.object({
   id: z.string().uuid().optional(),

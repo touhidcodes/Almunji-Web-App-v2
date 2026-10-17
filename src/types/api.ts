@@ -3,3 +3,10 @@ export interface TApiResponse<T> {
   message: string;
   data: T;
 }
+
+export type TApiError = {
+  data?: {
+    message?: string;
+  };
+  message?: string;
+};

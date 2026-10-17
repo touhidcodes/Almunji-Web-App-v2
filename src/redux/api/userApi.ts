@@ -1,3 +1,4 @@
+import { TApiResponse } from "@/types/api";
 import { tagTypes } from "../tags";
 import { baseServerApi } from "./baseApi";
 
@@ -28,12 +29,6 @@ export type TUpdateProfilePayload = {
   bio: string;
   profession: string;
   address: string;
-};
-
-type TApiResponse<T> = {
-  success: boolean;
-  message: string;
-  data: T;
 };
 
 export const userApi = baseServerApi.injectEndpoints({

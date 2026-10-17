@@ -19,22 +19,24 @@ export interface TUser {
   status: UserStatus;
   createdAt: Date;
   updatedAt: Date;
-  profile?: UserProfile | null;
+  profile?: TUserProfile | null;
   permissions?: UserPermission[];
   Bookmark?: Bookmark[];
 }
 
-export interface UserProfile {
+export type TUserProfile = {
   id: string;
-  userId: string;
+  userId?: string;
   name?: string | null;
+  username?: string | null;
+  email?: string | null;
   image?: string | null;
   bio?: string | null;
   profession?: string | null;
   address?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
+  role?: string | null;
+  status?: string | null;
+};
 
 export interface Permission {
   id: string;
