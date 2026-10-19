@@ -1,4 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { Eye, EyeOff } from "lucide-react";
 import { Controller, useFormContext } from "react-hook-form";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -21,6 +25,10 @@ const FormInput = ({
   className,
 }: TFormInputProps) => {
   const { control } = useFormContext();
+  const [showPassword, setShowPassword] = useState(false);
+
+  const isPassword = type === "password";
+  const inputType = isPassword && showPassword ? "text" : type;
 
   return (
     <Controller
@@ -31,24 +39,46 @@ const FormInput = ({
           {label && (
             <Label htmlFor={name} className={cn(error && "text-destructive")}>
               {label}
-              {required && <span className="text-destructive">{` `}*</span>}
+              {required && <span className="text-destructive"> *</span>}
             </Label>
           )}
 
-          <Input
-            {...field}
-            id={name}
-            type={type}
-            placeholder={placeholder || label}
-            className={cn(
-              "focus-visible:border-teal-500 focus-visible:ring-teal-100 focus-visible:ring-2",
-              className || "w-full bg-secondary shadow-none",
-              error && "border-destructive focus-visible:ring-destructive"
+          <div className="relative">
+            <Input
+              {...field}
+              id={name}
+              type={inputType}
+              required={required}
+              placeholder={placeholder || label}
+              className={cn(
+                "focus-visible:border-teal-500 focus-visible:ring-2 focus-visible:ring-teal-100",
+                isPassword && "pr-11",
+                className || "w-full bg-secondary shadow-none",
+                error && "border-destructive focus-visible:ring-destructive",
+              )}
+            />
+
+            {isPassword && (
+              <button
+                type="button"
+                onClick={() => setShowPassword((previous) => !previous)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-md text-muted-foreground transition-colors hover:text-teal-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-500"
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
             )}
-          />
+          </div>
 
           {error?.message && (
-            <p className="text-[0.8rem] text-destructive">{error.message}</p>
+            <p className="text-[0.8rem] text-destructive">
+              {String(error.message)}
+            </p>
           )}
         </div>
       )}
