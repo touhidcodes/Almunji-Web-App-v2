@@ -4,6 +4,7 @@ import Sidebar from "@/components/dashboard/Sidebar/SideBar";
 import DashboardAuthButton from "@/components/shared/AuthButton/DashboardAuthButton";
 import DynamicBreadcrumb from "@/components/shared/Breadcrumb/DynamicBreadcrumb";
 import { Button } from "@/components/ui/button";
+import { useAuth, useRole } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import {
   PanelRightOpen,
@@ -21,6 +22,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const { user, loading } = useRole(["ADMIN", "MODERATOR"]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const toggleSidebar = () => setSidebarOpen((prev) => !prev);
@@ -43,7 +45,7 @@ export default function DashboardLayout({
         {/* Dashboard Header */}
         <header className="sticky top-0 z-40 border-b border-gray-200/80 bg-white/95 backdrop-blur-md">
           {/* Main navbar */}
-          <div className="flex min-h-[68px] items-center justify-between gap-3 px-3 sm:px-5 lg:px-7">
+          <div className="flex min-h-[60px] items-center justify-between gap-3 px-3 sm:px-5 lg:px-7">
             {/* Left section */}
             <div className="flex min-w-0 items-center gap-2 sm:gap-3">
               <Button
@@ -143,20 +145,35 @@ export default function DashboardLayout({
           </div>
 
           {/* Secondary breadcrumb strip */}
-          <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/70 px-4 py-2 sm:px-6 lg:px-7">
-            <div className="flex min-w-0 items-center gap-2 text-xs text-gray-500">
-              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-teal-500" />
-              <span className="truncate">Almunji Workspace</span>
-              <span className="text-gray-300">/</span>
-              <span className="truncate font-medium text-gray-600">
-                Dashboard
-              </span>
-            </div>
+          {/* Secondary breadcrumb strip */}
+          {!loading &&
+            (user?.role?.toUpperCase() === "ADMIN" ||
+              user?.role?.toUpperCase() === "MODERATOR") && (
+              <div className="flex min-h-10 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-gray-100 bg-gray-50/70 px-4 py-2 sm:px-5 lg:px-7">
+                <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs sm:text-sm">
+                  <span className="font-medium text-gray-500">
+                    Almunji Workspace
+                  </span>
 
-            <span className="hidden text-xs text-gray-400 sm:inline">
-              Admin Panel
-            </span>
-          </div>
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+
+                  <span className="font-semibold text-gray-800">Dashboard</span>
+                </div>
+
+                <span
+                  className={cn(
+                    "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                    user?.role?.toUpperCase() === "ADMIN"
+                      ? "bg-teal-50 text-teal-700"
+                      : "bg-indigo-50 text-indigo-700",
+                  )}
+                >
+                  {user?.role?.toUpperCase() === "ADMIN"
+                    ? "Admin Panel"
+                    : "Moderator Panel"}
+                </span>
+              </div>
+            )}
         </header>
 
         {/* Page content */}

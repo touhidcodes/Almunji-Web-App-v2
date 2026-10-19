@@ -4,17 +4,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ArrowLeft,
   CheckCircle2,
-  Eye,
-  EyeOff,
   KeyRound,
   LockKeyhole,
   ShieldCheck,
+  LoaderCircle,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 import { toast } from "sonner";
 import FormContainer from "@/components/forms/FormContainer";
 import FormInput from "@/components/forms/FormInput";
+import { Button } from "@/components/ui/button";
 import { useChangePasswordMutation } from "@/redux/api/authApi";
 import { ChangePasswordSchema, TChangePasswordForm } from "@/schema/authSchema";
 import { TApiError } from "@/types/api";
@@ -22,10 +21,6 @@ import { userLogout } from "@/services/actions/logoutUser";
 
 const ChangePasswordPage: React.FC = () => {
   const [changePassword, { isLoading }] = useChangePasswordMutation();
-
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const onSubmit = async (data: TChangePasswordForm) => {
     try {
@@ -40,12 +35,12 @@ const ChangePasswordPage: React.FC = () => {
         // Log out the user after changing the password.
         await userLogout();
         return;
-      } else {
-        toast.error(result.message || "Failed to change password.");
-        return;
       }
+
+      toast.error(result.message || "Failed to change password.");
     } catch (error: unknown) {
       const apiError = error as TApiError;
+
       toast.error(
         apiError.data?.message ||
           apiError.message ||
@@ -109,118 +104,56 @@ const ChangePasswordPage: React.FC = () => {
 
             <div className="p-5 sm:p-8">
               <FormContainer
-                key={String(isLoading)}
                 onSubmit={onSubmit}
                 resolver={zodResolver(ChangePasswordSchema)}
+                defaultValues={{
+                  currentPassword: "",
+                  newPassword: "",
+                  confirmPassword: "",
+                }}
               >
                 <div className="space-y-6">
-                  <div className="relative">
-                    <FormInput
-                      name="currentPassword"
-                      label="Current Password"
-                      placeholder="Enter your current password"
-                      type={showCurrentPassword ? "text" : "password"}
-                      required
-                    />
+                  <FormInput
+                    name="currentPassword"
+                    label="Current Password"
+                    placeholder="Enter your current password"
+                    type="password"
+                    required
+                  />
 
-                    <button
-                      type="button"
-                      aria-label={
-                        showCurrentPassword
-                          ? "Hide current password"
-                          : "Show current password"
-                      }
-                      onClick={() =>
-                        setShowCurrentPassword((visible) => !visible)
-                      }
-                      className="absolute right-3 top-7 rounded-md p-1 text-gray-400 transition hover:text-teal-600"
-                    >
-                      {showCurrentPassword ? (
-                        <EyeOff className="h-5 w-5" />
-                      ) : (
-                        <Eye className="h-5 w-5" />
-                      )}
-                    </button>
-                  </div>
+                  <FormInput
+                    name="newPassword"
+                    label="New Password"
+                    placeholder="Enter your new password"
+                    type="password"
+                    required
+                  />
 
-                  <div className="relative">
-                    <FormInput
-                      name="newPassword"
-                      label="New Password"
-                      placeholder="Enter your new password"
-                      type={showNewPassword ? "text" : "password"}
-                      required
-                    />
+                  <FormInput
+                    name="confirmPassword"
+                    label="Confirm New Password"
+                    placeholder="Re-enter your new password"
+                    type="password"
+                    required
+                  />
 
-                    <button
-                      type="button"
-                      aria-label={
-                        showNewPassword
-                          ? "Hide new password"
-                          : "Show new password"
-                      }
-                      onClick={() => setShowNewPassword((visible) => !visible)}
-                      className="absolute right-3 top-7 rounded-md p-1 text-gray-400 transition hover:text-teal-600"
-                    >
-                      {showNewPassword ? (
-                        <EyeOff className="h-5 w-5" />
-                      ) : (
-                        <Eye className="h-5 w-5" />
-                      )}
-                    </button>
-                  </div>
-
-                  <div className="relative">
-                    <FormInput
-                      name="confirmPassword"
-                      label="Confirm New Password"
-                      placeholder="Re-enter your new password"
-                      type={showConfirmPassword ? "text" : "password"}
-                      required
-                    />
-
-                    <button
-                      type="button"
-                      aria-label={
-                        showConfirmPassword
-                          ? "Hide confirm password"
-                          : "Show confirm password"
-                      }
-                      onClick={() =>
-                        setShowConfirmPassword((visible) => !visible)
-                      }
-                      className="absolute right-3 top-7 rounded-md p-1 text-gray-400 transition hover:text-teal-600"
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="h-5 w-5" />
-                      ) : (
-                        <Eye className="h-5 w-5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mt-8 flex flex-col-reverse gap-3 border-t border-gray-100 pt-6 sm:flex-row sm:justify-end">
-                  <Link
-                    href="/dashboard"
-                    className="inline-flex items-center justify-center rounded-xl border border-gray-200 px-6 py-3 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
-                  >
-                    Cancel
-                  </Link>
-
-                  <button
+                  <Button
                     type="submit"
                     disabled={isLoading}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-teal-100 transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="w-full bg-teal-600 text-white hover:bg-teal-700 sm:w-auto"
                   >
                     {isLoading ? (
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      <>
+                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                        Updating Password...
+                      </>
                     ) : (
-                      <LockKeyhole className="h-4 w-4" />
+                      <>
+                        <LockKeyhole className="mr-2 h-4 w-4" />
+                        Update Password
+                      </>
                     )}
-
-                    {isLoading ? "Updating Password..." : "Update Password"}
-                  </button>
+                  </Button>
                 </div>
               </FormContainer>
             </div>
@@ -250,6 +183,7 @@ const ChangePasswordPage: React.FC = () => {
                 ].map((tip) => (
                   <li key={tip} className="flex items-start gap-3">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-600" />
+
                     <span className="text-sm leading-5 text-gray-700">
                       {tip}
                     </span>
@@ -277,6 +211,7 @@ const ChangePasswordPage: React.FC = () => {
           </aside>
         </div>
 
+        {/* Footer */}
         <footer className="pb-6 text-center">
           <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">
             Almunji • Account Security
