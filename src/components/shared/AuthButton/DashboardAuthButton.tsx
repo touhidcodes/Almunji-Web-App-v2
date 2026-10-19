@@ -24,7 +24,7 @@ const DashboardAuthButton = () => {
     <Button
       onClick={handleLogOut}
       variant="outline"
-      className="text-white px-6 py-3 rounded-full font-medium transition-all duration-200 group bg-[#1C2D37] hover:bg-slate-700 hover:text-white"
+      className="gap-2 rounded-xl text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
     >
       <span className="font-medium">Log Out</span>
       <LogOutIcon className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
