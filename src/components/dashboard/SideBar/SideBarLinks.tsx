@@ -92,6 +92,11 @@ export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
               href: "/dashboard/admin/manage/ayah",
               icon: BookOpen,
             },
+            {
+              label: "Tafsirs",
+              href: "/dashboard/admin/manage/tafsir",
+              icon: BookOpen,
+            },
           ],
         },
         {

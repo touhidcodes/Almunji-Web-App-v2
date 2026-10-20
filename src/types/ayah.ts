@@ -53,3 +53,26 @@ export type TAyahWithRelations = TAyah & {
   surah?: RelatedSurah | null;
   para?: RelatedPara | null;
 };
+
+export type TAyahListQueryParams = {
+  page?: number;
+  limit?: number;
+  searchTerm?: string;
+  surahId?: string;
+  paraId?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+};
+
+export type TAyahsWithTafsirQueryParams = {
+  page?: number;
+  limit?: number;
+  surahId?: string;
+  paraId?: string;
+  surahChapter?: number;
+  paraNumber?: number;
+  searchTerm?: string;
+  number?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+};
