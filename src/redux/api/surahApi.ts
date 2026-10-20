@@ -2,18 +2,11 @@ import { TApiResponse } from "@/types/api";
 import {
   TCreateSurahPayload,
   TSurah,
+  TSurahQueryParams,
   TUpdateSurahPayload,
 } from "@/types/surah";
 import { tagTypes } from "../tags";
 import { baseServerApi } from "./baseApi";
-
-type TSurahQueryParams = {
-  page?: number;
-  limit?: number;
-  searchTerm?: string;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
-};
 
 export const surahApi = baseServerApi.injectEndpoints({
   endpoints: (build) => ({

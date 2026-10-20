@@ -32,3 +32,12 @@ export interface TChapterData {
   revelationPlace: string;
   totalAyah: number;
 }
+
+export type TSurahQueryParams = {
+  page?: number;
+  limit?: number;
+  searchTerm?: string;
+  revelation?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+};

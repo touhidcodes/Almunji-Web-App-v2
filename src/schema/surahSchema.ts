@@ -1,6 +1,6 @@
 import z from "zod/v3";
 
-export const SurahSchema = z.object({
+export const CreateSurahSchema = z.object({
   id: z.string().uuid().optional(),
   chapter: z.coerce.number().int().positive(),
   totalAyah: z.coerce.number().int().positive(),
@@ -10,3 +10,5 @@ export const SurahSchema = z.object({
   history: z.string().optional(),
   revelation: z.string().min(1),
 });
+
+export type TCreateSurah = z.infer<typeof CreateSurahSchema>;

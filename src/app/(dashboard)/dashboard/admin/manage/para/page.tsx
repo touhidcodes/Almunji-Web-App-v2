@@ -26,7 +26,7 @@ import {
   useUpdateParaMutation,
   useSoftDeleteParaMutation,
 } from "@/redux/api/paraApi";
-import { ParaSchema } from "@/schema/paraSchema";
+import { CreateParaSchema } from "@/schema/paraSchema";
 import type { TPara, TUpdateParaPayload } from "@/types/para";
 
 const ManageParaPage = () => {
@@ -423,7 +423,7 @@ const ManageParaPage = () => {
               <FormContainer
                 key={editingPara.id}
                 onSubmit={handleUpdate}
-                resolver={zodResolver(ParaSchema)}
+                resolver={zodResolver(CreateParaSchema)}
                 defaultValues={{
                   number: editingPara.number,
                   arabic: editingPara.arabic,

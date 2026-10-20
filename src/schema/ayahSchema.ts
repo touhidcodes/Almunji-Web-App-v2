@@ -1,7 +1,7 @@
 import z from "zod/v3";
 import { TafsirSchema } from "./tafsirSchema";
 
-export const AyahSchema = z.object({
+export const CreateAyahSchema = z.object({
   id: z.string().uuid().optional(),
   surahId: z.string().uuid(),
   paraId: z.string().uuid(),
@@ -13,3 +13,5 @@ export const AyahSchema = z.object({
   isDeleted: z.boolean().optional(),
   tafsir: TafsirSchema.optional(),
 });
+
+export type TCreateAyah = z.infer<typeof CreateAyahSchema>;

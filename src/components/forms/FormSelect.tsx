@@ -20,6 +20,7 @@ type TFormSelectProps = {
   options: TSelectOption[];
   placeholder?: string;
   required?: boolean;
+  disabled?: boolean;
   className?: string;
 };
 
@@ -29,6 +30,7 @@ const FormSelect = ({
   options,
   placeholder,
   required,
+  disabled = false,
   className,
 }: TFormSelectProps) => {
   const { control } = useFormContext();
@@ -42,27 +44,36 @@ const FormSelect = ({
           {label && (
             <Label htmlFor={name} className={cn(error && "text-destructive")}>
               {label}
-              {required && <span className="text-destructive">{` `}*</span>}
+              {required && <span className="text-destructive"> *</span>}
             </Label>
           )}
 
           <Select
-            value={field.value ? String(field.value) : undefined}
+            value={
+              field.value !== undefined && field.value !== null
+                ? String(field.value)
+                : undefined
+            }
             onValueChange={(val) => {
               const parsedValue =
                 val === "true" ? true : val === "false" ? false : val;
+
               field.onChange(parsedValue);
             }}
+            disabled={disabled}
           >
             <SelectTrigger
+              id={name}
               className={cn(
                 "focus-visible:border-teal-500 focus-visible:ring-teal-100 focus-visible:ring-2",
                 className || "w-full bg-secondary shadow-none",
-                error && "border-destructive focus-visible:ring-destructive"
+                error && "border-destructive focus-visible:ring-destructive",
               )}
+              aria-invalid={!!error}
             >
               <SelectValue placeholder={placeholder} />
             </SelectTrigger>
+
             <SelectContent>
               {options.map((opt) => (
                 <SelectItem key={String(opt.value)} value={String(opt.value)}>

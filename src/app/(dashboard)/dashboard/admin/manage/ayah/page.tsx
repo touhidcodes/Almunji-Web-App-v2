@@ -20,29 +20,12 @@ import {
 import { useGetAllParaQuery } from "@/redux/api/paraApi";
 import { useGetAllSurahQuery } from "@/redux/api/surahApi";
 
-import { AyahSchema } from "@/schema/ayahSchema";
-import type { TAyah, TUpdateAyahPayload } from "@/types/ayah";
-
-type RelatedSurah = {
-  id?: string;
-  chapter?: number;
-  arabic?: string;
-  english?: string;
-  bangla?: string;
-};
-
-type RelatedPara = {
-  id?: string;
-  number?: number;
-  arabic?: string;
-  english?: string;
-  bangla?: string;
-};
-
-type TAyahWithRelations = TAyah & {
-  surah?: RelatedSurah | null;
-  para?: RelatedPara | null;
-};
+import { CreateAyahSchema } from "@/schema/ayahSchema";
+import type {
+  TAyah,
+  TAyahWithRelations,
+  TUpdateAyahPayload,
+} from "@/types/ayah";
 
 const getErrorMessage = (error: unknown, fallback: string): string => {
   if (
@@ -444,7 +427,7 @@ const ManageAyahsPage = () => {
               <FormContainer
                 key={editingAyah.id}
                 onSubmit={handleUpdate}
-                resolver={zodResolver(AyahSchema)}
+                resolver={zodResolver(CreateAyahSchema)}
                 defaultValues={{
                   surahId: getSurahId(editingAyah),
                   paraId: getParaId(editingAyah),

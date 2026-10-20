@@ -9,23 +9,11 @@ import {
   useCreateSurahMutation,
   useGetAllSurahQuery,
 } from "@/redux/api/surahApi";
-
-import { SurahSchema } from "@/schema/surahSchema";
-
+import { CreateSurahSchema, TCreateSurah } from "@/schema/surahSchema";
+import { TApiError } from "@/types/api";
 import { zodResolver } from "@hookform/resolvers/zod";
-
 import { Book, CheckCircle2, Save, Sparkles } from "lucide-react";
-
 import { toast } from "sonner";
-import { z } from "zod";
-
-type TCreateSurah = z.infer<typeof SurahSchema>;
-
-type TApiError = {
-  data?: {
-    message?: string;
-  };
-};
 
 const CreateSurahPage: React.FC = () => {
   const { data: surahsData, isLoading: isLoadingSurahs } = useGetAllSurahQuery(
@@ -215,7 +203,7 @@ const CreateSurahPage: React.FC = () => {
             <div className="relative p-10 lg:p-16">
               <FormContainer
                 onSubmit={onSubmit}
-                resolver={zodResolver(SurahSchema)}
+                resolver={zodResolver(CreateSurahSchema)}
                 defaultValues={{
                   chapter: defaultChapter,
                   totalAyah: 1,
@@ -361,7 +349,7 @@ const CreateSurahPage: React.FC = () => {
                         )}
 
                         <span>
-                          {isSubmitting ? "Creating..." : "Commit Chapter"}
+                          {isSubmitting ? "Creating..." : "Create Chapter"}
                         </span>
                       </button>
                     </div>

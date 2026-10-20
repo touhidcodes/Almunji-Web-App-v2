@@ -5,19 +5,12 @@ import FormInput from "@/components/forms/FormInput";
 import FormTextarea from "@/components/forms/FormTextarea";
 import { useCreateParaMutation, useGetAllParaQuery } from "@/redux/api/paraApi";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ParaSchema } from "@/schema/paraSchema";
 import { ArrowLeft, Book, Save, Sparkles, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { z } from "zod";
 
-type TCreatePara = z.infer<typeof ParaSchema>;
-
-type TApiError = {
-  data?: {
-    message?: string;
-  };
-};
+import { TApiError } from "@/types/api";
+import { CreateParaSchema, TCreatePara } from "@/schema/paraSchema";
 
 const CreateParaPage: React.FC = () => {
   const { data: parasData, isLoading: isLoadingParas } = useGetAllParaQuery({});
@@ -196,7 +189,7 @@ const CreateParaPage: React.FC = () => {
             <div className="relative p-10 lg:p-16">
               <FormContainer
                 onSubmit={onSubmit}
-                resolver={zodResolver(ParaSchema)}
+                resolver={zodResolver(CreateParaSchema)}
                 defaultValues={{
                   number: defaultNumber,
                 }}
@@ -253,13 +246,13 @@ const CreateParaPage: React.FC = () => {
                         <FormInput
                           name="english"
                           label="English Name"
-                          placeholder="First Para"
+                          placeholder="Alif Lam Meem"
                         />
 
                         <FormInput
                           name="bangla"
                           label="Bangla Name"
-                          placeholder="পারা ১"
+                          placeholder="আলিফ লাম মীম"
                         />
                       </div>
                     </div>
@@ -323,13 +316,6 @@ const CreateParaPage: React.FC = () => {
                           required
                         />
                       </div>
-
-                      <FormTextarea
-                        name="history"
-                        label="Historical Context"
-                        rows={4}
-                        placeholder="Add any historical notes..."
-                      />
                     </div>
 
                     {/* Submit */}

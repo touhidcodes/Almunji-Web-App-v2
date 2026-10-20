@@ -25,3 +25,24 @@ export type TCreateAyahPayload = {
 export type TUpdateAyahPayload = Partial<TCreateAyahPayload> & {
   isDeleted?: boolean;
 };
+
+type RelatedSurah = {
+  id?: string;
+  chapter?: number;
+  arabic?: string;
+  english?: string;
+  bangla?: string;
+};
+
+type RelatedPara = {
+  id?: string;
+  number?: number;
+  arabic?: string;
+  english?: string;
+  bangla?: string;
+};
+
+export type TAyahWithRelations = TAyah & {
+  surah?: RelatedSurah | null;
+  para?: RelatedPara | null;
+};

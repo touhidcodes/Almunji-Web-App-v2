@@ -27,7 +27,7 @@ import {
   useUpdateSurahMutation,
   useHardDeleteSurahMutation,
 } from "@/redux/api/surahApi";
-import { SurahSchema } from "@/schema/surahSchema";
+import { CreateSurahSchema } from "@/schema/surahSchema";
 import type { TSurah, TUpdateSurahPayload } from "@/types/surah";
 
 const revelationOptions = [
@@ -356,7 +356,7 @@ const ManageSurahPage = () => {
               <FormContainer
                 key={editingSurah.id}
                 onSubmit={handleUpdate}
-                resolver={zodResolver(SurahSchema)}
+                resolver={zodResolver(CreateSurahSchema)}
                 defaultValues={{
                   chapter: editingSurah.chapter,
                   totalAyah: editingSurah.totalAyah,

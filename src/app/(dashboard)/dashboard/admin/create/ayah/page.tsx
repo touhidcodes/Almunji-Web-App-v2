@@ -7,20 +7,13 @@ import FormTextarea from "@/components/forms/FormTextarea";
 import { useCreateAyahMutation } from "@/redux/api/ayahApi";
 import { useGetAllParaQuery } from "@/redux/api/paraApi";
 import { useGetAllSurahQuery } from "@/redux/api/surahApi";
-import { AyahSchema } from "@/schema/ayahSchema";
+import { CreateAyahSchema, TCreateAyah } from "@/schema/ayahSchema";
+import { TApiError } from "@/types/api";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Book, Save, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { z } from "zod";
-
-type TCreateAyah = z.infer<typeof AyahSchema>;
-
-type TApiError = {
-  data?: {
-    message?: string;
-  };
-};
 
 const CreateAyahPage: React.FC = () => {
   const [createAyah, { isLoading: isSubmitting }] = useCreateAyahMutation();
@@ -73,7 +66,7 @@ const CreateAyahPage: React.FC = () => {
         {/* Navigation */}
         <nav className="flex items-center justify-between pb-6 border-b border-gray-200">
           <Link
-            href="/dashboard/admin/manage/ayahs"
+            href="/dashboard/admin/manage/ayah"
             className="group flex items-center gap-2 text-gray-500 hover:text-teal-600 font-semibold uppercase text-xs tracking-widest transition-all"
           >
             <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
@@ -114,7 +107,7 @@ const CreateAyahPage: React.FC = () => {
           <div className="p-10 lg:p-16 relative">
             <FormContainer
               onSubmit={onSubmit}
-              resolver={zodResolver(AyahSchema)}
+              resolver={zodResolver(CreateAyahSchema)}
               defaultValues={{
                 number: 1,
               }}
