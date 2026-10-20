@@ -42,6 +42,13 @@ type RelatedPara = {
   bangla?: string;
 };
 
+export type TCreatedAyahResponse = {
+  id?: string;
+  data?: {
+    id?: string;
+  };
+};
+
 export type TAyahWithRelations = TAyah & {
   surah?: RelatedSurah | null;
   para?: RelatedPara | null;

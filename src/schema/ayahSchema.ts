@@ -1,5 +1,4 @@
 import z from "zod/v3";
-import { TafsirSchema } from "./tafsirSchema";
 
 export const CreateAyahSchema = z.object({
   id: z.string().uuid().optional(),
@@ -11,7 +10,6 @@ export const CreateAyahSchema = z.object({
   bangla: z.string().optional(),
   english: z.string().optional(),
   isDeleted: z.boolean().optional(),
-  tafsir: TafsirSchema.optional(),
 });
 
 export type TCreateAyah = z.infer<typeof CreateAyahSchema>;

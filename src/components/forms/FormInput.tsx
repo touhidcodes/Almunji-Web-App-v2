@@ -13,6 +13,7 @@ type TFormInputProps = {
   type?: string;
   placeholder?: string;
   required?: boolean;
+  disabled?: boolean;
   className?: string;
 };
 
@@ -22,6 +23,7 @@ const FormInput = ({
   type = "text",
   placeholder,
   required,
+  disabled = false,
   className,
 }: TFormInputProps) => {
   const { control } = useFormContext();
@@ -49,18 +51,21 @@ const FormInput = ({
               id={name}
               type={inputType}
               required={required}
+              disabled={disabled}
               placeholder={placeholder || label}
               className={cn(
                 "focus-visible:border-teal-500 focus-visible:ring-2 focus-visible:ring-teal-100",
                 isPassword && "pr-11",
                 className || "w-full bg-secondary shadow-none",
                 error && "border-destructive focus-visible:ring-destructive",
+                disabled && "cursor-not-allowed opacity-60",
               )}
             />
 
             {isPassword && (
               <button
                 type="button"
+                disabled={disabled}
                 onClick={() => setShowPassword((previous) => !previous)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
                 aria-pressed={showPassword}

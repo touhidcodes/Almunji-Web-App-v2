@@ -1,3 +1,5 @@
+"use client";
+
 import { Controller, useFormContext } from "react-hook-form";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
@@ -8,6 +10,7 @@ type TFormTextareaProps = {
   label?: string;
   placeholder?: string;
   required?: boolean;
+  disabled?: boolean;
   className?: string;
   rows?: number;
 };
@@ -17,6 +20,7 @@ const FormTextarea = ({
   label,
   placeholder,
   required,
+  disabled = false,
   className,
   rows = 4,
 }: TFormTextareaProps) => {
@@ -31,7 +35,7 @@ const FormTextarea = ({
           {label && (
             <Label htmlFor={name} className={cn(error && "text-destructive")}>
               {label}
-              {required && <span className="text-destructive">{` `}*</span>}
+              {required && <span className="text-destructive"> *</span>}
             </Label>
           )}
 
@@ -39,17 +43,22 @@ const FormTextarea = ({
             {...field}
             id={name}
             rows={rows}
+            required={required}
+            disabled={disabled}
             placeholder={placeholder || label}
             className={cn(
               "focus-visible:border-teal-500 focus-visible:ring-teal-100 focus-visible:ring-2",
               "w-full bg-secondary shadow-none resize-y",
               error && "border-destructive focus-visible:ring-destructive",
-              className
+              disabled && "cursor-not-allowed opacity-60",
+              className,
             )}
           />
 
           {error?.message && (
-            <p className="text-[0.8rem] text-destructive">{error.message}</p>
+            <p className="text-[0.8rem] text-destructive">
+              {String(error.message)}
+            </p>
           )}
         </div>
       )}
