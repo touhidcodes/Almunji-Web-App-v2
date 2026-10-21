@@ -14,7 +14,6 @@ import {
   Plus,
   Save,
   Sparkles,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -22,6 +21,7 @@ import FormContainer from "@/components/forms/FormContainer";
 import FormInput from "@/components/forms/FormInput";
 import FormSelect from "@/components/forms/FormSelect";
 import FormTextarea from "@/components/forms/FormTextarea";
+import FormTags from "@/components/forms/FormTags";
 
 import { useCreateAyahMutation } from "@/redux/api/ayahApi";
 import { useGetAllParaQuery } from "@/redux/api/paraApi";
@@ -35,7 +35,7 @@ import {
 } from "@/schema/ayahWithTafsirSchema";
 
 import type { TCreateTafsirPayload } from "@/types/tafsir";
-import { TCreatedAyahResponse } from "@/types/ayah";
+import type { TCreatedAyahResponse } from "@/types/ayah";
 
 const getErrorMessage = (error: unknown, fallback: string): string => {
   if (
@@ -57,6 +57,7 @@ const CreateAyahPage: React.FC = () => {
   const searchParams = useSearchParams();
 
   const [createAyah, { isLoading: isCreatingAyah }] = useCreateAyahMutation();
+
   const [createTafsir, { isLoading: isCreatingTafsir }] =
     useCreateTafsirMutation();
 
@@ -100,21 +101,29 @@ const CreateAyahPage: React.FC = () => {
       return;
     }
 
-    setAddTafsirMode(true);
-  };
+    if (isAyahCreated && !createdAyahId) {
+      toast.error(
+        "The Ayah was created, but its ID was not returned by the API.",
+        {
+          description:
+            "Check the create Ayah response before adding its Tafsir.",
+        },
+      );
+      return;
+    }
 
-  const handleDisableTafsir = () => {
-    if (isAyahCreated || isSubmitting) return;
-    setAddTafsirMode(false);
+    setAddTafsirMode(true);
   };
 
   const handleSubmit = async (data: TCreateAyahWithTafsir) => {
     let ayahId = createdAyahId;
 
     try {
-      // STEP 1: Create the Ayah if it has not already been created.
-      // This also prevents duplicate Ayah creation when retrying Tafsir.
-      if (!ayahId) {
+      /*
+       * STEP 1:
+       * Create the Ayah if it has not already been saved.
+       */
+      if (!isAyahCreated) {
         const ayahPayload: TCreateAyah = {
           surahId: data.surahId,
           paraId: data.paraId,
@@ -138,27 +147,34 @@ const CreateAyahPage: React.FC = () => {
 
         ayahId = responseData?.id ?? responseData?.data?.id ?? null;
 
-        if (!ayahId) {
-          toast.error("Ayah created, but its ID was not returned.", {
-            description:
-              "Check the create Ayah API response before continuing.",
-          });
-          return;
-        }
-
-        // Save the ID immediately so a Tafsir retry never recreates the Ayah.
-        setCreatedAyahId(ayahId);
+        // Save the Ayah state immediately after a successful API response.
         setIsAyahCreated(true);
+        setCreatedAyahId(ayahId);
 
         toast.success("Ayah created successfully!");
       }
 
-      // STEP 2: If Tafsir mode is disabled, stop after creating the Ayah.
+      /*
+       * STEP 2:
+       * If Tafsir mode is disabled, stop here.
+       * This allows the admin to create only an Ayah.
+       */
       if (!addTafsirMode) {
         return;
       }
 
-      // STEP 3: Create the Tafsir using the saved Ayah ID.
+      /*
+       * STEP 3:
+       * Tafsir requires the ID of the saved Ayah.
+       */
+      if (!ayahId) {
+        toast.error("The Ayah was created, but its ID is missing.", {
+          description:
+            "The API must return the created Ayah ID to associate a Tafsir.",
+        });
+        return;
+      }
+
       const tafsirPayload: TCreateTafsirPayload = {
         ayahId,
         heading: data.heading?.trim() || undefined,
@@ -185,17 +201,18 @@ const CreateAyahPage: React.FC = () => {
         description: "Both records have been saved.",
       });
     } catch (error: unknown) {
-      const message = getErrorMessage(
-        error,
-        addTafsirMode ? "Failed to create Tafsir." : "Failed to create Ayah.",
+      toast.error(
+        getErrorMessage(
+          error,
+          addTafsirMode ? "Failed to create Tafsir." : "Failed to create Ayah.",
+        ),
+        {
+          description:
+            isAyahCreated && addTafsirMode
+              ? "The Ayah is already saved. Retry Tafsir creation without duplicating the Ayah."
+              : undefined,
+        },
       );
-
-      toast.error(message, {
-        description:
-          ayahId && addTafsirMode
-            ? "The Ayah is already saved. You can retry Tafsir creation without duplicating the Ayah."
-            : undefined,
-      });
     }
   };
 
@@ -229,38 +246,13 @@ const CreateAyahPage: React.FC = () => {
               <h1 className="text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">
                 Create Ayah
               </h1>
-
               <p className="mt-2 text-sm text-gray-500 sm:text-base">
                 Create a verse independently or include its Tafsir.
               </p>
             </div>
           </div>
-
-          {!addTafsirMode && !isAyahCreated && (
-            <button
-              type="button"
-              onClick={handleEnableTafsir}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-100 transition hover:bg-purple-700"
-            >
-              <Plus className="h-4 w-4" />
-              Add Tafsir
-            </button>
-          )}
-
-          {addTafsirMode && !isAyahCreated && (
-            <button
-              type="button"
-              onClick={handleDisableTafsir}
-              disabled={isSubmitting}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
-            >
-              <X className="h-4 w-4" />
-              Remove Tafsir
-            </button>
-          )}
         </header>
 
-        {/* Shared form: Ayah + optional Tafsir */}
         <FormContainer
           onSubmit={handleSubmit}
           resolver={zodResolver(CreateAyahWithTafsirSchema)}
@@ -417,48 +409,61 @@ const CreateAyahPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Standalone Ayah submission */}
-              <div className="mt-8 flex flex-col gap-3 border-t border-gray-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
+              {/* Ayah submission actions */}
+              <div className="mt-8 flex flex-col gap-4 border-t border-gray-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-xs leading-5 text-gray-400">
                   {isAyahCreated
                     ? "The Ayah has been saved successfully."
                     : addTafsirMode
-                      ? "Tafsir mode is enabled. Use the combined submit button below."
-                      : "Only the Ayah will be created."}
+                      ? "Tafsir mode is enabled. Submit both records below."
+                      : "Create the Ayah alone or include its Tafsir."}
                 </p>
 
-                {!isAyahCreated && (
-                  <button
-                    type="button"
-                    disabled={
-                      isSubmitting || isLoadingReferences || addTafsirMode
-                    }
-                    onClick={() => {
-                      const form = document.querySelector("#ayah-create-form");
-
-                      if (form instanceof HTMLFormElement) {
-                        form.requestSubmit();
-                      }
-                    }}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-teal-100 transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-                  >
-                    {isCreatingAyah && !addTafsirMode ? (
-                      <LoaderCircle className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4" />
+                {!isTafsirCreated && (
+                  <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
+                    {/* Add Tafsir */}
+                    {!addTafsirMode && (
+                      <button
+                        type="button"
+                        onClick={handleEnableTafsir}
+                        disabled={
+                          isSubmitting ||
+                          isLoadingReferences ||
+                          (isAyahCreated && !createdAyahId)
+                        }
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-teal-100 transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Tafsir
+                      </button>
                     )}
-                    Create Ayah
-                  </button>
+
+                    {/* Create Ayah only */}
+                    {!isAyahCreated && !addTafsirMode && (
+                      <button
+                        type="submit"
+                        disabled={isSubmitting || isLoadingReferences}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-teal-100 transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                      >
+                        {isCreatingAyah ? (
+                          <LoaderCircle className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                        {isCreatingAyah ? "Creating Ayah..." : "Create Ayah"}
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
           </section>
 
-          {/* Tafsir section: appears when Add Tafsir is clicked */}
+          {/* Tafsir section */}
           {addTafsirMode && !isTafsirCreated && (
             <section className="mt-8 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-xl shadow-gray-200/40">
               <div className="flex items-center gap-3 border-b border-gray-100 bg-white px-5 py-5 sm:px-8">
-                <div className="rounded-xl bg-purple-50 p-2.5 text-purple-700">
+                <div className="rounded-xl bg-teal-50 p-2.5 text-teal-700">
                   <FileText className="h-5 w-5" />
                 </div>
 
@@ -482,7 +487,7 @@ const CreateAyahPage: React.FC = () => {
                       Ayah ID: {createdAyahId}
                     </p>
                     <p className="mt-2 text-xs text-green-700">
-                      Submitting again will create only the Tafsir.
+                      Submitting will create only the Tafsir.
                     </p>
                   </div>
                 )}
@@ -574,11 +579,11 @@ const CreateAyahPage: React.FC = () => {
                   />
                 </div>
 
-                <FormInput
+                <FormTags
                   name="tags"
-                  label="Tags"
-                  placeholder="e.g. tawheed, patience, guidance"
-                  disabled={isTafsirCreated}
+                  label="Tafsir Tags"
+                  placeholder="Type a tag and press Enter..."
+                  description="Add relevant topics such as Tawheed, patience, guidance, or prayer."
                 />
 
                 <div className="flex flex-col gap-3 border-t border-gray-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
@@ -591,7 +596,7 @@ const CreateAyahPage: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isSubmitting || isTafsirCreated}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-purple-100 transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-teal-100 transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                   >
                     {isSubmitting ? (
                       <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -607,6 +612,24 @@ const CreateAyahPage: React.FC = () => {
                           ? "Create Tafsir"
                           : "Create Ayah & Tafsir"}
                   </button>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Success state */}
+          {isAyahCreated && !addTafsirMode && !isTafsirCreated && (
+            <section className="mt-8 rounded-2xl border border-green-200 bg-green-50 p-5">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="h-6 w-6 text-green-600" />
+                <div>
+                  <h2 className="font-semibold text-green-900">
+                    Ayah created successfully
+                  </h2>
+                  <p className="mt-1 text-sm text-green-800">
+                    The Ayah has been saved. You can finish here or add its
+                    Tafsir using the button above.
+                  </p>
                 </div>
               </div>
             </section>

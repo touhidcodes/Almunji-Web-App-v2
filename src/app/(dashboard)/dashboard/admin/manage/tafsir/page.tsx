@@ -157,10 +157,9 @@ const ManageTafsirsPage = () => {
   );
   const [editingTafsir, setEditingTafsir] = useState<TTafsir | null>(null);
   const [formValues, setFormValues] = useState<TFormValues>(INITIAL_FORM);
+
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const [isDeletePending, setIsDeletePending] = useState(false);
-
-  // Debounce search to avoid requesting the API on every keystroke.
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   useEffect(() => {
@@ -213,13 +212,7 @@ const ManageTafsirsPage = () => {
   const surahs = surahResponse?.data ?? [];
   const paras = paraResponse?.data ?? [];
 
-  const meta = (
-    ayahResponse as
-      | {
-          meta?: TPageMeta;
-        }
-      | undefined
-  )?.meta;
+  const meta = (ayahResponse as { meta?: TPageMeta } | undefined)?.meta;
 
   const total = meta?.total ?? ayahs.length;
   const currentPage = meta?.page ?? page;
@@ -234,19 +227,22 @@ const ManageTafsirsPage = () => {
 
   const missingCount = ayahs.length - tafsirCount;
 
-  const closeModal = () => {
-    if (isSaving) return;
-
+  const resetModal = () => {
     setIsModalOpen(false);
     setSelectedAyah(null);
     setEditingTafsir(null);
-    setFormValues(INITIAL_FORM);
+    setFormValues({ ...INITIAL_FORM });
+  };
+
+  const closeModal = () => {
+    if (isSaving) return;
+    resetModal();
   };
 
   const openCreateModal = (ayah: TAyahWithTafsir) => {
     setSelectedAyah(ayah);
     setEditingTafsir(null);
-    setFormValues(INITIAL_FORM);
+    setFormValues({ ...INITIAL_FORM });
     setIsModalOpen(true);
   };
 
@@ -320,11 +316,7 @@ const ManageTafsirsPage = () => {
         toast.success("Tafsir created successfully.");
       }
 
-      setIsModalOpen(false);
-      setSelectedAyah(null);
-      setEditingTafsir(null);
-      setFormValues(INITIAL_FORM);
-
+      resetModal();
       await refetch();
     } catch (error: unknown) {
       toast.error(getErrorMessage(error));
@@ -495,7 +487,7 @@ const ManageTafsirsPage = () => {
           </div>
         </section>
 
-        {/* Table */}
+        {/* Records table */}
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-col gap-2 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             <div>
@@ -804,6 +796,7 @@ const ManageTafsirsPage = () => {
             aria-labelledby="tafsir-modal-title"
             className="flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
           >
+            {/* Modal header */}
             <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6">
               <div>
                 <h2
@@ -829,14 +822,18 @@ const ManageTafsirsPage = () => {
               </button>
             </div>
 
+            {/* Modal content */}
             <div className="overflow-y-auto px-5 py-5 sm:px-6">
-              <div className="mb-5 rounded-xl bg-slate-50 p-4">
-                <div className="mb-2 flex items-center gap-2 text-xs font-medium text-slate-500">
-                  <BookMarked className="size-4" />
-                  {selectedAyah.surah?.english ?? "Unknown Surah"}
-                  {selectedAyah.surah?.chapter != null &&
-                    ` · Surah ${selectedAyah.surah.chapter}`}
-                  {" · "}Ayah {selectedAyah.number}
+              {/* Selected Ayah preview */}
+              <div className="mb-6 rounded-xl border border-slate-100 bg-slate-50 p-4">
+                <div className="mb-3 flex items-center gap-2 text-xs font-medium text-slate-500">
+                  <BookMarked className="size-4 text-emerald-600" />
+                  <span>
+                    {selectedAyah.surah?.english ?? "Unknown Surah"}
+                    {selectedAyah.surah?.chapter != null &&
+                      ` · Surah ${selectedAyah.surah.chapter}`}
+                    {" · "}Ayah {selectedAyah.number}
+                  </span>
                 </div>
 
                 <p
@@ -854,26 +851,18 @@ const ManageTafsirsPage = () => {
               <form
                 id="tafsir-form"
                 onSubmit={handleSubmit}
-                className="space-y-5"
+                className="space-y-6"
               >
-                <div>
-                  <label
-                    htmlFor="heading"
-                    className="mb-1.5 block text-sm font-semibold text-slate-700"
-                  >
-                    Heading
-                  </label>
-                  <input
-                    id="heading"
-                    value={formValues.heading}
-                    onChange={(event) =>
-                      updateField("heading", event.target.value)
-                    }
-                    placeholder="Enter Tafsir heading"
-                    className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
-                  />
-                </div>
+                {/* Heading */}
+                <FormInput
+                  id="heading"
+                  label="Heading"
+                  placeholder="Enter Tafsir heading"
+                  value={formValues.heading}
+                  onChange={(value) => updateField("heading", value)}
+                />
 
+                {/* Summaries */}
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormTextarea
                     id="summaryBn"
@@ -892,7 +881,10 @@ const ManageTafsirsPage = () => {
                     onChange={(value) => updateField("summaryEn", value)}
                     rows={3}
                   />
+                </div>
 
+                {/* Detailed Tafsir */}
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormTextarea
                     id="detailBn"
                     label="Detailed Tafsir (Bangla)"
@@ -912,7 +904,8 @@ const ManageTafsirsPage = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                {/* Scholar and reference */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <FormInput
                     id="scholar"
                     label="Scholar"
@@ -928,18 +921,17 @@ const ManageTafsirsPage = () => {
                     value={formValues.reference}
                     onChange={(value) => updateField("reference", value)}
                   />
-
-                  <FormInput
-                    id="tags"
-                    label="Tags"
-                    placeholder="Comma-separated tags"
-                    value={formValues.tags}
-                    onChange={(value) => updateField("tags", value)}
-                  />
                 </div>
+
+                {/* Full-width controlled tags input */}
+                <TafsirTagsInput
+                  value={formValues.tags}
+                  onChange={(value) => updateField("tags", value)}
+                />
               </form>
             </div>
 
+            {/* Modal footer */}
             <div className="flex flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
               <button
                 type="button"
@@ -970,6 +962,123 @@ const ManageTafsirsPage = () => {
     </main>
   );
 };
+
+type TTafsirTagsInputProps = {
+  value: string;
+  onChange: (value: string) => void;
+};
+
+function TafsirTagsInput({ value, onChange }: TTafsirTagsInputProps) {
+  const [inputValue, setInputValue] = useState("");
+
+  // The API and database store tags as a comma-separated string.
+  const tags = value
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+
+  const addTag = () => {
+    const newTag = inputValue.trim().replace(/,+$/g, "").trim();
+
+    if (!newTag) return;
+
+    const alreadyExists = tags.some(
+      (tag) => tag.toLowerCase() === newTag.toLowerCase(),
+    );
+
+    if (alreadyExists) {
+      setInputValue("");
+      return;
+    }
+
+    onChange([...tags, newTag].join(", "));
+    setInputValue("");
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    onChange(tags.filter((tag) => tag !== tagToRemove).join(", "));
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter" || event.key === ",") {
+      event.preventDefault();
+      addTag();
+    }
+
+    if (event.key === "Backspace" && !inputValue && tags.length > 0) {
+      removeTag(tags[tags.length - 1]);
+    }
+  };
+
+  return (
+    <section className="space-y-2">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <label
+          htmlFor="tafsir-tags-input"
+          className="text-sm font-semibold text-slate-700"
+        >
+          Tafsir Tags
+        </label>
+
+        <span className="text-xs text-slate-400">
+          {tags.length} {tags.length === 1 ? "tag" : "tags"}
+        </span>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-3 transition focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-100">
+        {tags.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            {tags.map((tag, index) => (
+              <span
+                key={`${tag}-${index}`}
+                className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-800"
+              >
+                <span className="break-all">{tag}</span>
+
+                <button
+                  type="button"
+                  onClick={() => removeTag(tag)}
+                  aria-label={`Remove ${tag}`}
+                  title={`Remove ${tag}`}
+                  className="shrink-0 rounded-full p-0.5 text-emerald-600 transition hover:bg-emerald-100 hover:text-emerald-900"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input
+            id="tafsir-tags-input"
+            type="text"
+            value={inputValue}
+            onChange={(event) => setInputValue(event.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a tag and press Enter..."
+            className="h-10 min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white"
+          />
+
+          <button
+            type="button"
+            onClick={addTag}
+            disabled={!inputValue.trim()}
+            className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Plus className="size-4" />
+            Add tag
+          </button>
+        </div>
+      </div>
+
+      <p className="text-xs leading-5 text-slate-400">
+        Add relevant topics such as Tawheed, patience, guidance, or prayer.
+        Press Enter or comma to add a tag.
+      </p>
+    </section>
+  );
+}
 
 type TStatCardProps = {
   label: string;
@@ -1009,7 +1118,7 @@ function FormTextarea({
   rows,
 }: TFormTextareaProps) {
   return (
-    <div>
+    <div className="min-w-0">
       <label
         htmlFor={id}
         className="mb-1.5 block text-sm font-semibold text-slate-700"
@@ -1022,7 +1131,7 @@ function FormTextarea({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="w-full resize-y rounded-xl border border-slate-200 px-3 py-2.5 text-sm leading-6 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+        className="w-full resize-y rounded-xl border border-slate-200 px-3 py-2.5 text-sm leading-6 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
       />
     </div>
   );
@@ -1044,7 +1153,7 @@ function FormInput({
   onChange,
 }: TFormInputProps) {
   return (
-    <div>
+    <div className="min-w-0">
       <label
         htmlFor={id}
         className="mb-1.5 block text-sm font-semibold text-slate-700"
@@ -1056,7 +1165,7 @@ function FormInput({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+        className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
       />
     </div>
   );

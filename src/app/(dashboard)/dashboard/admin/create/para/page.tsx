@@ -239,7 +239,7 @@ const CreateParaPage: React.FC = () => {
                         <FormInput
                           name="arabic"
                           label="Arabic Name *"
-                          placeholder="Para 1"
+                          placeholder="الم"
                           required
                         />
 
