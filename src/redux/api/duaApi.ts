@@ -1,12 +1,15 @@
-import { TDuaData, TDuaQueryParams, TUpdateDuaArgs } from "@/types/dua";
+import type { TDuaData, TDuaQueryParams, TUpdateDuaArgs } from "@/types/dua";
 import { tagTypes } from "../tags";
 import { baseServerApi } from "./baseApi";
 
 export const duaApi = baseServerApi.injectEndpoints({
   endpoints: (build) => ({
     // Create Dua
-    createDua: build.mutation({
-      query: (data: TDuaData) => ({
+    createDua: build.mutation<
+      { success: boolean; message?: string; data?: unknown },
+      TDuaData
+    >({
+      query: (data) => ({
         url: "/dua",
         method: "POST",
         data,
@@ -14,7 +17,7 @@ export const duaApi = baseServerApi.injectEndpoints({
       invalidatesTags: [tagTypes.dua],
     }),
 
-    // Get all Dua for users
+    // Get all Duas for users
     getAllDuas: build.query({
       query: (params: TDuaQueryParams = {}) => ({
         url: "/dua/all",
@@ -24,7 +27,7 @@ export const duaApi = baseServerApi.injectEndpoints({
       providesTags: [tagTypes.dua],
     }),
 
-    // Get all Dua for admin
+    // Get all Duas for admin
     getAllDuasAdmin: build.query({
       query: (params: TDuaQueryParams = {}) => ({
         url: "/dua/admin/all",
@@ -34,7 +37,7 @@ export const duaApi = baseServerApi.injectEndpoints({
       providesTags: [tagTypes.dua],
     }),
 
-    // Get single Dua
+    // Get a single Dua
     getSingleDua: build.query({
       query: (id: string) => ({
         url: `/dua/${id}`,
@@ -44,8 +47,11 @@ export const duaApi = baseServerApi.injectEndpoints({
     }),
 
     // Update Dua
-    updateDua: build.mutation({
-      query: ({ id, data }: TUpdateDuaArgs) => ({
+    updateDua: build.mutation<
+      { success: boolean; message?: string; data?: unknown },
+      TUpdateDuaArgs
+    >({
+      query: ({ id, data }) => ({
         url: `/dua/${id}`,
         method: "PUT",
         data,
@@ -54,8 +60,11 @@ export const duaApi = baseServerApi.injectEndpoints({
     }),
 
     // Soft delete Dua
-    softDeleteDua: build.mutation({
-      query: (id: string) => ({
+    softDeleteDua: build.mutation<
+      { success: boolean; message?: string },
+      string
+    >({
+      query: (id) => ({
         url: `/dua/${id}`,
         method: "DELETE",
       }),
@@ -63,8 +72,11 @@ export const duaApi = baseServerApi.injectEndpoints({
     }),
 
     // Hard delete Dua
-    hardDeleteDua: build.mutation({
-      query: (id: string) => ({
+    hardDeleteDua: build.mutation<
+      { success: boolean; message?: string },
+      string
+    >({
+      query: (id) => ({
         url: `/dua/admin/${id}`,
         method: "DELETE",
       }),

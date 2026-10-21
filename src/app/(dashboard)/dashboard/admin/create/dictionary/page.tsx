@@ -1,6 +1,5 @@
 "use client";
 
-import FormContainer from "@/components/forms/FormContainer";
 import FormInput from "@/components/forms/FormInput";
 import FormTextarea from "@/components/forms/FormTextarea";
 import { useCreateWordMutation } from "@/redux/api/dictionaryApi";
@@ -9,272 +8,350 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ArrowLeft,
   BookOpenText,
+  Check,
   Languages,
+  LoaderCircle,
   Save,
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
-import React from "react";
+import { useRouter } from "next/navigation";
+import {
+  FormProvider,
+  useForm,
+  type Resolver,
+  type SubmitErrorHandler,
+} from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
 
-type TCreateDictionaryWord = z.infer<typeof DictionarySchema>;
+const MANAGEMENT_URL = "/dashboard/admin/manage/dictionary";
 
-type TApiError = {
+interface TCreateDictionaryWord {
+  persianWord: string;
+  transliteration?: string;
+  banglaMeaning: string;
+  englishMeaning?: string;
+  exampleFA?: string;
+  exampleEN?: string;
+  exampleBN?: string;
+}
+
+interface TApiError {
   data?: {
     message?: string;
   };
+  message?: string;
+}
+
+interface TCreateWordResponse {
+  success: boolean;
+  message?: string;
+}
+
+const defaultValues: TCreateDictionaryWord = {
+  persianWord: "",
+  transliteration: "",
+  banglaMeaning: "",
+  englishMeaning: "",
+  exampleFA: "",
+  exampleEN: "",
+  exampleBN: "",
 };
 
-const CreateDictionaryPage: React.FC = () => {
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (typeof error === "object" && error !== null) {
+    if ("data" in error) {
+      const data = error.data;
+
+      if (
+        typeof data === "object" &&
+        data !== null &&
+        "message" in data &&
+        typeof data.message === "string"
+      ) {
+        return data.message;
+      }
+    }
+
+    if ("message" in error && typeof error.message === "string") {
+      return error.message;
+    }
+  }
+
+  return fallback;
+};
+
+const CreateDictionaryPage = () => {
+  const router = useRouter();
   const [createWord, { isLoading: isSubmitting }] = useCreateWordMutation();
 
-  const onSubmit = async (data: TCreateDictionaryWord) => {
+  const form = useForm<TCreateDictionaryWord>({
+    resolver: zodResolver(DictionarySchema) as Resolver<TCreateDictionaryWord>,
+    defaultValues,
+    mode: "onSubmit",
+  });
+
+  const onSubmit = async (data: TCreateDictionaryWord): Promise<void> => {
+    const payload: TCreateDictionaryWord = {
+      persianWord: data.persianWord.trim(),
+      transliteration: data.transliteration?.trim() || undefined,
+      banglaMeaning: data.banglaMeaning.trim(),
+      englishMeaning: data.englishMeaning?.trim() || undefined,
+      exampleFA: data.exampleFA?.trim() || undefined,
+      exampleEN: data.exampleEN?.trim() || undefined,
+      exampleBN: data.exampleBN?.trim() || undefined,
+    };
+
     try {
-      const res = await createWord(data).unwrap();
+      const response = (await createWord(
+        payload,
+      ).unwrap()) as TCreateWordResponse;
 
-      if (res.success) {
-        toast.success("Dictionary word created successfully!", {
+      if (!response.success) {
+        toast.error("Unable to create dictionary word", {
           description:
-            "The Persian word has been successfully added to the dictionary.",
+            response.message || "The server did not confirm creation.",
         });
+        return;
       }
-    } catch (error: unknown) {
-      const apiError = error as TApiError;
 
-      toast.error(
-        apiError.data?.message || "Failed to create dictionary word!",
-      );
+      toast.success("Dictionary word created successfully!", {
+        description: "The Persian word and its translations have been saved.",
+      });
+
+      form.reset(defaultValues);
+      router.push(MANAGEMENT_URL);
+      router.refresh();
+    } catch (error: unknown) {
+      toast.error("Failed to create dictionary word", {
+        description: getErrorMessage(
+          error,
+          "Something went wrong while saving the dictionary entry.",
+        ),
+      });
     }
   };
 
+  const onInvalid: SubmitErrorHandler<TCreateDictionaryWord> = (errors) => {
+    const firstError = Object.values(errors).find((error) => error?.message);
+
+    toast.error(
+      firstError?.message?.toString() || "Please check the required fields.",
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6 lg:p-12 font-poppins">
-      <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700">
-        {/* Header Navigation */}
-        <nav className="flex items-center justify-between pb-6 border-b border-gray-200">
+    <div className="min-h-screen bg-gray-50 p-4 font-poppins sm:p-6 lg:p-12">
+      <div className="mx-auto max-w-6xl space-y-8 sm:space-y-12">
+        {/* Navigation */}
+        <nav className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 pb-6">
           <Link
-            href="/dashboard/admin/manage/dictionary"
-            className="group flex items-center gap-2 text-gray-500 hover:text-teal-600 font-semibold uppercase text-xs tracking-widest transition-all"
+            href={MANAGEMENT_URL}
+            className="group flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-500 transition hover:text-teal-600"
           >
-            <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-            <span>Back to Dictionary</span>
+            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+            Back to Dictionary
           </Link>
 
-          <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-widest leading-none">
-            <Sparkles className="h-3 w-3 text-teal-400" />
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-400">
+            <Sparkles className="h-3 w-3 text-teal-500" />
             New Dictionary Entry
           </div>
         </nav>
 
-        {/* Hero Section */}
-        <header className="space-y-4">
+        {/* Header */}
+        <header>
           <div className="flex items-center gap-4">
-            <div className="bg-teal-600 p-4 rounded-2xl shadow-xl shadow-teal-100">
-              <Languages className="h-8 w-8 text-white" />
+            <div className="shrink-0 rounded-2xl bg-teal-600 p-3 shadow-xl shadow-teal-100 sm:p-4">
+              <Languages className="h-7 w-7 text-white sm:h-8 sm:w-8" />
             </div>
 
             <div>
-              <h1 className="text-4xl lg:text-5xl font-black text-gray-900 tracking-tight">
+              <h1 className="text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">
                 Add Dictionary Word
               </h1>
-
-              <p className="text-gray-500 font-medium mt-2 text-lg">
-                Add Persian vocabulary with translations and examples
+              <p className="mt-2 text-sm text-gray-500 sm:text-base">
+                Add Persian vocabulary with translations and examples.
               </p>
             </div>
           </div>
         </header>
 
-        {/* Main Interface */}
-        <div className="bg-white rounded-3xl shadow-2xl shadow-gray-200/50 border border-gray-100 overflow-hidden relative">
-          {/* Decorative Icon */}
-          <div className="absolute -top-32 -right-32 p-16 pointer-events-none opacity-[0.02] rotate-12">
-            <BookOpenText className="h-[40rem] w-[40rem] text-teal-900" />
+        {/* Form Card */}
+        <section className="relative overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-2xl shadow-gray-200/50">
+          <div className="pointer-events-none absolute right-0 top-0 p-8 opacity-[0.04] sm:p-16">
+            <BookOpenText className="h-40 w-40 text-teal-900 sm:h-64 sm:w-64" />
           </div>
 
-          <div className="p-10 lg:p-16 relative">
-            <FormContainer
-              onSubmit={onSubmit}
-              resolver={zodResolver(DictionarySchema)}
-            >
-              <div className="space-y-12">
-                {/* ========================================= */}
-                {/* WORD INFORMATION */}
-                {/* ========================================= */}
-
-                <section className="space-y-8">
-                  <div className="flex items-center gap-3">
-                    <div className="h-1 w-12 bg-teal-600 rounded-full" />
-
-                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest">
-                      Word Information
-                    </h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Persian Word */}
-                    <FormInput
-                      name="persianWord"
-                      label="Persian Word *"
-                      placeholder="مثلاً: کتاب"
-                      className="h-14 bg-gray-50/50 border-gray-100 focus:bg-white rounded-xl font-bold text-lg"
-                      required
-                    />
-
-                    {/* Transliteration */}
-                    <FormInput
-                      name="transliteration"
-                      label="Transliteration"
-                      placeholder="e.g., Ketab"
-                      className="h-14 bg-gray-50/50 border-gray-100 focus:bg-white rounded-xl font-medium"
-                    />
-                  </div>
-                </section>
-
-                {/* ========================================= */}
-                {/* MEANINGS */}
-                {/* ========================================= */}
-
-                <section className="space-y-8">
-                  <div className="flex items-center gap-3">
-                    <div className="h-1 w-12 bg-purple-500 rounded-full" />
-
-                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest">
-                      Meanings & Translations
-                    </h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Bangla Meaning */}
-                    <FormTextarea
-                      name="banglaMeaning"
-                      label="Bangla Meaning *"
-                      rows={5}
-                      placeholder="বাংলা অর্থ লিখুন..."
-                      className="bg-gray-50/30 border-gray-100 rounded-2xl p-6 focus:bg-white leading-relaxed text-gray-700"
-                      required
-                    />
-
-                    {/* English Meaning */}
-                    <FormTextarea
-                      name="englishMeaning"
-                      label="English Meaning"
-                      rows={5}
-                      placeholder="Enter English meaning..."
-                      className="bg-gray-50/30 border-gray-100 rounded-2xl p-6 focus:bg-white leading-relaxed text-gray-700"
-                    />
-                  </div>
-                </section>
-
-                {/* ========================================= */}
-                {/* EXAMPLES */}
-                {/* ========================================= */}
-
-                <section className="space-y-8">
-                  <div className="flex items-center gap-3">
-                    <div className="h-1 w-12 bg-teal-500 rounded-full" />
-
-                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest">
-                      Usage Examples
-                    </h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Persian Example */}
-                    <FormTextarea
-                      name="exampleFA"
-                      label="Persian Example"
-                      rows={6}
-                      placeholder="جمله فارسی را وارد کنید..."
-                      className="bg-gray-50/30 border-gray-100 rounded-2xl p-6 focus:bg-white leading-relaxed text-gray-700"
-                    />
-
-                    {/* English Example */}
-                    <FormTextarea
-                      name="exampleEN"
-                      label="English Example"
-                      rows={6}
-                      placeholder="Enter the English example..."
-                      className="bg-gray-50/30 border-gray-100 rounded-2xl p-6 focus:bg-white leading-relaxed text-gray-700"
-                    />
-
-                    {/* Bangla Example */}
-                    <FormTextarea
-                      name="exampleBN"
-                      label="Bangla Example"
-                      rows={6}
-                      placeholder="বাংলা উদাহরণ বাক্য লিখুন..."
-                      className="bg-gray-50/30 border-gray-100 rounded-2xl p-6 focus:bg-white leading-relaxed text-gray-700"
-                    />
-                  </div>
-                </section>
-
-                {/* GUIDELINES */}
-
-                <section className="p-8 bg-teal-50/50 rounded-2xl border border-teal-100/50 space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-teal-600 text-white p-2 rounded-lg shadow-sm">
-                      <Sparkles className="h-5 w-5" />
+          <div className="relative p-5 sm:p-8 lg:p-12">
+            <FormProvider {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit, onInvalid)}
+                noValidate
+                className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12"
+              >
+                {/* Sidebar */}
+                <aside className="space-y-8 lg:col-span-4 lg:space-y-10">
+                  <section className="space-y-6">
+                    <div className="flex items-center gap-3">
+                      <div className="h-1 w-10 rounded-full bg-teal-600" />
+                      <h2 className="text-xs font-black uppercase tracking-widest text-gray-400 sm:text-sm">
+                        Word Information
+                      </h2>
                     </div>
 
-                    <span className="text-sm font-black text-gray-800 uppercase tracking-widest leading-none">
-                      Entry Guidelines
-                    </span>
-                  </div>
+                    <div className="space-y-6">
+                      <FormInput
+                        name="persianWord"
+                        label="Persian Word *"
+                        placeholder="مثلاً: کتاب"
+                        className="h-14 rounded-xl border-gray-100 bg-gray-50/50 text-lg font-bold focus:bg-white"
+                        required
+                      />
 
-                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {[
-                      "Provide the correct Persian word",
-                      "Use accurate transliteration",
-                      "Bangla meaning is required",
-                      "English meaning is optional",
-                      "Use natural Persian example sentences",
-                      "Keep translations semantically accurate",
-                    ].map((rule) => (
-                      <li
-                        key={rule}
-                        className="flex items-center gap-3 text-xs font-bold text-gray-600 uppercase tracking-tight"
+                      <FormInput
+                        name="transliteration"
+                        label="Transliteration"
+                        placeholder="e.g., Ketab"
+                        className="h-14 rounded-xl border-gray-100 bg-gray-50/50 font-medium focus:bg-white"
+                      />
+                    </div>
+                  </section>
+
+                  <section className="space-y-5 rounded-2xl border border-teal-100 bg-teal-50/60 p-5 sm:p-7">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-lg bg-teal-600 p-2 text-white shadow-sm">
+                        <Sparkles className="h-5 w-5" />
+                      </div>
+
+                      <h2 className="text-sm font-black uppercase tracking-widest text-gray-800">
+                        Entry Guidelines
+                      </h2>
+                    </div>
+
+                    <ul className="space-y-4">
+                      {[
+                        "Provide the correct Persian word.",
+                        "Check spelling and transliteration.",
+                        "Add an accurate Bangla meaning.",
+                        "Use reliable translations and examples.",
+                      ].map((rule) => (
+                        <li
+                          key={rule}
+                          className="flex items-start gap-3 text-xs font-semibold leading-5 text-gray-600"
+                        >
+                          <Check className="mt-0.5 h-4 w-4 shrink-0 text-teal-600" />
+                          <span>{rule}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                </aside>
+
+                {/* Main Fields */}
+                <main className="min-w-0 space-y-8 lg:col-span-8 lg:space-y-10">
+                  <section className="space-y-6">
+                    <div className="flex items-center gap-3">
+                      <div className="h-1 w-10 rounded-full bg-purple-500" />
+                      <h2 className="text-xs font-black uppercase tracking-widest text-gray-400 sm:text-sm">
+                        Meanings & Translations
+                      </h2>
+                    </div>
+
+                    <div className="space-y-6">
+                      <FormTextarea
+                        name="banglaMeaning"
+                        label="Bangla Meaning *"
+                        rows={4}
+                        placeholder="বাংলা অর্থ লিখুন..."
+                        className="rounded-2xl border-gray-100 bg-gray-50/30 p-5 leading-relaxed text-gray-700 focus:bg-white"
+                        required
+                      />
+
+                      <FormTextarea
+                        name="englishMeaning"
+                        label="English Meaning"
+                        rows={4}
+                        placeholder="Enter the English meaning..."
+                        className="rounded-2xl border-gray-100 bg-gray-50/30 p-5 leading-relaxed text-gray-700 focus:bg-white"
+                      />
+                    </div>
+                  </section>
+
+                  <section className="space-y-6">
+                    <div className="flex items-center gap-3">
+                      <div className="h-1 w-10 rounded-full bg-teal-500" />
+                      <h2 className="text-xs font-black uppercase tracking-widest text-gray-400 sm:text-sm">
+                        Usage Examples
+                      </h2>
+                    </div>
+
+                    <div className="space-y-6">
+                      <FormTextarea
+                        name="exampleFA"
+                        label="Persian Example"
+                        rows={4}
+                        placeholder="جمله فارسی را وارد کنید..."
+                        className="rounded-2xl border-gray-100 bg-gray-50/30 p-5 leading-relaxed text-gray-700 focus:bg-white"
+                      />
+
+                      <FormTextarea
+                        name="exampleEN"
+                        label="English Example"
+                        rows={4}
+                        placeholder="Enter the English example..."
+                        className="rounded-2xl border-gray-100 bg-gray-50/30 p-5 leading-relaxed text-gray-700 focus:bg-white"
+                      />
+
+                      <FormTextarea
+                        name="exampleBN"
+                        label="Bangla Example"
+                        rows={4}
+                        placeholder="বাংলা উদাহরণ বাক্য লিখুন..."
+                        className="rounded-2xl border-gray-100 bg-gray-50/30 p-5 leading-relaxed text-gray-700 focus:bg-white"
+                      />
+                    </div>
+                  </section>
+
+                  {/* Actions */}
+                  <div className="border-t border-gray-100 pt-7 sm:pt-10">
+                    <div className="flex flex-col-reverse justify-end gap-3 sm:flex-row sm:items-center">
+                      <Link
+                        href={MANAGEMENT_URL}
+                        className="inline-flex min-h-12 items-center justify-center rounded-xl border border-gray-200 px-6 py-3 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
                       >
-                        <div className="h-1.5 w-1.5 rounded-full bg-teal-300 shadow-sm" />
-                        {rule}
-                      </li>
-                    ))}
-                  </ul>
-                </section>
+                        Cancel
+                      </Link>
 
-                {/* ACTION */}
-
-                <div className="pt-8 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-end gap-6">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full sm:w-auto px-12 py-6 bg-teal-600 hover:bg-teal-700 text-white rounded-xl flex items-center justify-center gap-4 transition-all shadow-xl shadow-teal-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed font-bold tracking-wide uppercase text-sm"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
-                        <span>Adding...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-5 w-5" />
-                        <span>Add Word</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </FormContainer>
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-xl bg-teal-600 px-8 py-4 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-teal-200 transition hover:bg-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <LoaderCircle className="h-5 w-5 animate-spin" />
+                            Creating Word...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-5 w-5" />
+                            Add Word
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </main>
+              </form>
+            </FormProvider>
           </div>
-        </div>
+        </section>
 
         {/* Footer */}
-        <footer className="flex flex-col items-center gap-4 py-8">
-          <div className="h-1 w-16 bg-gray-200 rounded-full" />
-
-          <p className="text-xs font-semibold uppercase text-gray-400 tracking-widest">
-            Almunji Global Archival System • Dictionary Services
+        <footer className="pb-8 text-center">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 sm:text-xs">
+            Almunji Global Archival System · Dictionary Services
           </p>
         </footer>
       </div>

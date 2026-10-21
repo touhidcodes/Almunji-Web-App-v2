@@ -8,7 +8,8 @@ export type TDuaQueryParams = {
   sortOrder?: "asc" | "desc";
 };
 
-export type TDuaData = {
+export interface TDuaData {
+  id?: string;
   name: string;
   arabic: string;
   transliteration?: string;
@@ -16,30 +17,26 @@ export type TDuaData = {
   english?: string;
   reference?: string;
   tags?: string[];
-};
+  isDeleted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 export type TUpdateDuaArgs = {
   id: string;
   data: Partial<TDuaData>;
 };
 
-export type TDua = {
-  id: string;
-  name: string;
-  arabic: string;
-  transliteration?: string;
-  bangla: string;
-  english?: string;
-  reference?: string;
-  tags?: string[];
-};
-
-export type TUpdateDuaPayload = {
-  name: string;
-  arabic: string;
-  transliteration?: string;
-  bangla: string;
-  english?: string;
-  reference?: string;
-  tags?: string[];
-};
+export type TUpdateDuaPayload = Partial<
+  Pick<
+    TDuaData,
+    | "name"
+    | "arabic"
+    | "transliteration"
+    | "bangla"
+    | "english"
+    | "reference"
+    | "tags"
+    | "isDeleted"
+  >
+>;

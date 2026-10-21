@@ -1,38 +1,62 @@
 "use client";
 
 import { useState } from "react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, type FieldValues, type Path } from "react-hook-form";
 import { Plus, X } from "lucide-react";
 
-interface FormTagsProps {
-  name: string;
+interface FormTagsProps<T extends FieldValues = FieldValues> {
+  name: Path<T>;
   label?: string;
   placeholder?: string;
   description?: string;
 }
 
-const FormTags = ({
+const normalizeTags = (value: unknown): string[] => {
+  let parsed = value;
+
+  // Support existing records or form values that are strings.
+  if (typeof parsed === "string") {
+    const trimmed = parsed.trim();
+
+    if (!trimmed) return [];
+
+    try {
+      const json: unknown = JSON.parse(trimmed);
+
+      parsed = Array.isArray(json) ? json : trimmed.split(",");
+    } catch {
+      parsed = trimmed.split(",");
+    }
+  }
+
+  if (!Array.isArray(parsed)) return [];
+
+  return [
+    ...new Set(
+      parsed
+        .filter((tag): tag is string => typeof tag === "string")
+        .flatMap((tag) => tag.split(","))
+        .map((tag) => tag.trim())
+        .filter(Boolean),
+    ),
+  ];
+};
+
+const FormTags = <T extends FieldValues = FieldValues>({
   name,
   label = "Tags",
   placeholder = "Type a tag and press Enter...",
   description,
-}: FormTagsProps) => {
-  const { watch, setValue } = useFormContext();
+}: FormTagsProps<T>) => {
+  const { watch, setValue } = useFormContext<T>();
   const [inputValue, setInputValue] = useState("");
 
-  const rawTags = watch(name);
+  const rawTags: unknown = watch(name);
+  const tags = normalizeTags(rawTags);
 
-  const tags: string[] = Array.isArray(rawTags)
-    ? rawTags
-    : typeof rawTags === "string"
-      ? rawTags
-          .split(",")
-          .map((tag: string) => tag.trim())
-          .filter(Boolean)
-      : [];
-
+  // IMPORTANT: Keep tags as string[], never join them into a string.
   const saveTags = (nextTags: string[]) => {
-    setValue(name, nextTags.join(", "), {
+    setValue(name, normalizeTags(nextTags) as never, {
       shouldDirty: true,
       shouldTouch: true,
       shouldValidate: true,
@@ -42,7 +66,10 @@ const FormTags = ({
   const addTag = () => {
     const tag = inputValue.trim().replace(/,+$/, "").trim();
 
-    if (!tag) return;
+    if (!tag) {
+      setInputValue("");
+      return;
+    }
 
     if (
       tags.some(
@@ -61,13 +88,13 @@ const FormTags = ({
     saveTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault();
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter" || event.key === ",") {
+      event.preventDefault();
       addTag();
     }
 
-    if (e.key === "Backspace" && !inputValue && tags.length > 0) {
+    if (event.key === "Backspace" && !inputValue && tags.length > 0) {
       removeTag(tags[tags.length - 1]);
     }
   };
@@ -101,7 +128,7 @@ const FormTags = ({
           <input
             type="text"
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={(event) => setInputValue(event.target.value)}
             onKeyDown={handleKeyDown}
             onBlur={addTag}
             placeholder={tags.length === 0 ? placeholder : "Add another tag..."}

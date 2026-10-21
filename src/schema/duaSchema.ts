@@ -1,13 +1,24 @@
-import z from "zod/v3";
+import { normalizeTags } from "@/utils/normalizeTags";
+import { z } from "zod/v3";
 
-export const DuaSchema = z.object({
-  id: z.string().uuid().optional(),
-  name: z.string().min(1),
-  arabic: z.string().min(1),
+export const CreateDuaSchema = z.object({
+  name: z.string().trim().min(1, "Name is required"),
+  arabic: z.string().trim().min(1, "Arabic text is required"),
   transliteration: z.string().optional(),
-  bangla: z.string().min(1),
+  bangla: z.string().trim().min(1, "Bangla text is required"),
   english: z.string().optional(),
   reference: z.string().optional(),
-  tags: z.array(z.string()).optional(),
-  isDeleted: z.boolean().optional(),
+  tags: z.array(z.string().trim().min(1)).optional(),
+});
+
+export type TDuaFormValues = z.infer<typeof CreateDuaSchema>;
+
+export const UpdateDuaSchema = z.object({
+  name: z.string().trim().min(1, "Name is required"),
+  arabic: z.string().trim().min(1, "Arabic text is required"),
+  transliteration: z.string().optional(),
+  bangla: z.string().trim().min(1, "Bangla text is required"),
+  english: z.string().optional(),
+  reference: z.string().optional(),
+  tags: z.array(z.string().trim().min(1)).optional(),
 });

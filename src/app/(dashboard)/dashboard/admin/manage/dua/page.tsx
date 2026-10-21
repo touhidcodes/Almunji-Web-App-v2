@@ -1,443 +1,580 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import {
-  BookOpen,
-  Plus,
-  Search,
-  Pencil,
-  Trash2,
-  X,
-  Save,
-  Loader2,
-  ChevronRight,
-  AlertTriangle,
-  Languages,
-  BookMarked,
-  Tags,
-} from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { FormProvider, useForm, useFormContext } from "react-hook-form";
+import { Edit, Plus, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
-import FormContainer from "@/components/forms/FormContainer";
 import FormInput from "@/components/forms/FormInput";
 import FormTextarea from "@/components/forms/FormTextarea";
 import FormTags from "@/components/forms/FormTags";
+import { useDebounce } from "@/hooks/useDebounce";
 
 import {
   useGetAllDuasQuery,
-  useUpdateDuaMutation,
   useSoftDeleteDuaMutation,
+  useUpdateDuaMutation,
 } from "@/redux/api/duaApi";
 
-import { DuaSchema } from "@/schema/duaSchema";
-import type { TDua, TUpdateDuaPayload } from "@/types/dua";
+import { UpdateDuaSchema, type TDuaFormValues } from "@/schema/duaSchema";
+
+import type { TDuaData, TUpdateDuaPayload } from "@/types/dua";
+import { TApiError } from "@/types/api";
+
+const CREATE_URL = "/dashboard/admin/create/dua";
+
+type TManagedDua = TDuaData & {
+  id: string;
+};
+
+type TEditDuaFormProps = {
+  dua: TManagedDua;
+  isUpdating: boolean;
+  onCancel: () => void;
+  onSubmit: (data: TDuaFormValues) => Promise<void>;
+};
+
+// Convert API values and custom input values to string arrays.
+const normalizeTags = (value: unknown): string[] => {
+  let tags: unknown = value;
+
+  // Support JSON-encoded arrays returned as strings.
+  if (typeof tags === "string") {
+    const trimmed = tags.trim();
+
+    if (!trimmed) return [];
+
+    try {
+      const parsed: unknown = JSON.parse(trimmed);
+
+      if (Array.isArray(parsed)) {
+        tags = parsed;
+      } else {
+        tags = trimmed.split(",");
+      }
+    } catch {
+      tags = trimmed.split(",");
+    }
+  }
+
+  if (!Array.isArray(tags)) return [];
+
+  return [
+    ...new Set(
+      tags
+        .filter((tag): tag is string => typeof tag === "string")
+        .flatMap((tag) => tag.split(","))
+        .map((tag) => tag.trim())
+        .filter(Boolean),
+    ),
+  ];
+};
 
 const getErrorMessage = (error: unknown, fallback: string): string => {
-  if (typeof error === "object" && error !== null && "data" in error) {
-    const data = error.data;
+  if (typeof error !== "object" || error === null) {
+    return fallback;
+  }
 
-    if (
-      typeof data === "object" &&
-      data !== null &&
-      "message" in data &&
-      typeof data.message === "string"
-    ) {
-      return data.message;
-    }
+  const apiError = error as TApiError;
+
+  if (
+    typeof apiError.data?.message === "string" &&
+    apiError.data.message.trim()
+  ) {
+    return apiError.data.message;
+  }
+
+  if (typeof apiError.message === "string" && apiError.message.trim()) {
+    return apiError.message;
   }
 
   return fallback;
 };
 
-const ManageDuaPage = () => {
+function EditFormValidationErrors() {
+  const {
+    formState: { errors },
+  } = useFormContext<TDuaFormValues>();
+
+  const fieldLabels: Record<string, string> = {
+    name: "Dua name",
+    arabic: "Arabic text",
+    transliteration: "Transliteration",
+    bangla: "Bangla translation",
+    english: "English translation",
+    reference: "Reference",
+    tags: "Tags",
+  };
+
+  const entries = Object.entries(errors).filter(
+    ([, error]) => typeof error?.message === "string",
+  );
+
+  if (!entries.length) return null;
+
+  return (
+    <div
+      role="alert"
+      className="space-y-1 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+    >
+      <p className="font-semibold">
+        Please correct these fields before saving:
+      </p>
+
+      {entries.map(([field, error]) => (
+        <p key={field}>
+          <span className="font-medium">{fieldLabels[field] ?? field}:</span>{" "}
+          {typeof error?.message === "string" ? error.message : "Invalid value"}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function EditDuaForm({
+  dua,
+  isUpdating,
+  onCancel,
+  onSubmit,
+}: TEditDuaFormProps) {
+  const form = useForm<TDuaFormValues>({
+    resolver: zodResolver(UpdateDuaSchema),
+    defaultValues: {
+      name: dua.name ?? "",
+      arabic: dua.arabic ?? "",
+      transliteration: dua.transliteration ?? "",
+      bangla: dua.bangla ?? "",
+      english: dua.english ?? "",
+      reference: dua.reference ?? "",
+      tags: normalizeTags(dua.tags),
+    },
+    mode: "onSubmit",
+  });
+
+  const handleValidSubmit = async (values: TDuaFormValues): Promise<void> => {
+    await onSubmit({
+      ...values,
+      tags: normalizeTags(values.tags),
+    });
+  };
+
+  const handleInvalidSubmit = (): void => {
+    const firstError = Object.entries(form.formState.errors)[0];
+
+    if (firstError) {
+      const [field, error] = firstError;
+
+      toast.error("Form validation failed", {
+        description:
+          typeof error?.message === "string"
+            ? `${field}: ${error.message}`
+            : `Please check the ${field} field.`,
+      });
+    }
+  };
+
+  const isBusy = isUpdating || form.formState.isSubmitting;
+
+  return (
+    <FormProvider {...form}>
+      <form
+        onSubmit={form.handleSubmit(handleValidSubmit, handleInvalidSubmit)}
+        noValidate
+        className="space-y-5"
+      >
+        <FormInput name="name" label="Dua name" required />
+
+        <FormTextarea
+          name="arabic"
+          label="Arabic text"
+          rows={4}
+          required
+          className="text-right text-2xl leading-loose"
+        />
+
+        <FormTextarea name="transliteration" label="Transliteration" rows={2} />
+
+        <FormTextarea
+          name="bangla"
+          label="Bangla translation"
+          rows={3}
+          required
+        />
+
+        <FormTextarea name="english" label="English translation" rows={3} />
+
+        <FormInput
+          name="reference"
+          label="Reference"
+          placeholder="e.g. Sahih al-Bukhari 1234"
+        />
+
+        <FormTags
+          name="tags"
+          label="Tags"
+          placeholder="Type a tag and press Enter"
+        />
+
+        <EditFormValidationErrors />
+
+        <footer className="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isBusy}
+            className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            disabled={isBusy}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isBusy ? (
+              <>
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                Saving...
+              </>
+            ) : (
+              "Save changes"
+            )}
+          </button>
+        </footer>
+      </form>
+    </FormProvider>
+  );
+}
+
+const ManageDuasPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [editingDua, setEditingDua] = useState<TDua | null>(null);
-  const [deletingDua, setDeletingDua] = useState<TDua | null>(null);
+  const [editingDua, setEditingDua] = useState<TManagedDua | null>(null);
+  const [deletingDua, setDeletingDua] = useState<TManagedDua | null>(null);
+
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const {
     data: duasData,
     isLoading: isLoadingDuas,
-    isFetching,
-  } = useGetAllDuasQuery({ searchTerm });
+    isFetching: isFetchingDuas,
+    refetch: refetchDuas,
+  } = useGetAllDuasQuery({
+    searchTerm: debouncedSearchTerm,
+  });
 
   const [updateDua, { isLoading: isUpdating }] = useUpdateDuaMutation();
 
-  const [softDeleteDua, { isLoading: isSoftDeleting }] =
-    useSoftDeleteDuaMutation();
+  const [softDeleteDua, { isLoading: isDeleting }] = useSoftDeleteDuaMutation();
 
-  const duas = duasData?.data ?? [];
-
-  const filteredDuas = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-
-    if (!term) return duas;
-
-    return duas.filter((dua) => {
-      const searchableValues = [
-        dua.name,
-        dua.arabic,
-        dua.transliteration,
-        dua.bangla,
-        dua.english,
-        dua.reference,
-        ...(dua.tags ?? []),
-      ];
-
-      return searchableValues.some((value) =>
-        String(value ?? "")
-          .toLowerCase()
-          .includes(term),
-      );
-    });
-  }, [duas, searchTerm]);
-
-  const totalDuas = duas.length;
+  const duas: TManagedDua[] = (duasData?.data ?? []) as TManagedDua[];
 
   const closeEditModal = () => {
-    if (isUpdating) return;
-    setEditingDua(null);
+    if (!isUpdating) setEditingDua(null);
   };
 
-  const handleUpdate = async (data: TUpdateDuaPayload) => {
-    if (!editingDua) return;
+  const handleUpdate = async (values: TDuaFormValues): Promise<void> => {
+    if (!editingDua || isUpdating) return;
+
+    const name = values.name.trim();
+    const arabic = values.arabic.trim();
+    const bangla = values.bangla.trim();
+
+    if (!name || !arabic || !bangla) {
+      toast.error("Required fields are missing", {
+        description:
+          "Dua name, Arabic text, and Bangla translation are required.",
+      });
+      return;
+    }
+
+    // Always send tags as string[], never as a raw string.
+    // Empty optional strings are retained so users can clear fields.
+    const payload: TUpdateDuaPayload = {
+      name,
+      arabic,
+      bangla,
+      transliteration: values.transliteration?.trim() ?? "",
+      english: values.english?.trim() ?? "",
+      reference: values.reference?.trim() ?? "",
+      tags: normalizeTags(values.tags),
+    };
 
     try {
-      const response = await updateDua({
-        duaId: editingDua.id,
-        payload: data,
+      await updateDua({
+        id: editingDua.id,
+        data: payload,
       }).unwrap();
 
-      if (response.success) {
-        toast.success("Dua updated successfully.");
-        setEditingDua(null);
-      } else {
-        toast.error("Unable to update the dua.");
-      }
+      toast.success("Dua updated successfully.");
+      setEditingDua(null);
+
+      await refetchDuas();
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error, "Failed to update dua."));
+      toast.error("Failed to update Dua", {
+        description: getErrorMessage(
+          error,
+          "The server rejected the update. Please verify the fields and try again.",
+        ),
+        duration: 6000,
+      });
+
+      console.error("Update Dua failed:", error);
     }
   };
 
-  const handleDelete = async () => {
-    if (!deletingDua) return;
+  const handleSoftDelete = async (): Promise<void> => {
+    if (!deletingDua || isDeleting) return;
 
     try {
       await softDeleteDua(deletingDua.id).unwrap();
 
       toast.success("Dua deleted successfully.");
       setDeletingDua(null);
+
+      await refetchDuas();
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error, "Failed to delete dua."));
+      toast.error("Failed to delete Dua", {
+        description: getErrorMessage(
+          error,
+          "Could not delete the Dua. Please try again.",
+        ),
+      });
+
+      console.error("Delete Dua failed:", error);
     }
   };
 
+  const clearFilters = () => setSearchTerm("");
+
   return (
-    <main className="min-h-screen bg-slate-50/70 px-4 py-6 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-gray-50/70 p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-slate-500">
-          <Link
-            href="/dashboard/admin"
-            className="transition hover:text-teal-700"
-          >
-            Dashboard
-          </Link>
-
-          <ChevronRight className="h-4 w-4" />
-
-          <span className="font-medium text-slate-800">Manage Duas</span>
-        </nav>
-
-        {/* Page header */}
-        <section className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-7">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
-              <BookOpen className="h-6 w-6" />
-            </div>
-
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                Manage Duas
-              </h1>
-
-              <p className="mt-1 max-w-xl text-sm leading-6 text-slate-500">
-                View, edit, search, and manage supplications and their
-                translations.
-              </p>
-            </div>
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+              Manage Duas
+            </h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Manage Duas, Arabic text, translations, references, and tags.
+            </p>
           </div>
 
           <Link
-            href="/dashboard/admin/create/dua"
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+            href={CREATE_URL}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
           >
             <Plus className="h-4 w-4" />
-            Create New Dua
+            Create Dua
           </Link>
-        </section>
+        </header>
 
-        {/* Summary cards */}
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
-              <BookMarked className="h-5 w-5" />
-            </div>
-
-            <div>
-              <p className="text-sm font-medium text-slate-500">
-                Records found
-              </p>
-
-              <p className="mt-1 text-2xl font-bold text-slate-900">
-                {totalDuas}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-50 text-sky-700">
-              <Languages className="h-5 w-5" />
-            </div>
-
-            <div>
-              <p className="text-sm font-medium text-slate-500">Displaying</p>
-
-              <p className="mt-1 text-2xl font-bold text-slate-900">
-                {filteredDuas.length}
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Dua directory */}
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-col gap-4 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-base font-semibold text-slate-900">
-                Dua directory
-              </h2>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Search supplications and manage their details.
-              </p>
-            </div>
-
-            <div className="relative w-full sm:max-w-sm">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
+        <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(240px,1fr)_auto]">
+            <label className="relative block">
+              <span className="sr-only">Search Duas</span>
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <input
                 type="search"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search name, translation, tags..."
-                aria-label="Search duas"
-                className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+                placeholder="Search Dua name, Arabic, translation, or reference..."
+                className="w-full rounded-lg border border-gray-200 py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
               />
-            </div>
+            </label>
+
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+            >
+              Clear search
+            </button>
+          </div>
+        </section>
+
+        <section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 sm:px-5">
+            <h2 className="text-sm font-semibold text-gray-800">Dua Records</h2>
+            <span className="text-xs text-gray-500">
+              {isLoadingDuas
+                ? "Loading..."
+                : `${duas.length} records${isFetchingDuas ? " · Updating..." : ""}`}
+            </span>
           </div>
 
           {isLoadingDuas ? (
-            <div className="flex min-h-64 flex-col items-center justify-center gap-3">
-              <Loader2 className="h-7 w-7 animate-spin text-teal-700" />
-              <p className="text-sm text-slate-500">Loading dua records...</p>
+            <div className="space-y-3 p-4">
+              {[1, 2, 3].map((item) => (
+                <div
+                  key={item}
+                  className="h-16 animate-pulse rounded-lg bg-gray-100"
+                />
+              ))}
+            </div>
+          ) : duas.length === 0 ? (
+            <div className="px-4 py-16 text-center">
+              <h3 className="text-base font-semibold text-gray-800">
+                No Duas found
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Try changing your search term or create a new Dua.
+              </p>
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="mt-4 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+                >
+                  Clear search
+                </button>
+              )}
             </div>
           ) : (
-            <>
-              {isFetching && (
-                <div className="h-0.5 w-full overflow-hidden bg-teal-50">
-                  <div className="h-full w-1/3 animate-pulse bg-teal-600" />
-                </div>
-              )}
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1050px] text-left text-sm">
+                <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                  <tr>
+                    <th className="w-[190px] px-4 py-3 font-semibold">
+                      Dua Name
+                    </th>
+                    <th className="w-[240px] px-4 py-3 font-semibold">
+                      Arabic
+                    </th>
+                    <th className="w-[300px] px-4 py-3 font-semibold">
+                      Translations
+                    </th>
+                    <th className="w-[160px] px-4 py-3 font-semibold">
+                      Reference
+                    </th>
+                    <th className="w-[170px] px-4 py-3 font-semibold">Tags</th>
+                    <th className="sticky right-0 z-20 w-[100px] bg-gray-50 px-4 py-3 text-right font-semibold">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
 
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[1000px] border-collapse text-left">
-                  <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50/80">
-                      <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        Dua
-                      </th>
+                <tbody className="divide-y divide-gray-100">
+                  {duas.map((dua) => {
+                    const tags = normalizeTags(dua.tags);
 
-                      <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        Arabic text
-                      </th>
-
-                      <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        Transliteration
-                      </th>
-
-                      <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        Translations
-                      </th>
-
-                      <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        Reference & tags
-                      </th>
-
-                      <th className="px-5 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredDuas.map((dua) => (
+                    return (
                       <tr
                         key={dua.id}
-                        className="transition hover:bg-slate-50/80"
+                        className="align-top transition hover:bg-gray-50/70"
                       >
-                        <td className="px-5 py-4">
-                          <div className="flex items-start gap-3">
-                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-teal-700">
-                              <BookOpen className="h-4 w-4" />
-                            </span>
-
-                            <div className="max-w-52">
-                              <p className="text-sm font-semibold text-slate-900">
-                                {dua.name}
-                              </p>
-
-                              <p className="mt-1 line-clamp-2 text-xs text-slate-500">
-                                {dua.bangla || "No Bangla translation"}
-                              </p>
-                            </div>
-                          </div>
+                        <td className="max-w-[190px] px-4 py-4">
+                          <p className="break-words font-medium text-gray-800">
+                            {dua.name}
+                          </p>
+                          <p className="mt-1 break-all text-xs text-gray-400">
+                            {dua.id}
+                          </p>
                         </td>
 
-                        <td className="px-5 py-4">
+                        <td className="max-w-[240px] px-4 py-4">
                           <p
                             dir="rtl"
-                            className="max-w-64 whitespace-normal text-right text-lg leading-9 text-slate-800"
+                            lang="ar"
+                            className="line-clamp-4 text-right text-xl leading-loose text-gray-900"
                           >
-                            {dua.arabic || "—"}
+                            {dua.arabic}
                           </p>
+                          {dua.transliteration && (
+                            <p className="mt-2 line-clamp-2 text-xs italic leading-5 text-gray-500">
+                              {dua.transliteration}
+                            </p>
+                          )}
                         </td>
 
-                        <td className="px-5 py-4">
-                          <p className="max-w-52 whitespace-normal text-sm leading-6 text-slate-700">
-                            {dua.transliteration || "—"}
-                          </p>
-                        </td>
-
-                        <td className="px-5 py-4">
-                          <p className="max-w-56 text-sm leading-6 text-slate-700">
-                            <span className="font-medium text-slate-500">
-                              EN:
-                            </span>{" "}
-                            {dua.english || "—"}
-                          </p>
-
-                          <p className="mt-1 max-w-56 text-xs leading-5 text-slate-500">
-                            <span className="font-medium">BN:</span>{" "}
-                            {dua.bangla || "—"}
-                          </p>
-                        </td>
-
-                        <td className="px-5 py-4">
-                          <div className="flex max-w-48 flex-col items-start gap-2">
-                            <span className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600">
-                              {dua.reference || "No reference"}
-                            </span>
-
-                            {dua.tags?.length ? (
-                              <div className="flex flex-wrap gap-1.5">
-                                {dua.tags.slice(0, 3).map((tag, index) => (
-                                  <span
-                                    key={`${tag}-${index}`}
-                                    className="rounded-md bg-teal-50 px-2 py-1 text-xs font-medium text-teal-700"
-                                  >
-                                    {tag}
-                                  </span>
-                                ))}
-
-                                {dua.tags.length > 3 && (
-                                  <span className="px-1 py-1 text-xs text-slate-500">
-                                    +{dua.tags.length - 3} more
-                                  </span>
-                                )}
+                        <td className="max-w-[300px] px-4 py-4">
+                          <div className="space-y-2">
+                            <div>
+                              <p className="mb-1 text-xs font-medium text-gray-400">
+                                Bangla
+                              </p>
+                              <p className="line-clamp-3 break-words leading-6 text-gray-700">
+                                {dua.bangla || "—"}
+                              </p>
+                            </div>
+                            {dua.english && (
+                              <div>
+                                <p className="mb-1 text-xs font-medium text-gray-400">
+                                  English
+                                </p>
+                                <p className="line-clamp-3 break-words leading-6 text-gray-600">
+                                  {dua.english}
+                                </p>
                               </div>
-                            ) : (
-                              <span className="text-xs text-slate-400">
-                                No tags
-                              </span>
                             )}
                           </div>
                         </td>
 
-                        <td className="px-5 py-4">
+                        <td className="max-w-[160px] px-4 py-4">
+                          <p className="line-clamp-3 break-words leading-6 text-gray-600">
+                            {dua.reference || "—"}
+                          </p>
+                        </td>
+
+                        <td className="max-w-[170px] px-4 py-4">
+                          {tags.length ? (
+                            <div className="flex flex-wrap gap-1.5">
+                              {tags.slice(0, 3).map((tag, index) => (
+                                <span
+                                  key={`${tag}-${index}`}
+                                  className="max-w-full break-words rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-600"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                              {tags.length > 3 && (
+                                <span className="rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-500">
+                                  +{tags.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">—</span>
+                          )}
+                        </td>
+
+                        <td className="sticky right-0 z-10 whitespace-nowrap border-l border-gray-100 bg-white px-4 py-4">
                           <div className="flex justify-end gap-2">
                             <button
                               type="button"
                               onClick={() => setEditingDua(dua)}
                               aria-label={`Edit ${dua.name}`}
-                              title="Edit dua"
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-teal-200 hover:bg-teal-50 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                              className="rounded-lg border border-gray-200 p-2 text-gray-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                             >
-                              <Pencil className="h-4 w-4" />
+                              <Edit className="h-4 w-4" />
                             </button>
-
                             <button
                               type="button"
                               onClick={() => setDeletingDua(dua)}
                               aria-label={`Delete ${dua.name}`}
-                              title="Delete dua"
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                              className="rounded-lg border border-gray-200 p-2 text-gray-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {filteredDuas.length === 0 && (
-                <div className="flex min-h-64 flex-col items-center justify-center px-6 py-12 text-center">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
-                    <Search className="h-6 w-6" />
-                  </div>
-
-                  <h3 className="mt-4 text-base font-semibold text-slate-900">
-                    No dua records found
-                  </h3>
-
-                  <p className="mt-1 max-w-sm text-sm text-slate-500">
-                    Try another search term or create a new dua.
-                  </p>
-
-                  {!searchTerm.trim() && (
-                    <Link
-                      href="/dashboard/admin/create/dua"
-                      className="mt-5 inline-flex items-center gap-2 rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Create Dua
-                    </Link>
-                  )}
-                </div>
-              )}
-            </>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
-
-          <div className="flex flex-col gap-2 border-t border-slate-200 bg-slate-50/60 px-5 py-3 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-            <span>
-              Showing {filteredDuas.length} of {totalDuas} records
-            </span>
-
-            <span>Dua management</span>
-          </div>
         </section>
       </div>
 
-      {/* Edit modal */}
       {editingDua && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 p-3 backdrop-blur-sm sm:p-6"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
+            if (event.target === event.currentTarget && !isUpdating) {
               closeEditModal();
             }
           }}
@@ -446,234 +583,87 @@ const ManageDuaPage = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="edit-dua-title"
-            className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            className="flex max-h-[95vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
           >
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
-                  <Pencil className="h-5 w-5" />
-                </div>
-
-                <div>
-                  <h2
-                    id="edit-dua-title"
-                    className="text-lg font-bold text-slate-900"
-                  >
-                    Edit Dua
-                  </h2>
-
-                  <p className="text-sm text-slate-500">
-                    Update the details for {editingDua.name}.
-                  </p>
-                </div>
+            <header className="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-4 sm:px-6">
+              <div>
+                <h2
+                  id="edit-dua-title"
+                  className="text-lg font-semibold text-gray-900"
+                >
+                  Edit Dua
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Update the Dua details below.
+                </p>
               </div>
-
               <button
                 type="button"
                 onClick={closeEditModal}
                 disabled={isUpdating}
                 aria-label="Close edit modal"
-                className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+                className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50"
               >
                 <X className="h-5 w-5" />
               </button>
-            </div>
+            </header>
 
             <div className="overflow-y-auto p-5 sm:p-6">
-              <FormContainer
+              <EditDuaForm
                 key={editingDua.id}
+                dua={editingDua}
+                isUpdating={isUpdating}
+                onCancel={closeEditModal}
                 onSubmit={handleUpdate}
-                resolver={zodResolver(DuaSchema)}
-                defaultValues={{
-                  name: editingDua.name ?? "",
-                  reference: editingDua.reference ?? "",
-                  tags: editingDua.tags ?? [],
-                  arabic: editingDua.arabic ?? "",
-                  transliteration: editingDua.transliteration ?? "",
-                  bangla: editingDua.bangla ?? "",
-                  english: editingDua.english ?? "",
-                }}
-              >
-                <div className="space-y-7">
-                  {/* Metadata */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-1 w-10 rounded-full bg-teal-600" />
-                      <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">
-                        Metadata
-                      </h3>
-                    </div>
-
-                    <FormInput
-                      name="name"
-                      label="Dua Name"
-                      placeholder="Enter dua name"
-                      required
-                    />
-
-                    <FormInput
-                      name="reference"
-                      label="Reference"
-                      placeholder="Book, hadith number, or source"
-                    />
-
-                    <FormTags
-                      name="tags"
-                      label="Tags"
-                      placeholder="Type a tag and press Enter..."
-                      description="Examples: morning, protection, travel, prayer."
-                    />
-                  </div>
-
-                  {/* Arabic */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-1 w-10 rounded-full bg-teal-600" />
-                      <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">
-                        Arabic Text
-                      </h3>
-                    </div>
-
-                    <FormTextarea
-                      name="arabic"
-                      label="Arabic Text"
-                      rows={5}
-                      placeholder="Enter Arabic text..."
-                      className="text-right text-2xl leading-loose"
-                      required
-                    />
-                  </div>
-
-                  {/* Translations */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-1 w-10 rounded-full bg-teal-600" />
-                      <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">
-                        Translations
-                      </h3>
-                    </div>
-
-                    <FormTextarea
-                      name="transliteration"
-                      label="Transliteration"
-                      rows={3}
-                      placeholder="Enter transliteration..."
-                    />
-
-                    <FormTextarea
-                      name="bangla"
-                      label="Bangla Translation"
-                      rows={4}
-                      placeholder="Enter Bangla translation..."
-                      required
-                    />
-
-                    <FormTextarea
-                      name="english"
-                      label="English Translation"
-                      rows={4}
-                      placeholder="Enter English translation..."
-                    />
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
-                    <button
-                      type="button"
-                      onClick={closeEditModal}
-                      disabled={isUpdating}
-                      className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-
-                    <button
-                      type="submit"
-                      disabled={isUpdating}
-                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {isUpdating ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Save className="h-4 w-4" />
-                      )}
-
-                      {isUpdating ? "Saving changes..." : "Save Changes"}
-                    </button>
-                  </div>
-                </div>
-              </FormContainer>
+              />
             </div>
           </section>
         </div>
       )}
 
-      {/* Delete confirmation modal */}
       {deletingDua && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 p-4 backdrop-blur-sm">
           <section
             role="dialog"
             aria-modal="true"
             aria-labelledby="delete-dua-title"
-            className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
           >
-            <div className="flex items-start gap-3 p-5 sm:p-6">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
-                <AlertTriangle className="h-5 w-5" />
-              </div>
-
-              <div className="flex-1">
-                <h2
-                  id="delete-dua-title"
-                  className="text-lg font-bold text-slate-900"
-                >
-                  Delete Dua?
-                </h2>
-
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Are you sure you want to delete{" "}
-                  <span className="font-semibold text-slate-700">
-                    {deletingDua.name}
-                  </span>
-                  ? This action will soft-delete the record and remove it from
-                  active records.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setDeletingDua(null)}
-                disabled={isSoftDeleting}
-                aria-label="Close delete dialog"
-                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
-              >
-                <X className="h-5 w-5" />
-              </button>
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
+              <Trash2 className="h-5 w-5" />
             </div>
 
-            <div className="flex flex-col-reverse gap-3 border-t border-slate-200 bg-slate-50/70 p-5 sm:flex-row sm:justify-end sm:px-6">
+            <h2
+              id="delete-dua-title"
+              className="mt-4 text-lg font-semibold text-gray-900"
+            >
+              Delete Dua?
+            </h2>
+
+            <p className="mt-2 break-words text-sm leading-6 text-gray-500">
+              <span className="font-medium text-gray-700">
+                {deletingDua.name}
+              </span>{" "}
+              will be removed from the active Dua list. This uses soft-delete
+              rather than permanently removing the record.
+            </p>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={() => setDeletingDua(null)}
-                disabled={isSoftDeleting}
-                className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                disabled={isDeleting}
+                className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:opacity-60"
               >
                 Cancel
               </button>
-
               <button
                 type="button"
-                onClick={handleDelete}
-                disabled={isSoftDeleting}
-                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-rose-600 px-5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={handleSoftDelete}
+                disabled={isDeleting}
+                className="rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isSoftDeleting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="h-4 w-4" />
-                )}
-
-                {isSoftDeleting ? "Deleting..." : "Delete"}
+                {isDeleting ? "Deleting..." : "Delete"}
               </button>
             </div>
           </section>
@@ -683,4 +673,4 @@ const ManageDuaPage = () => {
   );
 };
 
-export default ManageDuaPage;
+export default ManageDuasPage;

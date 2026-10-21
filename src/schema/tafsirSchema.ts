@@ -1,3 +1,4 @@
+import { normalizeTags } from "@/utils/normalizeTags";
 import z from "zod/v3";
 
 export const TafsirSchema = z.object({
@@ -22,7 +23,14 @@ export const CreateTafsirSchema = z.object({
   detailEn: z.string().optional(),
   scholar: z.string().optional(),
   reference: z.string().optional(),
-  tags: z.string().optional(),
+  tags: z.array(z.string().trim().min(1)).optional(),
 });
 
 export type TCreateTafsirForm = z.infer<typeof CreateTafsirSchema>;
+
+export const EditTafsirSchema = CreateTafsirSchema.extend({
+  tags: z.preprocess(
+    normalizeTags,
+    z.array(z.string().trim().min(1)).optional(),
+  ),
+});
