@@ -31,66 +31,16 @@ import {
 import type { TAyah } from "@/types/ayah";
 import type { TSurah } from "@/types/surah";
 import type { TPara } from "@/types/para";
+import { normalizeTags } from "@/utils/normalizeTags";
+import { TApiError } from "@/types/api";
+import {
+  TAyahWithTafsir,
+  TPageMeta,
+  TTafsir,
+  TTafsirFormValues,
+} from "@/types/tafsir";
 
-type TTafsir = {
-  id: string;
-  heading?: string | null;
-  summaryBn?: string | null;
-  summaryEn?: string | null;
-  detailBn?: string | null;
-  detailEn?: string | null;
-  scholar?: string | null;
-  reference?: string | null;
-  tags?: string | null;
-  isDeleted?: boolean;
-};
-
-type TAyahWithTafsir = TAyah & {
-  surah?: {
-    id: string;
-    chapter: number;
-    arabic: string;
-    english: string;
-    bangla: string;
-  } | null;
-  para?: {
-    id: string;
-    number: number;
-    arabic: string;
-    english: string;
-    bangla: string;
-  } | null;
-  tafsir?: TTafsir | null;
-};
-
-type TPageMeta = {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
-};
-
-type TFormValues = {
-  heading: string;
-  summaryBn: string;
-  summaryEn: string;
-  detailBn: string;
-  detailEn: string;
-  scholar: string;
-  reference: string;
-  tags: string;
-};
-
-type TApiError = {
-  data?: {
-    message?: string;
-  };
-  message?: string;
-};
-
-const INITIAL_FORM: TFormValues = {
+const INITIAL_FORM: TTafsirFormValues = {
   heading: "",
   summaryBn: "",
   summaryEn: "",
@@ -156,7 +106,7 @@ const ManageTafsirsPage = () => {
     null,
   );
   const [editingTafsir, setEditingTafsir] = useState<TTafsir | null>(null);
-  const [formValues, setFormValues] = useState<TFormValues>(INITIAL_FORM);
+  const [formValues, setFormValues] = useState<TTafsirFormValues>(INITIAL_FORM);
 
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const [isDeletePending, setIsDeletePending] = useState(false);
@@ -258,13 +208,13 @@ const ManageTafsirsPage = () => {
       detailEn: tafsir.detailEn ?? "",
       scholar: tafsir.scholar ?? "",
       reference: tafsir.reference ?? "",
-      tags: tafsir.tags ?? "",
+      tags: normalizeTags(tafsir.tags).join(", "),
     });
 
     setIsModalOpen(true);
   };
 
-  const updateField = (field: keyof TFormValues, value: string) => {
+  const updateField = (field: keyof TTafsirFormValues, value: string) => {
     setFormValues((previous) => ({
       ...previous,
       [field]: value,
@@ -279,8 +229,10 @@ const ManageTafsirsPage = () => {
       return;
     }
 
-    const hasContent = Object.values(formValues).some(
-      (value) => value.trim().length > 0,
+    const normalizedTags = normalizeTags(formValues.tags);
+
+    const hasContent = Object.entries(formValues).some(([field, value]) =>
+      field === "tags" ? normalizedTags.length > 0 : value.trim().length > 0,
     );
 
     if (!hasContent) {
@@ -296,7 +248,7 @@ const ManageTafsirsPage = () => {
       detailEn: formValues.detailEn.trim() || undefined,
       scholar: formValues.scholar.trim() || undefined,
       reference: formValues.reference.trim() || undefined,
-      tags: formValues.tags.trim() || undefined,
+      tags: normalizedTags.length > 0 ? normalizedTags : undefined,
     };
 
     try {
