@@ -8,7 +8,7 @@ export type TTafsir = {
   detailEn?: string | null;
   scholar?: string | null;
   reference?: string | null;
-  tags?: string | null;
+  tags?: string[] | null;
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
@@ -32,7 +32,7 @@ export type TCreateTafsirPayload = {
   detailEn?: string;
   scholar?: string;
   reference?: string;
-  tags?: string;
+  tags?: string[];
 };
 
 export type TUpdateTafsirPayload = {
@@ -43,5 +43,5 @@ export type TUpdateTafsirPayload = {
   detailEn?: string;
   scholar?: string;
   reference?: string;
-  tags?: string;
+  tags?: string[];
 };

@@ -8,11 +8,7 @@ import { baseServerApi } from "./baseApi";
 
 export const tafsirApi = baseServerApi.injectEndpoints({
   endpoints: (build) => ({
-    // -----------------------------------------------------------------------
     // Create Tafsir
-    // POST /tafsir
-    // -----------------------------------------------------------------------
-
     createTafsir: build.mutation({
       query: (data: TCreateTafsirPayload) => ({
         url: "/tafsir",
@@ -22,11 +18,7 @@ export const tafsirApi = baseServerApi.injectEndpoints({
       invalidatesTags: [tagTypes.tafsir],
     }),
 
-    // -----------------------------------------------------------------------
     // Get All Tafsir - Admin
-    // GET /tafsir/admin/all
-    // -----------------------------------------------------------------------
-
     getAllTafsirAdmin: build.query({
       query: (params?: TTafsirQueryParams) => ({
         url: "/tafsir/admin/all",
@@ -36,11 +28,7 @@ export const tafsirApi = baseServerApi.injectEndpoints({
       providesTags: [tagTypes.tafsir],
     }),
 
-    // -----------------------------------------------------------------------
     // Get Tafsir By Ayah
-    // GET /tafsir/ayah/:ayahId
-    // -----------------------------------------------------------------------
-
     getTafsirByAyah: build.query({
       query: (ayahId: string) => ({
         url: `/tafsir/ayah/${ayahId}`,
@@ -49,11 +37,7 @@ export const tafsirApi = baseServerApi.injectEndpoints({
       providesTags: [tagTypes.tafsir],
     }),
 
-    // -----------------------------------------------------------------------
     // Get Single Tafsir
-    // GET /tafsir/:tafsirId
-    // -----------------------------------------------------------------------
-
     getSingleTafsir: build.query({
       query: (tafsirId: string) => ({
         url: `/tafsir/${tafsirId}`,
@@ -62,11 +46,7 @@ export const tafsirApi = baseServerApi.injectEndpoints({
       providesTags: [tagTypes.tafsir],
     }),
 
-    // -----------------------------------------------------------------------
     // Update Tafsir
-    // PUT /tafsir/:tafsirId
-    // -----------------------------------------------------------------------
-
     updateTafsir: build.mutation({
       query: ({ id, data }: { id: string; data: TUpdateTafsirPayload }) => ({
         url: `/tafsir/${id}`,
@@ -76,11 +56,7 @@ export const tafsirApi = baseServerApi.injectEndpoints({
       invalidatesTags: [tagTypes.tafsir],
     }),
 
-    // -----------------------------------------------------------------------
     // Soft Delete Tafsir
-    // DELETE /tafsir/:tafsirId
-    // -----------------------------------------------------------------------
-
     softDeleteTafsir: build.mutation({
       query: (tafsirId: string) => ({
         url: `/tafsir/${tafsirId}`,
@@ -89,11 +65,7 @@ export const tafsirApi = baseServerApi.injectEndpoints({
       invalidatesTags: [tagTypes.tafsir],
     }),
 
-    // -----------------------------------------------------------------------
     // Hard Delete Tafsir
-    // DELETE /tafsir/admin/:tafsirId
-    // -----------------------------------------------------------------------
-
     hardDeleteTafsir: build.mutation({
       query: (tafsirId: string) => ({
         url: `/tafsir/admin/${tafsirId}`,
@@ -103,10 +75,6 @@ export const tafsirApi = baseServerApi.injectEndpoints({
     }),
   }),
 });
-
-/* -------------------------------------------------------------------------- */
-/*                                   Hooks                                    */
-/* -------------------------------------------------------------------------- */
 
 export const {
   useCreateTafsirMutation,
