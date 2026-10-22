@@ -1,46 +1,34 @@
-export interface TWordSuggestion {
-  id: string;
-  word: string;
-  pronunciation?: string;
-  definition?: string;
-}
+export type TDictionaryApiResponse<T> = {
+  success?: boolean;
+  message?: string;
+  data?: T[] | T;
+};
 
-export interface TWordDetails {
-  id: string;
-  word: string;
-  pronunciation?: string;
-  definition?: string;
-  meaning?: string;
-  root?: string;
-  examples?: string[];
-  verses?: string[];
+export interface TCreateDictionaryWord {
+  persianWord: string;
+  transliteration: string;
+  banglaMeaning: string;
+  englishMeaning: string;
+  exampleFA: string;
+  exampleEN: string;
+  exampleBN: string;
 }
 
 export type TDictionaryWord = {
   id: string;
   persianWord: string;
   transliteration?: string;
-  englishMeaning: string;
-  banglaMeaning?: string;
-};
-
-export type TDictionaryWordUpdatePayload = {
-  persianWord: string;
-  transliteration: string;
-  englishMeaning: string;
   banglaMeaning: string;
+  englishMeaning?: string;
+  exampleFA?: string;
+  exampleEN?: string;
+  exampleBN?: string;
 };
 
-export type TManagedDictionaryWord = {
-  id: string;
-  word: string;
-  pronunciation: string;
-  definition: string;
-  meaning: string;
-};
-
-export type TDictionaryApiResponse<T> = {
-  success?: boolean;
-  message?: string;
-  data?: T[] | T;
+export type TDictionaryApiWord = Partial<TDictionaryWord> & {
+  _id?: string;
+  word?: string;
+  pronunciation?: string;
+  meaning?: string;
+  definition?: string;
 };

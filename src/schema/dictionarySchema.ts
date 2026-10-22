@@ -1,10 +1,13 @@
-import z from "zod/v3";
+import { z } from "zod/v3";
 
-export const DictionarySchema = z.object({
-  id: z.string().uuid().optional(),
-  word: z.string().min(1, "Word is required"),
-  pronunciation: z.string().min(1, "Pronunciation is required"),
-  definition: z.string().min(1, "Definition is required"),
-  meaning: z.string().optional(),
-  isDeleted: z.boolean().optional(),
+export const CreateDictionarySchema = z.object({
+  persianWord: z.string().trim().min(1, "Persian word is required."),
+  transliteration: z.string().optional(),
+  banglaMeaning: z.string().trim().min(1, "Bangla meaning is required."),
+  englishMeaning: z.string().optional(),
+  exampleFA: z.string().optional(),
+  exampleEN: z.string().optional(),
+  exampleBN: z.string().optional(),
 });
+
+export type TDictionaryFormValues = z.infer<typeof CreateDictionarySchema>;

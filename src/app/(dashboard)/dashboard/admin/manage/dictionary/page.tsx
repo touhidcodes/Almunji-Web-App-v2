@@ -30,29 +30,11 @@ import {
   useSoftDeleteWordMutation,
   useUpdateWordMutation,
 } from "@/redux/api/dictionaryApi";
-
-import { DictionarySchema } from "@/schema/dictionarySchema";
-
-type TDictionaryFormValues = z.infer<typeof DictionarySchema>;
-
-type TDictionaryWord = {
-  id: string;
-  persianWord: string;
-  transliteration?: string;
-  banglaMeaning: string;
-  englishMeaning?: string;
-  exampleFA?: string;
-  exampleEN?: string;
-  exampleBN?: string;
-};
-
-type TDictionaryApiWord = Partial<TDictionaryWord> & {
-  _id?: string;
-  word?: string;
-  pronunciation?: string;
-  meaning?: string;
-  definition?: string;
-};
+import { TDictionaryApiWord, TDictionaryWord } from "@/types/dictionary";
+import {
+  CreateDictionarySchema,
+  TDictionaryFormValues,
+} from "@/schema/dictionarySchema";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -95,16 +77,21 @@ function extractWords(response: unknown): TDictionaryWord[] {
     .filter((word): word is TDictionaryWord => word !== null);
 }
 
-/* ─────────────────────────── Page ─────────────────────────── */
-
 const ManageDictionaryPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [editingWord, setEditingWord] = useState<TDictionaryWord | null>(null);
-  const [deletingWord, setDeletingWord] = useState<TDictionaryWord | null>(null);
+  const [deletingWord, setDeletingWord] = useState<TDictionaryWord | null>(
+    null,
+  );
 
-  const { data: wordsData, isLoading, isFetching } = useGetAllWordsAdminQuery({ searchTerm });
+  const {
+    data: wordsData,
+    isLoading,
+    isFetching,
+  } = useGetAllWordsAdminQuery({ searchTerm });
   const [updateWord, { isLoading: isUpdating }] = useUpdateWordMutation();
-  const [softDeleteWord, { isLoading: isDeleting }] = useSoftDeleteWordMutation();
+  const [softDeleteWord, { isLoading: isDeleting }] =
+    useSoftDeleteWordMutation();
 
   const words = useMemo(() => {
     const normalizedWords = extractWords(wordsData);
@@ -119,19 +106,34 @@ const ManageDictionaryPage = () => {
         word.exampleFA,
         word.exampleEN,
         word.exampleBN,
-      ].some((v) => String(v ?? "").toLowerCase().includes(term)),
+      ].some((v) =>
+        String(v ?? "")
+          .toLowerCase()
+          .includes(term),
+      ),
     );
   }, [wordsData, searchTerm]);
 
-  const closeEditModal = () => { if (isUpdating) return; setEditingWord(null); };
-  const closeDeleteModal = () => { if (isDeleting) return; setDeletingWord(null); };
+  const closeEditModal = () => {
+    if (isUpdating) return;
+    setEditingWord(null);
+  };
+  const closeDeleteModal = () => {
+    if (isDeleting) return;
+    setDeletingWord(null);
+  };
 
   const handleUpdate = async (data: TDictionaryFormValues) => {
     if (!editingWord) return;
     try {
-      const response: unknown = await updateWord({ id: editingWord.id, data }).unwrap();
+      const response: unknown = await updateWord({
+        id: editingWord.id,
+        data,
+      }).unwrap();
       if (isRecord(response) && response.success === false) {
-        toast.error(getString(response.message) || "Failed to update dictionary word.");
+        toast.error(
+          getString(response.message) || "Failed to update dictionary word.",
+        );
         return;
       }
       toast.success("Dictionary word updated successfully.");
@@ -158,10 +160,12 @@ const ManageDictionaryPage = () => {
   return (
     <main className="min-h-screen bg-slate-50/70 px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-6">
-
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-slate-500">
-          <Link href="/dashboard/admin" className="transition hover:text-teal-700">
+          <Link
+            href="/dashboard/admin"
+            className="transition hover:text-teal-700"
+          >
             Dashboard
           </Link>
           <ChevronRight className="h-4 w-4 shrink-0" />
@@ -179,7 +183,8 @@ const ManageDictionaryPage = () => {
                 Manage Dictionary
               </h1>
               <p className="mt-1 max-w-xl text-sm leading-6 text-slate-500">
-                Search, edit, and manage Persian words, translations, and usage examples.
+                Search, edit, and manage Persian words, translations, and usage
+                examples.
               </p>
             </div>
           </div>
@@ -199,8 +204,12 @@ const ManageDictionaryPage = () => {
               <BookMarked className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500 sm:text-sm">Records</p>
-              <p className="mt-0.5 text-xl font-bold text-slate-900 sm:mt-1 sm:text-2xl">{totalWords}</p>
+              <p className="text-xs font-medium text-slate-500 sm:text-sm">
+                Records
+              </p>
+              <p className="mt-0.5 text-xl font-bold text-slate-900 sm:mt-1 sm:text-2xl">
+                {totalWords}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:gap-4 sm:p-5">
@@ -208,19 +217,24 @@ const ManageDictionaryPage = () => {
               <Search className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-500 sm:text-sm">Displaying</p>
-              <p className="mt-0.5 text-xl font-bold text-slate-900 sm:mt-1 sm:text-2xl">{words.length}</p>
+              <p className="text-xs font-medium text-slate-500 sm:text-sm">
+                Displaying
+              </p>
+              <p className="mt-0.5 text-xl font-bold text-slate-900 sm:mt-1 sm:text-2xl">
+                {words.length}
+              </p>
             </div>
           </div>
         </section>
 
         {/* Directory section */}
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-
           {/* Toolbar */}
           <div className="flex flex-col gap-4 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
             <div className="min-w-0">
-              <h2 className="text-base font-semibold text-slate-900">Dictionary directory</h2>
+              <h2 className="text-base font-semibold text-slate-900">
+                Dictionary directory
+              </h2>
               <p className="mt-0.5 text-sm text-slate-500">
                 Manage words, meanings, transliterations, and examples.
               </p>
@@ -249,7 +263,10 @@ const ManageDictionaryPage = () => {
           {isLoading ? (
             <div className="space-y-3 p-4 sm:p-5">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-20 animate-pulse rounded-xl bg-slate-100 sm:h-14" />
+                <div
+                  key={i}
+                  className="h-20 animate-pulse rounded-xl bg-slate-100 sm:h-14"
+                />
               ))}
             </div>
           ) : words.length === 0 ? (
@@ -287,11 +304,16 @@ const ManageDictionaryPage = () => {
                           <Languages className="h-4 w-4" />
                         </span>
                         <div className="min-w-0">
-                          <p dir="rtl" className="text-xl font-semibold leading-8 text-slate-900">
+                          <p
+                            dir="rtl"
+                            className="text-xl font-semibold leading-8 text-slate-900"
+                          >
                             {word.persianWord || "Untitled word"}
                           </p>
                           {word.transliteration && (
-                            <p className="text-xs text-slate-500">{word.transliteration}</p>
+                            <p className="text-xs text-slate-500">
+                              {word.transliteration}
+                            </p>
                           )}
                         </div>
                       </div>
@@ -320,14 +342,22 @@ const ManageDictionaryPage = () => {
                     <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                       {word.banglaMeaning && (
                         <div className="rounded-lg bg-slate-50 px-3 py-2">
-                          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Bangla</p>
-                          <p className="mt-0.5 text-sm leading-6 text-slate-700">{word.banglaMeaning}</p>
+                          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                            Bangla
+                          </p>
+                          <p className="mt-0.5 text-sm leading-6 text-slate-700">
+                            {word.banglaMeaning}
+                          </p>
                         </div>
                       )}
                       {word.englishMeaning && (
                         <div className="rounded-lg bg-slate-50 px-3 py-2">
-                          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">English</p>
-                          <p className="mt-0.5 text-sm leading-6 text-slate-700">{word.englishMeaning}</p>
+                          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                            English
+                          </p>
+                          <p className="mt-0.5 text-sm leading-6 text-slate-700">
+                            {word.englishMeaning}
+                          </p>
                         </div>
                       )}
                     </div>
@@ -340,13 +370,17 @@ const ManageDictionaryPage = () => {
                         </p>
                         {word.exampleFA && (
                           <p className="line-clamp-2 text-sm leading-5 text-slate-700">
-                            <span className="font-medium text-slate-500">FA: </span>
+                            <span className="font-medium text-slate-500">
+                              FA:{" "}
+                            </span>
                             {word.exampleFA}
                           </p>
                         )}
                         {word.exampleEN && (
                           <p className="line-clamp-2 text-sm leading-5 text-slate-700">
-                            <span className="font-medium text-slate-500">EN: </span>
+                            <span className="font-medium text-slate-500">
+                              EN:{" "}
+                            </span>
                             {word.exampleEN}
                           </p>
                         )}
@@ -367,21 +401,29 @@ const ManageDictionaryPage = () => {
                 <table className="w-full border-collapse text-left text-sm">
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-50/80">
-                      {["Persian Word", "Transliteration", "Bangla Meaning", "English Meaning", "Usage Examples", "Actions"].map(
-                        (col, i) => (
-                          <th
-                            key={col}
-                            className={`px-5 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 ${i === 5 ? "text-right" : ""}`}
-                          >
-                            {col}
-                          </th>
-                        ),
-                      )}
+                      {[
+                        "Persian Word",
+                        "Transliteration",
+                        "Bangla Meaning",
+                        "English Meaning",
+                        "Usage Examples",
+                        "Actions",
+                      ].map((col, i) => (
+                        <th
+                          key={col}
+                          className={`px-5 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 ${i === 5 ? "text-right" : ""}`}
+                        >
+                          {col}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {words.map((word) => (
-                      <tr key={word.id} className="transition hover:bg-slate-50/80">
+                      <tr
+                        key={word.id}
+                        className="transition hover:bg-slate-50/80"
+                      >
                         {/* Persian word */}
                         <td className="px-5 py-4">
                           <div className="flex max-w-56 items-start gap-3">
@@ -389,7 +431,10 @@ const ManageDictionaryPage = () => {
                               <Languages className="h-4 w-4" />
                             </span>
                             <div className="min-w-0">
-                              <p dir="rtl" className="break-words text-right text-xl font-semibold leading-8 text-slate-900">
+                              <p
+                                dir="rtl"
+                                className="break-words text-right text-xl font-semibold leading-8 text-slate-900"
+                              >
                                 {word.persianWord || "Untitled word"}
                               </p>
                               {word.transliteration && (
@@ -427,13 +472,17 @@ const ManageDictionaryPage = () => {
                           <div className="flex max-w-64 flex-col items-start gap-1.5">
                             {word.exampleFA && (
                               <p className="line-clamp-2 text-sm leading-5 text-slate-700">
-                                <span className="font-medium text-slate-500">FA: </span>
+                                <span className="font-medium text-slate-500">
+                                  FA:{" "}
+                                </span>
                                 {word.exampleFA}
                               </p>
                             )}
                             {word.exampleEN && (
                               <p className="line-clamp-2 text-sm leading-5 text-slate-700">
-                                <span className="font-medium text-slate-500">EN: </span>
+                                <span className="font-medium text-slate-500">
+                                  EN:{" "}
+                                </span>
                                 {word.exampleEN}
                               </p>
                             )}
@@ -443,9 +492,13 @@ const ManageDictionaryPage = () => {
                                 {word.exampleBN}
                               </p>
                             )}
-                            {!word.exampleFA && !word.exampleEN && !word.exampleBN && (
-                              <span className="text-xs text-slate-400">No examples</span>
-                            )}
+                            {!word.exampleFA &&
+                              !word.exampleEN &&
+                              !word.exampleBN && (
+                                <span className="text-xs text-slate-400">
+                                  No examples
+                                </span>
+                              )}
                           </div>
                         </td>
 
@@ -482,7 +535,9 @@ const ManageDictionaryPage = () => {
 
           {/* Footer */}
           <div className="flex flex-col gap-1 border-t border-slate-200 bg-slate-50/60 px-4 py-3 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-            <span>Displaying {words.length} of {totalWords} received records</span>
+            <span>
+              Displaying {words.length} of {totalWords} received records
+            </span>
             <span>Dictionary management</span>
           </div>
         </section>
@@ -492,7 +547,9 @@ const ManageDictionaryPage = () => {
       {editingWord && (
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
-          onMouseDown={(e) => { if (e.target === e.currentTarget) closeEditModal(); }}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) closeEditModal();
+          }}
         >
           <section
             role="dialog"
@@ -507,7 +564,10 @@ const ManageDictionaryPage = () => {
                   <Pencil className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
                 <div className="min-w-0">
-                  <h2 id="edit-dictionary-title" className="text-base font-bold text-slate-900 sm:text-lg">
+                  <h2
+                    id="edit-dictionary-title"
+                    className="text-base font-bold text-slate-900 sm:text-lg"
+                  >
                     Edit Dictionary Word
                   </h2>
                   <p className="truncate text-xs text-slate-500 sm:text-sm">
@@ -531,7 +591,7 @@ const ManageDictionaryPage = () => {
               <FormContainer
                 key={editingWord.id}
                 onSubmit={handleUpdate}
-                resolver={zodResolver(DictionarySchema)}
+                resolver={zodResolver(CreateDictionarySchema)}
                 defaultValues={{
                   persianWord: editingWord.persianWord,
                   transliteration: editingWord.transliteration ?? "",
@@ -662,7 +722,11 @@ const ManageDictionaryPage = () => {
                       disabled={isUpdating}
                       className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                      {isUpdating ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4" />
+                      )}
                       {isUpdating ? "Saving changes..." : "Save Changes"}
                     </button>
                   </div>
@@ -698,7 +762,8 @@ const ManageDictionaryPage = () => {
                   <span className="font-semibold text-slate-700">
                     {deletingWord.persianWord || "this word"}
                   </span>
-                  ? This will soft-delete the entry and remove it from active dictionary records.
+                  ? This will soft-delete the entry and remove it from active
+                  dictionary records.
                 </p>
               </div>
               <button
@@ -727,7 +792,11 @@ const ManageDictionaryPage = () => {
                 disabled={isDeleting}
                 className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-rose-600 px-5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                {isDeleting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
                 {isDeleting ? "Deleting..." : "Delete Word"}
               </button>
             </div>

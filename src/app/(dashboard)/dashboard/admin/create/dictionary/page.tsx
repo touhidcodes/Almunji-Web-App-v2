@@ -1,13 +1,17 @@
 "use client";
 
+import FormContainer from "@/components/forms/FormContainer";
 import FormInput from "@/components/forms/FormInput";
 import FormTextarea from "@/components/forms/FormTextarea";
 import { useCreateWordMutation } from "@/redux/api/dictionaryApi";
-import { DictionarySchema } from "@/schema/dictionarySchema";
+import {
+  CreateDictionarySchema,
+  type TDictionaryFormValues,
+} from "@/schema/dictionarySchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ArrowLeft,
-  BookOpenText,
+  BookA,
   Check,
   Languages,
   LoaderCircle,
@@ -16,39 +20,32 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  FormProvider,
-  useForm,
-  type Resolver,
-  type SubmitErrorHandler,
-} from "react-hook-form";
 import { toast } from "sonner";
 
 const MANAGEMENT_URL = "/dashboard/admin/manage/dictionary";
 
-interface TCreateDictionaryWord {
-  persianWord: string;
-  transliteration?: string;
-  banglaMeaning: string;
-  englishMeaning?: string;
-  exampleFA?: string;
-  exampleEN?: string;
-  exampleBN?: string;
-}
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (typeof error === "object" && error !== null && "data" in error) {
+    const data = error.data;
 
-interface TApiError {
-  data?: {
-    message?: string;
-  };
-  message?: string;
-}
+    if (
+      typeof data === "object" &&
+      data !== null &&
+      "message" in data &&
+      typeof data.message === "string"
+    ) {
+      return data.message;
+    }
+  }
 
-interface TCreateWordResponse {
-  success: boolean;
-  message?: string;
-}
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
 
-const defaultValues: TCreateDictionaryWord = {
+  return fallback;
+};
+
+const defaultValues: TDictionaryFormValues = {
   persianWord: "",
   transliteration: "",
   banglaMeaning: "",
@@ -58,86 +55,44 @@ const defaultValues: TCreateDictionaryWord = {
   exampleBN: "",
 };
 
-const getErrorMessage = (error: unknown, fallback: string): string => {
-  if (typeof error === "object" && error !== null) {
-    if ("data" in error) {
-      const data = error.data;
-
-      if (
-        typeof data === "object" &&
-        data !== null &&
-        "message" in data &&
-        typeof data.message === "string"
-      ) {
-        return data.message;
-      }
-    }
-
-    if ("message" in error && typeof error.message === "string") {
-      return error.message;
-    }
-  }
-
-  return fallback;
-};
-
 const CreateDictionaryPage = () => {
   const router = useRouter();
-  const [createWord, { isLoading: isSubmitting }] = useCreateWordMutation();
 
-  const form = useForm<TCreateDictionaryWord>({
-    resolver: zodResolver(DictionarySchema) as Resolver<TCreateDictionaryWord>,
-    defaultValues,
-    mode: "onSubmit",
-  });
+  const [createDictionaryWord, { isLoading: isSubmitting }] =
+    useCreateWordMutation();
 
-  const onSubmit = async (data: TCreateDictionaryWord): Promise<void> => {
-    const payload: TCreateDictionaryWord = {
-      persianWord: data.persianWord.trim(),
-      transliteration: data.transliteration?.trim() || undefined,
-      banglaMeaning: data.banglaMeaning.trim(),
-      englishMeaning: data.englishMeaning?.trim() || undefined,
-      exampleFA: data.exampleFA?.trim() || undefined,
-      exampleEN: data.exampleEN?.trim() || undefined,
-      exampleBN: data.exampleBN?.trim() || undefined,
-    };
-
+  const onSubmit = async (data: TDictionaryFormValues): Promise<void> => {
     try {
-      const response = (await createWord(
-        payload,
-      ).unwrap()) as TCreateWordResponse;
+      const payload: TDictionaryFormValues = {
+        persianWord: data.persianWord.trim(),
+        transliteration: data.transliteration?.trim() || undefined,
+        banglaMeaning: data.banglaMeaning.trim(),
+        englishMeaning: data.englishMeaning?.trim() || undefined,
+        exampleFA: data.exampleFA?.trim() || undefined,
+        exampleEN: data.exampleEN?.trim() || undefined,
+        exampleBN: data.exampleBN?.trim() || undefined,
+      };
+
+      const response = await createDictionaryWord(payload).unwrap();
 
       if (!response.success) {
         toast.error("Unable to create dictionary word", {
-          description:
-            response.message || "The server did not confirm creation.",
+          description: "The server did not confirm the creation.",
         });
         return;
       }
 
-      toast.success("Dictionary word created successfully!", {
-        description: "The Persian word and its translations have been saved.",
-      });
-
-      form.reset(defaultValues);
+      toast.success("Dictionary word created successfully!");
       router.push(MANAGEMENT_URL);
       router.refresh();
     } catch (error: unknown) {
       toast.error("Failed to create dictionary word", {
         description: getErrorMessage(
           error,
-          "Something went wrong while saving the dictionary entry.",
+          "Something went wrong while saving the dictionary word.",
         ),
       });
     }
-  };
-
-  const onInvalid: SubmitErrorHandler<TCreateDictionaryWord> = (errors) => {
-    const firstError = Object.values(errors).find((error) => error?.message);
-
-    toast.error(
-      firstError?.message?.toString() || "Please check the required fields.",
-    );
   };
 
   return (
@@ -163,15 +118,16 @@ const CreateDictionaryPage = () => {
         <header>
           <div className="flex items-center gap-4">
             <div className="shrink-0 rounded-2xl bg-teal-600 p-3 shadow-xl shadow-teal-100 sm:p-4">
-              <Languages className="h-7 w-7 text-white sm:h-8 sm:w-8" />
+              <BookA className="h-7 w-7 text-white sm:h-8 sm:w-8" />
             </div>
 
             <div>
               <h1 className="text-3xl font-black tracking-tight text-gray-900 sm:text-4xl">
-                Add Dictionary Word
+                Create Dictionary Word
               </h1>
-              <p className="mt-2 text-sm text-gray-500 sm:text-base">
-                Add Persian vocabulary with translations and examples.
+              <p className="mt-2 text-sm text-gray-500">
+                Add a Persian word with its transliteration, meanings, and
+                multilingual examples.
               </p>
             </div>
           </div>
@@ -180,23 +136,23 @@ const CreateDictionaryPage = () => {
         {/* Form Card */}
         <section className="relative overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-2xl shadow-gray-200/50">
           <div className="pointer-events-none absolute right-0 top-0 p-8 opacity-[0.04] sm:p-16">
-            <BookOpenText className="h-40 w-40 text-teal-900 sm:h-64 sm:w-64" />
+            <Languages className="h-40 w-40 text-teal-900 sm:h-64 sm:w-64" />
           </div>
 
           <div className="relative p-5 sm:p-8 lg:p-12">
-            <FormProvider {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit, onInvalid)}
-                noValidate
-                className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12"
-              >
+            <FormContainer
+              onSubmit={onSubmit}
+              resolver={zodResolver(CreateDictionarySchema)}
+              defaultValues={defaultValues}
+            >
+              <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12">
                 {/* Sidebar */}
                 <aside className="space-y-8 lg:col-span-4 lg:space-y-10">
                   <section className="space-y-6">
                     <div className="flex items-center gap-3">
                       <div className="h-1 w-10 rounded-full bg-teal-600" />
                       <h2 className="text-xs font-black uppercase tracking-widest text-gray-400 sm:text-sm">
-                        Word Information
+                        Word Metadata
                       </h2>
                     </div>
 
@@ -204,16 +160,20 @@ const CreateDictionaryPage = () => {
                       <FormInput
                         name="persianWord"
                         label="Persian Word *"
-                        placeholder="مثلاً: کتاب"
-                        className="h-14 rounded-xl border-gray-100 bg-gray-50/50 text-lg font-bold focus:bg-white"
+                        placeholder="Enter the Persian word"
                         required
                       />
 
                       <FormInput
                         name="transliteration"
                         label="Transliteration"
-                        placeholder="e.g., Ketab"
-                        className="h-14 rounded-xl border-gray-100 bg-gray-50/50 font-medium focus:bg-white"
+                        placeholder="Enter pronunciation"
+                      />
+
+                      <FormInput
+                        name="englishMeaning"
+                        label="English Meaning"
+                        placeholder="Enter the English meaning"
                       />
                     </div>
                   </section>
@@ -225,16 +185,16 @@ const CreateDictionaryPage = () => {
                       </div>
 
                       <h2 className="text-sm font-black uppercase tracking-widest text-gray-800">
-                        Entry Guidelines
+                        Guidelines
                       </h2>
                     </div>
 
                     <ul className="space-y-4">
                       {[
-                        "Provide the correct Persian word.",
-                        "Check spelling and transliteration.",
-                        "Add an accurate Bangla meaning.",
-                        "Use reliable translations and examples.",
+                        "Enter the correct Persian spelling.",
+                        "Add transliteration when available.",
+                        "Provide a clear Bangla meaning.",
+                        "Keep example sentences consistent across languages.",
                       ].map((rule) => (
                         <li
                           key={rule}
@@ -248,39 +208,28 @@ const CreateDictionaryPage = () => {
                   </section>
                 </aside>
 
-                {/* Main Fields */}
+                {/* Main Content */}
                 <main className="min-w-0 space-y-8 lg:col-span-8 lg:space-y-10">
                   <section className="space-y-6">
                     <div className="flex items-center gap-3">
-                      <div className="h-1 w-10 rounded-full bg-purple-500" />
+                      <div className="h-1 w-10 rounded-full bg-teal-600" />
                       <h2 className="text-xs font-black uppercase tracking-widest text-gray-400 sm:text-sm">
-                        Meanings & Translations
+                        Meaning
                       </h2>
                     </div>
 
-                    <div className="space-y-6">
-                      <FormTextarea
-                        name="banglaMeaning"
-                        label="Bangla Meaning *"
-                        rows={4}
-                        placeholder="বাংলা অর্থ লিখুন..."
-                        className="rounded-2xl border-gray-100 bg-gray-50/30 p-5 leading-relaxed text-gray-700 focus:bg-white"
-                        required
-                      />
-
-                      <FormTextarea
-                        name="englishMeaning"
-                        label="English Meaning"
-                        rows={4}
-                        placeholder="Enter the English meaning..."
-                        className="rounded-2xl border-gray-100 bg-gray-50/30 p-5 leading-relaxed text-gray-700 focus:bg-white"
-                      />
-                    </div>
+                    <FormTextarea
+                      name="banglaMeaning"
+                      label="Bangla Meaning *"
+                      rows={4}
+                      placeholder="বাংলা অর্থ লিখুন..."
+                      required
+                    />
                   </section>
 
                   <section className="space-y-6">
                     <div className="flex items-center gap-3">
-                      <div className="h-1 w-10 rounded-full bg-teal-500" />
+                      <div className="h-1 w-10 rounded-full bg-teal-600" />
                       <h2 className="text-xs font-black uppercase tracking-widest text-gray-400 sm:text-sm">
                         Usage Examples
                       </h2>
@@ -290,25 +239,22 @@ const CreateDictionaryPage = () => {
                       <FormTextarea
                         name="exampleFA"
                         label="Persian Example"
-                        rows={4}
-                        placeholder="جمله فارسی را وارد کنید..."
-                        className="rounded-2xl border-gray-100 bg-gray-50/30 p-5 leading-relaxed text-gray-700 focus:bg-white"
+                        rows={3}
+                        placeholder="Enter an example sentence in Persian..."
                       />
 
                       <FormTextarea
                         name="exampleEN"
                         label="English Example"
-                        rows={4}
+                        rows={3}
                         placeholder="Enter the English example..."
-                        className="rounded-2xl border-gray-100 bg-gray-50/30 p-5 leading-relaxed text-gray-700 focus:bg-white"
                       />
 
                       <FormTextarea
                         name="exampleBN"
                         label="Bangla Example"
-                        rows={4}
-                        placeholder="বাংলা উদাহরণ বাক্য লিখুন..."
-                        className="rounded-2xl border-gray-100 bg-gray-50/30 p-5 leading-relaxed text-gray-700 focus:bg-white"
+                        rows={3}
+                        placeholder="উদাহরণ বাক্য লিখুন..."
                       />
                     </div>
                   </section>
@@ -336,15 +282,15 @@ const CreateDictionaryPage = () => {
                         ) : (
                           <>
                             <Save className="h-5 w-5" />
-                            Add Word
+                            Create Word
                           </>
                         )}
                       </button>
                     </div>
                   </div>
                 </main>
-              </form>
-            </FormProvider>
+              </div>
+            </FormContainer>
           </div>
         </section>
 
