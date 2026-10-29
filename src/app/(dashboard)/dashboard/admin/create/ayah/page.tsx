@@ -364,6 +364,7 @@ const CreateAyahPage = () => {
                   rows={3}
                   placeholder="Enter transliteration..."
                   disabled={isAyahCreated}
+                  maxWords={200}
                 />
 
                 <FormTextarea
