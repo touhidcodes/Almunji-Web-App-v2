@@ -49,7 +49,7 @@ export type TDictionaryApiWord = Partial<TDictionaryWord> & {
 export type TUpdateDictionaryWord = Partial<TCreateDictionaryWord>;
 
 export type TDictionarySuggestionParams = {
-  search: string;
+  searchTerm: string;
 };
 
 export type TDictionaryAdminParams = {
