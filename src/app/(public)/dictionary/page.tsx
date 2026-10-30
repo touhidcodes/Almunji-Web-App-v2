@@ -24,24 +24,26 @@ import {
   useGetDictionaryWordQuery,
 } from "@/redux/api/dictionaryApi";
 
+/**
+ * Matches the actual Prisma Dictionary model.
+ */
 type DictionaryWord = {
   id: string;
-  persianWord?: string | null;
-  word?: string | null;
-  transliteration?: string | null;
-  pronunciation?: string | null;
-  banglaMeaning?: string | null;
-  englishMeaning?: string | null;
-  meaning?: string | null;
-  definition?: string | null;
-  root?: string | null;
-  exampleFA?: string | null;
-  exampleEN?: string | null;
-  exampleBN?: string | null;
-  examples?: string[] | null;
-  verses?: string[] | null;
+  persianWord: string;
+  transliteration: string | null;
+  banglaMeaning: string;
+  englishMeaning: string | null;
+  exampleFA: string | null;
+  exampleEN: string | null;
+  exampleBN: string | null;
+  isDeleted: boolean;
+  createdAt: string;
+  updatedAt: string;
 };
 
+/**
+ * Normalize optional text fields.
+ */
 const cleanText = (value?: string | null): string => {
   const text = value?.trim();
 
@@ -57,6 +59,9 @@ const cleanText = (value?: string | null): string => {
   return text;
 };
 
+/**
+ * Empty state component.
+ */
 function EmptyState({ message }: { message: string }) {
   return (
     <div className="rounded-xl border border-dashed bg-muted/30 px-4 py-4">
@@ -65,6 +70,9 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
+/**
+ * Section heading.
+ */
 function SectionHeader({
   title,
   subtitle,
@@ -75,6 +83,7 @@ function SectionHeader({
   return (
     <div className="mb-3">
       <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
+
       {subtitle && (
         <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
       )}
@@ -82,31 +91,32 @@ function SectionHeader({
   );
 }
 
+/**
+ * Meaning card.
+ */
 function MeaningCard({
   title,
   subtitle,
   value,
-  dir = "auto",
 }: {
   title: string;
   subtitle: string;
   value: string;
-  dir?: "auto" | "rtl" | "ltr";
 }) {
   return (
     <section>
       <SectionHeader title={title} subtitle={subtitle} />
+
       {value ? (
         <div className="rounded-xl border bg-card p-4 sm:p-5">
-          <p
-            dir={dir}
-            className="whitespace-pre-wrap text-sm leading-7 text-foreground sm:text-base"
-          >
+          <p className="whitespace-pre-wrap text-sm leading-7 text-foreground sm:text-base">
             {value}
           </p>
         </div>
       ) : (
-        <EmptyState message={`${title} is not available for this word yet.`} />
+        <EmptyState
+          message={`${title} has not been added to this dictionary entry yet.`}
+        />
       )}
     </section>
   );
@@ -118,6 +128,7 @@ export default function DictionaryPage() {
 
   const debouncedSearchTerm = useDebounce(searchTerm.trim(), 400);
 
+  // Dictionary suggestions
   const {
     data: suggestionsData,
     isLoading: isSuggestionsLoading,
@@ -128,48 +139,61 @@ export default function DictionaryPage() {
     { skip: !debouncedSearchTerm },
   );
 
+  // Selected dictionary entry
   const {
     data: wordDetailsData,
     isLoading: isWordDetailsLoading,
     isFetching: isWordDetailsFetching,
     isError: isWordDetailsError,
-  } = useGetDictionaryWordQuery(selectedWordId || "", {
+  } = useGetDictionaryWordQuery(selectedWordId ?? "", {
     skip: !selectedWordId,
   });
 
+  /**
+   * API response data.
+   *
+   * The endpoint response is typed at the component boundary
+   * because the actual response type depends on dictionaryApi.
+   */
   const suggestions =
     (suggestionsData?.data as DictionaryWord[] | undefined) ?? [];
 
   const selectedWord =
     (wordDetailsData?.data as DictionaryWord | undefined) ?? null;
 
+  /**
+   * Clear search and selection.
+   */
   const clearSearch = () => {
     setSearchTerm("");
     setSelectedWordId(null);
   };
 
+  /**
+   * Update search and reset selected entry.
+   */
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
     setSelectedWordId(null);
   };
 
-  const wordTitle = selectedWord
-    ? cleanText(selectedWord.persianWord) || cleanText(selectedWord.word)
-    : "";
+  /**
+   * Select dictionary entry.
+   */
+  const handleSelectWord = (id: string) => {
+    setSelectedWordId(id);
+  };
 
-  const transliteration = selectedWord
-    ? cleanText(selectedWord.transliteration) ||
-      cleanText(selectedWord.pronunciation)
-    : "";
+  // Selected word properties
+  const wordTitle = cleanText(selectedWord?.persianWord);
 
-  const banglaMeaning = selectedWord
-    ? cleanText(selectedWord.banglaMeaning) || cleanText(selectedWord.meaning)
-    : "";
+  const transliteration = cleanText(selectedWord?.transliteration);
+
+  const banglaMeaning = cleanText(selectedWord?.banglaMeaning);
 
   const englishMeaning = cleanText(selectedWord?.englishMeaning);
-  const definition = cleanText(selectedWord?.definition);
-  const root = cleanText(selectedWord?.root);
 
+  // Structured examples
   const examples = selectedWord
     ? [
         {
@@ -196,13 +220,7 @@ export default function DictionaryPage() {
       ]
     : [];
 
-  const legacyExamples =
-    selectedWord?.examples?.filter((example) => cleanText(example)) ?? [];
-
-  const hasStructuredExamples = examples.some((example) => example.value);
-
-  const verses =
-    selectedWord?.verses?.filter((verse) => cleanText(verse)) ?? [];
+  const hasExamples = examples.some((example) => example.value);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -285,7 +303,7 @@ export default function DictionaryPage() {
 
             <p className="mt-3 max-w-xl text-sm leading-6 text-teal-50/85 sm:text-base">
               Explore Persian words with Bangla and English meanings,
-              transliteration, usage examples, and Quranic references.
+              transliteration, usage examples, and multilingual support.
             </p>
 
             <div className="mt-5 flex flex-wrap gap-2 text-xs font-medium text-teal-50">
@@ -320,23 +338,25 @@ export default function DictionaryPage() {
                   </span>
                 </div>
 
+                {/* Search input */}
                 <div className="relative mt-4">
-                  <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 
                   <Input
-                    type="search"
+                    type="text"
                     placeholder="Type a word to search..."
                     value={searchTerm}
                     onChange={(event) => handleSearchChange(event.target.value)}
-                    className="h-12 rounded-xl pl-10 pr-10 focus-visible:ring-teal-600"
+                    className="h-12 rounded-xl pl-10 pr-11 focus-visible:ring-teal-600"
                     aria-label="Search dictionary"
                   />
 
                   {isSuggestionsFetching && debouncedSearchTerm && (
-                    <Loader2 className="absolute right-10 top-1/2 size-4 -translate-y-1/2 animate-spin text-teal-700" />
+                    <Loader2 className="pointer-events-none absolute right-11 top-1/2 size-4 -translate-y-1/2 animate-spin text-teal-700" />
                   )}
 
-                  {searchTerm && (
+                  {/* Single clear button */}
+                  {searchTerm.length > 0 && (
                     <Button
                       type="button"
                       variant="ghost"
@@ -362,6 +382,7 @@ export default function DictionaryPage() {
                             suggestions.length === 1 ? "result" : "results"
                           }`}
                   </span>
+
                   {debouncedSearchTerm && suggestions.length > 0 && (
                     <span className="hidden sm:inline">Select an entry</span>
                   )}
@@ -386,20 +407,13 @@ export default function DictionaryPage() {
                       </div>
                     ) : suggestions.length > 0 ? (
                       suggestions.map((word) => {
-                        const title =
-                          cleanText(word.persianWord) ||
-                          cleanText(word.word) ||
-                          "Untitled word";
+                        const title = cleanText(word.persianWord);
 
                         const meaning =
                           cleanText(word.banglaMeaning) ||
-                          cleanText(word.englishMeaning) ||
-                          cleanText(word.definition) ||
-                          cleanText(word.meaning);
+                          cleanText(word.englishMeaning);
 
-                        const pronunciation =
-                          cleanText(word.transliteration) ||
-                          cleanText(word.pronunciation);
+                        const pronunciation = cleanText(word.transliteration);
 
                         const isSelected = selectedWordId === word.id;
 
@@ -407,7 +421,7 @@ export default function DictionaryPage() {
                           <button
                             key={word.id}
                             type="button"
-                            onClick={() => setSelectedWordId(word.id)}
+                            onClick={() => handleSelectWord(word.id)}
                             aria-pressed={isSelected}
                             className={`group w-full rounded-xl border p-4 text-left transition-all ${
                               isSelected
@@ -421,7 +435,7 @@ export default function DictionaryPage() {
                                   dir="rtl"
                                   className="text-xl font-semibold leading-8"
                                 >
-                                  {title}
+                                  {title || "Untitled word"}
                                 </p>
 
                                 {pronunciation && (
@@ -459,7 +473,9 @@ export default function DictionaryPage() {
                         <span className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
                           <Search className="size-5" />
                         </span>
+
                         <p className="mt-4 font-semibold">No matching words</p>
+
                         <p className="mx-auto mt-1 max-w-xs text-sm leading-5 text-muted-foreground">
                           Try another spelling or search in Persian, Bangla, or
                           English.
@@ -470,7 +486,9 @@ export default function DictionaryPage() {
                         <span className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-teal-50 text-teal-800 dark:bg-teal-950 dark:text-teal-200">
                           <Languages className="size-5" />
                         </span>
+
                         <p className="mt-4 font-semibold">Start exploring</p>
+
                         <p className="mx-auto mt-1 max-w-xs text-sm leading-5 text-muted-foreground">
                           Enter a word above to discover its meaning and usage.
                         </p>
@@ -495,9 +513,11 @@ export default function DictionaryPage() {
               <Card className="rounded-2xl shadow-sm">
                 <CardContent className="flex min-h-[320px] flex-col items-center justify-center px-6 text-center">
                   <p className="font-semibold">Unable to load this word</p>
+
                   <p className="mt-1 text-sm text-muted-foreground">
                     Please select it again or try another search.
                   </p>
+
                   <Button
                     variant="outline"
                     className="mt-4"
@@ -546,56 +566,31 @@ export default function DictionaryPage() {
                       Pronunciation has not been provided.
                     </p>
                   )}
-
-                  {root && (
-                    <div className="mt-4">
-                      <span className="inline-flex items-center rounded-lg border bg-background px-3 py-1.5 text-xs text-muted-foreground">
-                        Root:
-                        <span className="ml-1.5 font-semibold text-foreground">
-                          {root}
-                        </span>
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 <CardContent className="space-y-7 p-5 sm:p-7">
-                  {/* Meanings */}
+                  {/* Bangla meaning */}
                   <MeaningCard
                     title="Bangla meaning"
                     subtitle="বাংলা অর্থ"
                     value={banglaMeaning}
                   />
 
+                  {/* English meaning */}
                   <MeaningCard
                     title="English meaning"
                     subtitle="English translation"
                     value={englishMeaning}
                   />
 
-                  {/* Optional definition */}
-                  <section>
-                    <SectionHeader title="Definition" />
-                    {definition ? (
-                      <p className="whitespace-pre-wrap text-sm leading-7 text-muted-foreground sm:text-base">
-                        {definition}
-                      </p>
-                    ) : (
-                      <EmptyState>
-                        No additional definition has been provided for this word
-                        yet.
-                      </EmptyState>
-                    )}
-                  </section>
-
-                  {/* Examples: Prisma fields */}
+                  {/* Usage examples */}
                   <section>
                     <SectionHeader
                       title="Usage examples"
                       subtitle="Examples in Persian, Bangla, and English"
                     />
 
-                    {hasStructuredExamples ? (
+                    {hasExamples ? (
                       <div className="space-y-3">
                         {examples.map((example) => (
                           <div
@@ -607,6 +602,7 @@ export default function DictionaryPage() {
                                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                   {example.title}
                                 </p>
+
                                 <p className="mt-1 text-xs text-muted-foreground">
                                   {example.subtitle}
                                 </p>
@@ -632,52 +628,30 @@ export default function DictionaryPage() {
                           </div>
                         ))}
                       </div>
-                    ) : legacyExamples.length > 0 ? (
-                      <div className="space-y-3">
-                        {legacyExamples.map((example, index) => (
-                          <div
-                            key={`${index}-${example}`}
-                            className="rounded-xl border bg-muted/20 p-4"
-                          >
-                            <p
-                              dir="auto"
-                              className="whitespace-pre-wrap text-sm leading-7"
-                            >
-                              {example}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
                     ) : (
-                      <EmptyState>
-                        No usage examples have been added for this word yet.
-                      </EmptyState>
+                      <EmptyState message="No usage examples have been added for this word yet." />
                     )}
                   </section>
 
-                  {/* Quranic references */}
-                  <section>
-                    <SectionHeader
-                      title="Quranic references"
-                      subtitle="Related verse references"
-                    />
+                  {/* Entry metadata */}
+                  <section className="border-t pt-5">
+                    <p className="text-xs text-muted-foreground">
+                      Dictionary entry
+                    </p>
 
-                    {verses.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {verses.map((verse, index) => (
-                          <span
-                            key={`${verse}-${index}`}
-                            className="rounded-lg border border-teal-700/20 bg-teal-50 px-3 py-2 text-sm font-medium text-teal-900 dark:bg-teal-950 dark:text-teal-100"
-                          >
-                            {verse}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <EmptyState>
-                        No Quranic references have been linked to this word yet.
-                      </EmptyState>
-                    )}
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Last updated:{" "}
+                      {selectedWord.updatedAt
+                        ? new Date(selectedWord.updatedAt).toLocaleDateString(
+                            undefined,
+                            {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            },
+                          )
+                        : "Not available"}
+                    </p>
                   </section>
 
                   <div className="border-t pt-5">
@@ -706,8 +680,7 @@ export default function DictionaryPage() {
 
                   <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
                     Select a word from the search results to explore its
-                    meanings, pronunciation, examples, and Quranic references in
-                    one place.
+                    meanings, transliteration, and usage examples in one place.
                   </p>
 
                   <div className="mt-6 flex flex-wrap justify-center gap-2 text-xs text-muted-foreground">
@@ -728,6 +701,7 @@ export default function DictionaryPage() {
         </div>
       </main>
 
+      {/* Footer */}
       <footer className="border-t bg-muted/20">
         <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-6 text-center text-xs text-muted-foreground sm:px-6 md:flex-row md:items-center md:justify-between md:text-left lg:px-8">
           <p>© {new Date().getFullYear()} Almunji. All rights reserved.</p>

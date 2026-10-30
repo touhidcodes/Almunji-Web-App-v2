@@ -3,7 +3,6 @@ export type TDictionaryApiResponse<T> = {
   message?: string;
   data?: T[] | T;
 };
-
 export interface TCreateDictionaryWord {
   persianWord: string;
   transliteration: string;
@@ -13,6 +12,20 @@ export interface TCreateDictionaryWord {
   exampleEN: string;
   exampleBN: string;
 }
+
+export type TDictionary = {
+  id: string;
+  persianWord: string;
+  transliteration: string | null;
+  banglaMeaning: string;
+  englishMeaning: string | null;
+  exampleFA: string | null;
+  exampleEN: string | null;
+  exampleBN: string | null;
+  isDeleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export type TDictionaryWord = {
   id: string;
@@ -31,4 +44,24 @@ export type TDictionaryApiWord = Partial<TDictionaryWord> & {
   pronunciation?: string;
   meaning?: string;
   definition?: string;
+};
+
+export type TUpdateDictionaryWord = Partial<TCreateDictionaryWord>;
+
+export type TDictionarySuggestionParams = {
+  search: string;
+};
+
+export type TDictionaryAdminParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  isDeleted?: boolean;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+};
+
+export type TUpdateDictionaryPayload = {
+  id: string;
+  data: TUpdateDictionaryWord;
 };
