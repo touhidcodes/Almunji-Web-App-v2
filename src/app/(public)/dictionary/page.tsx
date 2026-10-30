@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import {
   ArrowLeft,
   BookOpen,
   Check,
   ChevronRight,
-  Languages,
   Loader2,
   Search,
   Sparkles,
@@ -24,26 +22,6 @@ import {
   useGetDictionaryWordQuery,
 } from "@/redux/api/dictionaryApi";
 
-/**
- * Matches the actual Prisma Dictionary model.
- */
-type DictionaryWord = {
-  id: string;
-  persianWord: string;
-  transliteration: string | null;
-  banglaMeaning: string;
-  englishMeaning: string | null;
-  exampleFA: string | null;
-  exampleEN: string | null;
-  exampleBN: string | null;
-  isDeleted: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
-
-/**
- * Normalize optional text fields.
- */
 const cleanText = (value?: string | null): string => {
   const text = value?.trim();
 
@@ -59,9 +37,6 @@ const cleanText = (value?: string | null): string => {
   return text;
 };
 
-/**
- * Empty state component.
- */
 function EmptyState({ message }: { message: string }) {
   return (
     <div className="rounded-xl border border-dashed bg-muted/30 px-4 py-4">
@@ -70,9 +45,6 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
-/**
- * Section heading.
- */
 function SectionHeader({
   title,
   subtitle,
@@ -91,9 +63,6 @@ function SectionHeader({
   );
 }
 
-/**
- * Meaning card.
- */
 function MeaningCard({
   title,
   subtitle,
@@ -128,63 +97,53 @@ export default function DictionaryPage() {
 
   const debouncedSearchTerm = useDebounce(searchTerm.trim(), 400);
 
-  // Dictionary suggestions
   const {
-    data: suggestionsData,
+    data: suggestionsResponse,
     isLoading: isSuggestionsLoading,
     isFetching: isSuggestionsFetching,
     isError: isSuggestionsError,
-  } = useGetDictionarySuggestionsQuery(
-    { search: debouncedSearchTerm },
-    { skip: !debouncedSearchTerm },
-  );
+    refetch: refetchSuggestions,
+  } = useGetDictionarySuggestionsQuery({
+    search: debouncedSearchTerm,
+  });
 
-  // Selected dictionary entry
+  // Selected Dictionary Word
   const {
-    data: wordDetailsData,
+    data: wordDetailsResponse,
     isLoading: isWordDetailsLoading,
     isFetching: isWordDetailsFetching,
     isError: isWordDetailsError,
+    refetch: refetchWordDetails,
   } = useGetDictionaryWordQuery(selectedWordId ?? "", {
     skip: !selectedWordId,
   });
 
-  /**
-   * API response data.
-   *
-   * The endpoint response is typed at the component boundary
-   * because the actual response type depends on dictionaryApi.
-   */
-  const suggestions =
-    (suggestionsData?.data as DictionaryWord[] | undefined) ?? [];
+  const suggestions = suggestionsResponse?.data ?? [];
 
-  const selectedWord =
-    (wordDetailsData?.data as DictionaryWord | undefined) ?? null;
+  const selectedWord = wordDetailsResponse?.data ?? null;
 
-  /**
-   * Clear search and selection.
-   */
-  const clearSearch = () => {
-    setSearchTerm("");
-    setSelectedWordId(null);
-  };
-
-  /**
-   * Update search and reset selected entry.
-   */
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
     setSelectedWordId(null);
   };
 
-  /**
-   * Select dictionary entry.
-   */
+  const handleClearSearch = () => {
+    setSearchTerm("");
+    setSelectedWordId(null);
+  };
+
   const handleSelectWord = (id: string) => {
     setSelectedWordId(id);
   };
 
-  // Selected word properties
+  const handleBackToResults = () => {
+    setSelectedWordId(null);
+  };
+
+  // --------------------------------------------------
+  // Selected Word Information
+  // --------------------------------------------------
+
   const wordTitle = cleanText(selectedWord?.persianWord);
 
   const transliteration = cleanText(selectedWord?.transliteration);
@@ -193,7 +152,10 @@ export default function DictionaryPage() {
 
   const englishMeaning = cleanText(selectedWord?.englishMeaning);
 
-  // Structured examples
+  // --------------------------------------------------
+  // Examples
+  // --------------------------------------------------
+
   const examples = selectedWord
     ? [
         {
@@ -220,75 +182,16 @@ export default function DictionaryPage() {
       ]
     : [];
 
-  const hasExamples = examples.some((example) => example.value);
+  const hasExamples = examples.some((example) => Boolean(example.value));
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Navigation */}
-      <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur-xl">
-        <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-3">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-teal-700 text-white shadow-sm">
-              <BookOpen className="size-5" />
-            </span>
+    <main className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+        {/* Page Introduction */}
 
-            <span>
-              <span className="block text-lg font-bold tracking-tight">
-                Almunji
-              </span>
-              <span className="hidden text-xs text-muted-foreground sm:block">
-                Language & Quran resources
-              </span>
-            </span>
-          </Link>
-
-          <div className="flex items-center gap-1 sm:gap-2">
-            <Link
-              href="/"
-              className="hidden rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground sm:inline-flex"
-            >
-              Home
-            </Link>
-
-            <Link
-              href="/dictionary"
-              aria-current="page"
-              className="rounded-lg bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800 dark:bg-teal-950 dark:text-teal-200"
-            >
-              Dictionary
-            </Link>
-
-            <Link
-              href="/about"
-              className="hidden rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground sm:inline-flex"
-            >
-              About
-            </Link>
-
-            <div className="ml-1 hidden items-center gap-2 border-l pl-3 md:flex">
-              <Link href="/auth?type=login">
-                <Button variant="ghost" size="sm">
-                  Sign in
-                </Button>
-              </Link>
-
-              <Link href="/auth?type=register">
-                <Button
-                  size="sm"
-                  className="bg-teal-700 text-white hover:bg-teal-800"
-                >
-                  Get started
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </nav>
-      </header>
-
-      <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-        {/* Hero */}
-        <section className="relative mb-8 overflow-hidden rounded-3xl bg-gradient-to-br from-teal-950 via-teal-900 to-emerald-800 px-6 py-8 text-white shadow-sm sm:px-10 sm:py-10">
+        <section className="relative mb-8 overflow-hidden rounded-3xl bg-linear-to-br from-teal-950 via-teal-900 to-emerald-800 px-6 py-8 text-white shadow-sm sm:px-10 sm:py-10">
           <div className="pointer-events-none absolute -right-12 -top-20 size-64 rounded-full border border-white/10" />
+
           <div className="pointer-events-none absolute -right-2 -top-10 size-44 rounded-full border border-white/10" />
 
           <div className="relative max-w-2xl">
@@ -302,17 +205,19 @@ export default function DictionaryPage() {
             </h1>
 
             <p className="mt-3 max-w-xl text-sm leading-6 text-teal-50/85 sm:text-base">
-              Explore Persian words with Bangla and English meanings,
-              transliteration, usage examples, and multilingual support.
+              Explore Persian words with their Bangla and English meanings,
+              transliteration, and multilingual usage examples.
             </p>
 
             <div className="mt-5 flex flex-wrap gap-2 text-xs font-medium text-teal-50">
               <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5">
                 فارسی
               </span>
+
               <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5">
                 বাংলা
               </span>
+
               <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5">
                 English
               </span>
@@ -320,14 +225,20 @@ export default function DictionaryPage() {
           </div>
         </section>
 
+        {/* Main Content */}
+
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(300px,0.85fr)_minmax(0,1.4fr)]">
-          {/* Search and results */}
+          {/* Search and Suggestions */}
+
           <section className="min-w-0">
             <Card className="overflow-hidden rounded-2xl border-border/80 shadow-sm">
+              {/* Search Header */}
+
               <div className="border-b px-5 py-5">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <h2 className="font-semibold">Find a word</h2>
+
                     <p className="mt-1 text-xs text-muted-foreground">
                       Search in Persian, Bangla, or English
                     </p>
@@ -338,7 +249,8 @@ export default function DictionaryPage() {
                   </span>
                 </div>
 
-                {/* Search input */}
+                {/* Search Input */}
+
                 <div className="relative mt-4">
                   <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 
@@ -351,18 +263,21 @@ export default function DictionaryPage() {
                     aria-label="Search dictionary"
                   />
 
-                  {isSuggestionsFetching && debouncedSearchTerm && (
+                  {/* Loading Indicator */}
+
+                  {isSuggestionsFetching && (
                     <Loader2 className="pointer-events-none absolute right-11 top-1/2 size-4 -translate-y-1/2 animate-spin text-teal-700" />
                   )}
 
-                  {/* Single clear button */}
+                  {/* Single Clear Button */}
+
                   {searchTerm.length > 0 && (
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
                       aria-label="Clear search"
-                      onClick={clearSearch}
+                      onClick={handleClearSearch}
                       className="absolute right-1 top-1/2 size-9 -translate-y-1/2 rounded-lg"
                     >
                       <X className="size-4" />
@@ -371,47 +286,71 @@ export default function DictionaryPage() {
                 </div>
               </div>
 
+              {/* Results Header */}
+
               <CardContent className="p-0">
                 <div className="flex min-h-11 items-center justify-between gap-2 px-5 py-3 text-xs text-muted-foreground">
                   <span>
-                    {!debouncedSearchTerm
-                      ? "Search to explore dictionary entries"
-                      : isSuggestionsLoading || isSuggestionsFetching
-                        ? "Searching dictionary..."
-                        : `${suggestions.length} ${
+                    {isSuggestionsLoading || isSuggestionsFetching
+                      ? "Loading dictionary entries..."
+                      : debouncedSearchTerm
+                        ? `${suggestions.length} ${
                             suggestions.length === 1 ? "result" : "results"
+                          } found`
+                        : `${suggestions.length} dictionary ${
+                            suggestions.length === 1 ? "word" : "words"
                           }`}
                   </span>
 
-                  {debouncedSearchTerm && suggestions.length > 0 && (
-                    <span className="hidden sm:inline">Select an entry</span>
+                  {suggestions.length > 0 && (
+                    <span className="hidden sm:inline">
+                      {debouncedSearchTerm
+                        ? "Search results"
+                        : "Dictionary entries"}
+                    </span>
                   )}
                 </div>
 
+                {/* Suggestions List */}
+
                 <ScrollArea className="h-[min(62vh,620px)]">
                   <div className="space-y-1.5 px-3 pb-3">
+                    {/* Loading */}
+
                     {isSuggestionsLoading ||
-                    (isSuggestionsFetching && !suggestionsData) ? (
+                    (isSuggestionsFetching && !suggestionsResponse) ? (
                       <div className="flex flex-col items-center gap-3 py-16 text-sm text-muted-foreground">
                         <Loader2 className="size-6 animate-spin text-teal-700" />
-                        Searching words...
+                        Loading dictionary words...
                       </div>
                     ) : isSuggestionsError ? (
-                      <div className="px-4 py-12 text-center">
+                      /* Error */
+
+                      <div className="flex flex-col items-center px-4 py-12 text-center">
                         <p className="font-medium">
-                          We couldn’t load the results
+                          Unable to load dictionary entries
                         </p>
+
                         <p className="mt-1 text-sm text-muted-foreground">
-                          Please try searching again.
+                          Please try again.
                         </p>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-4"
+                          onClick={() => refetchSuggestions()}
+                        >
+                          Try again
+                        </Button>
                       </div>
                     ) : suggestions.length > 0 ? (
+                      /* Dynamic Results */
+
                       suggestions.map((word) => {
                         const title = cleanText(word.persianWord);
 
-                        const meaning =
-                          cleanText(word.banglaMeaning) ||
-                          cleanText(word.englishMeaning);
+                        const meaning = cleanText(word.banglaMeaning);
 
                         const pronunciation = cleanText(word.transliteration);
 
@@ -435,7 +374,7 @@ export default function DictionaryPage() {
                                   dir="rtl"
                                   className="text-xl font-semibold leading-8"
                                 >
-                                  {title || "Untitled word"}
+                                  {title}
                                 </p>
 
                                 {pronunciation && (
@@ -469,10 +408,10 @@ export default function DictionaryPage() {
                         );
                       })
                     ) : debouncedSearchTerm ? (
+                      /* No Search Results */
+
                       <div className="px-4 py-16 text-center">
-                        <span className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-                          <Search className="size-5" />
-                        </span>
+                        <Search className="mx-auto size-8 text-muted-foreground" />
 
                         <p className="mt-4 font-semibold">No matching words</p>
 
@@ -482,15 +421,18 @@ export default function DictionaryPage() {
                         </p>
                       </div>
                     ) : (
+                      /* Empty Default Dictionary */
+
                       <div className="px-4 py-16 text-center">
-                        <span className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-teal-50 text-teal-800 dark:bg-teal-950 dark:text-teal-200">
-                          <Languages className="size-5" />
-                        </span>
+                        <BookOpen className="mx-auto size-8 text-muted-foreground" />
 
-                        <p className="mt-4 font-semibold">Start exploring</p>
+                        <p className="mt-4 font-semibold">
+                          No dictionary entries available
+                        </p>
 
-                        <p className="mx-auto mt-1 max-w-xs text-sm leading-5 text-muted-foreground">
-                          Enter a word above to discover its meaning and usage.
+                        <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
+                          Dictionary entries will appear here when they become
+                          available.
                         </p>
                       </div>
                     )}
@@ -500,9 +442,13 @@ export default function DictionaryPage() {
             </Card>
           </section>
 
-          {/* Word details */}
+          {/* Dictionary Word Details */}
+
           <section className="min-w-0">
-            {isWordDetailsLoading || isWordDetailsFetching ? (
+            {/* Loading */}
+
+            {selectedWordId &&
+            (isWordDetailsLoading || isWordDetailsFetching) ? (
               <Card className="rounded-2xl shadow-sm">
                 <CardContent className="flex min-h-[420px] flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
                   <Loader2 className="size-7 animate-spin text-teal-700" />
@@ -510,30 +456,40 @@ export default function DictionaryPage() {
                 </CardContent>
               </Card>
             ) : isWordDetailsError && selectedWordId ? (
+              /* Error */
+
               <Card className="rounded-2xl shadow-sm">
-                <CardContent className="flex min-h-[320px] flex-col items-center justify-center px-6 text-center">
+                <CardContent className="flex min-h-80 flex-col items-center justify-center px-6 text-center">
                   <p className="font-semibold">Unable to load this word</p>
 
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Please select it again or try another search.
+                    Please try selecting it again.
                   </p>
 
-                  <Button
-                    variant="outline"
-                    className="mt-4"
-                    onClick={() => setSelectedWordId(null)}
-                  >
-                    <ArrowLeft className="mr-2 size-4" />
-                    Back to results
-                  </Button>
+                  <div className="mt-4 flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => refetchWordDetails()}
+                    >
+                      Try again
+                    </Button>
+
+                    <Button variant="ghost" onClick={handleBackToResults}>
+                      <ArrowLeft className="mr-2 size-4" />
+                      Back
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ) : selectedWord ? (
+              /* Selected Word */
+
               <Card className="overflow-hidden rounded-2xl border-border/80 shadow-sm">
-                {/* Word heading */}
-                <div className="border-b bg-gradient-to-br from-card to-muted/40 px-5 py-6 sm:px-7 sm:py-8">
+                {/* Word Heading */}
+
+                <div className="border-b bg-linear-to-br from-card to-muted/40 px-5 py-6 sm:px-7 sm:py-8">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="inline-flex items-center gap-2 rounded-full border bg-background/80 px-3 py-1.5 text-xs font-medium text-muted-foreground">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-teal-700 bg-background/80 px-3 py-1.5 text-xs font-medium text-teal-700">
                       <BookOpen className="size-3.5" />
                       Dictionary entry
                     </span>
@@ -543,7 +499,7 @@ export default function DictionaryPage() {
                       variant="ghost"
                       size="sm"
                       className="lg:hidden"
-                      onClick={() => setSelectedWordId(null)}
+                      onClick={handleBackToResults}
                     >
                       <ArrowLeft className="mr-1 size-4" />
                       Results
@@ -552,7 +508,7 @@ export default function DictionaryPage() {
 
                   <h2
                     dir="rtl"
-                    className="mt-5 break-words text-4xl font-bold leading-tight tracking-tight sm:text-5xl"
+                    className="mt-5 wrap-break-words text-4xl font-bold leading-tight tracking-tight sm:text-5xl"
                   >
                     {wordTitle || "Dictionary entry"}
                   </h2>
@@ -568,22 +524,27 @@ export default function DictionaryPage() {
                   )}
                 </div>
 
+                {/* Word Information */}
+
                 <CardContent className="space-y-7 p-5 sm:p-7">
-                  {/* Bangla meaning */}
+                  {/* Bangla Meaning */}
+
                   <MeaningCard
                     title="Bangla meaning"
                     subtitle="বাংলা অর্থ"
                     value={banglaMeaning}
                   />
 
-                  {/* English meaning */}
+                  {/* English Meaning */}
+
                   <MeaningCard
                     title="English meaning"
                     subtitle="English translation"
                     value={englishMeaning}
                   />
 
-                  {/* Usage examples */}
+                  {/* Examples */}
+
                   <section>
                     <SectionHeader
                       title="Usage examples"
@@ -632,42 +593,11 @@ export default function DictionaryPage() {
                       <EmptyState message="No usage examples have been added for this word yet." />
                     )}
                   </section>
-
-                  {/* Entry metadata */}
-                  <section className="border-t pt-5">
-                    <p className="text-xs text-muted-foreground">
-                      Dictionary entry
-                    </p>
-
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Last updated:{" "}
-                      {selectedWord.updatedAt
-                        ? new Date(selectedWord.updatedAt).toLocaleDateString(
-                            undefined,
-                            {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            },
-                          )
-                        : "Not available"}
-                    </p>
-                  </section>
-
-                  <div className="border-t pt-5">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full rounded-xl"
-                      onClick={() => setSelectedWordId(null)}
-                    >
-                      <ArrowLeft className="mr-2 size-4" />
-                      Back to search results
-                    </Button>
-                  </div>
                 </CardContent>
               </Card>
             ) : (
+              /* Initial Details State */
+
               <Card className="overflow-hidden rounded-2xl border-border/80 shadow-sm">
                 <CardContent className="flex min-h-[540px] flex-col items-center justify-center px-6 py-16 text-center">
                   <span className="flex size-16 items-center justify-center rounded-3xl bg-teal-50 text-teal-800 dark:bg-teal-950 dark:text-teal-200">
@@ -687,9 +617,11 @@ export default function DictionaryPage() {
                     <span className="rounded-full border px-3 py-1.5">
                       Persian
                     </span>
+
                     <span className="rounded-full border px-3 py-1.5">
                       বাংলা
                     </span>
+
                     <span className="rounded-full border px-3 py-1.5">
                       English
                     </span>
@@ -699,15 +631,7 @@ export default function DictionaryPage() {
             )}
           </section>
         </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t bg-muted/20">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-6 text-center text-xs text-muted-foreground sm:px-6 md:flex-row md:items-center md:justify-between md:text-left lg:px-8">
-          <p>© {new Date().getFullYear()} Almunji. All rights reserved.</p>
-          <p>A thoughtful space for language and Quran learning.</p>
-        </div>
-      </footer>
-    </div>
+      </div>
+    </main>
   );
 }
