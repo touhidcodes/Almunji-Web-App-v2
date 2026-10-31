@@ -1,13 +1,28 @@
-import z from "zod/v3";
+import { z } from "zod";
 
-export const BlogSchema = z.object({
-  id: z.string().uuid().optional(),
-  title: z.string().min(1),
-  slug: z.string().min(1),
-  thumbnail: z.string().url().optional(),
+// Create Blog
+export const CreateBlogSchema = z.object({
+  title: z.string().trim().min(1, "Title is required"),
+  thumbnail: z.string().optional(),
   summary: z.string().optional(),
-  content: z.string().min(1),
-  isPublished: z.boolean().optional(),
-  isFeatured: z.boolean().optional(),
-  isDeleted: z.boolean().optional(),
+  content: z.string().trim().min(1, "Content is required"),
 });
+
+// Update Blog
+export const UpdateBlogSchema = z
+  .object({
+    title: z.string().trim().min(1, "Title cannot be empty").optional(),
+    thumbnail: z.string().optional(),
+    summary: z.string().optional(),
+    content: z.string().trim().min(1, "Content cannot be empty").optional(),
+    isPublished: z.boolean().optional(),
+    isFeatured: z.boolean().optional(),
+  })
+  .refine(
+    (data) => Object.keys(data).length > 0,
+    "At least one field is required to update a blog",
+  );
+
+// Inferred Types
+export type TCreateBlogFormValues = z.infer<typeof CreateBlogSchema>;
+export type TUpdateBlogFormValues = z.infer<typeof UpdateBlogSchema>;

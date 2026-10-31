@@ -1,9 +1,19 @@
+import type {
+  TBlogDeleteResponse,
+  TBlogQueryParams,
+  TBlogResponse,
+  TBlogsResponse,
+  TCreateBlog,
+  TUpdateBlogRequest,
+} from "@/types/blog";
+
 import { tagTypes } from "../tags";
 import { baseServerApi } from "./baseApi";
 
 export const blogApi = baseServerApi.injectEndpoints({
   endpoints: (build) => ({
-    createBlog: build.mutation({
+    // Create Blog
+    createBlog: build.mutation<TBlogResponse, TCreateBlog>({
       query: (data) => ({
         url: "/blog",
         method: "POST",
@@ -11,37 +21,47 @@ export const blogApi = baseServerApi.injectEndpoints({
       }),
       invalidatesTags: [tagTypes.blog],
     }),
-    getAllBlogs: build.query({
-      query: (arg: Record<string, any>) => ({
+
+    // Get All Published Blogs
+    getAllBlogs: build.query<TBlogsResponse, TBlogQueryParams | void>({
+      query: (arg) => ({
         url: "/blog/all",
         method: "GET",
         params: arg,
       }),
       providesTags: [tagTypes.blog],
     }),
-    getAllBlogsAdmin: build.query({
-      query: (arg: Record<string, any>) => ({
+
+    // Get All Blogs (Admin)
+    getAllBlogsAdmin: build.query<TBlogsResponse, TBlogQueryParams | void>({
+      query: (arg) => ({
         url: "/blog/admin/all",
         method: "GET",
         params: arg,
       }),
       providesTags: [tagTypes.blog],
     }),
-    getSingleBlog: build.query({
+
+    // Get Single Blog by ID
+    getSingleBlog: build.query<TBlogResponse, string>({
       query: (id) => ({
         url: `/blog/${id}`,
         method: "GET",
       }),
       providesTags: [tagTypes.blog],
     }),
-    getBlogBySlug: build.query({
+
+    // Get Blog by Slug
+    getBlogBySlug: build.query<TBlogResponse, string>({
       query: (slug) => ({
         url: `/blog/slug/${slug}`,
         method: "GET",
       }),
       providesTags: [tagTypes.blog],
     }),
-    updateBlog: build.mutation({
+
+    // Update Blog
+    updateBlog: build.mutation<TBlogResponse, TUpdateBlogRequest>({
       query: ({ id, data }) => ({
         url: `/blog/${id}`,
         method: "PUT",
@@ -49,14 +69,18 @@ export const blogApi = baseServerApi.injectEndpoints({
       }),
       invalidatesTags: [tagTypes.blog],
     }),
-    softDeleteBlog: build.mutation({
+
+    // Soft Delete Blog
+    softDeleteBlog: build.mutation<TBlogDeleteResponse, string>({
       query: (id) => ({
         url: `/blog/${id}`,
         method: "DELETE",
       }),
       invalidatesTags: [tagTypes.blog],
     }),
-    hardDeleteBlog: build.mutation({
+
+    // Hard Delete Blog
+    hardDeleteBlog: build.mutation<TBlogDeleteResponse, string>({
       query: (id) => ({
         url: `/blog/admin/${id}`,
         method: "DELETE",

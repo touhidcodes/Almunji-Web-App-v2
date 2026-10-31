@@ -14,23 +14,18 @@ export interface TBlog {
 
 export interface TCreateBlog {
   title: string;
-  slug: string;
   thumbnail?: string;
   summary?: string;
   content: string;
-  isPublished?: boolean;
-  isFeatured?: boolean;
 }
 
 export interface TUpdateBlog {
   title?: string;
-  slug?: string;
-  thumbnail?: string | null;
-  summary?: string | null;
+  thumbnail?: string;
+  summary?: string;
   content?: string;
   isPublished?: boolean;
   isFeatured?: boolean;
-  isDeleted?: boolean;
 }
 
 export interface TBlogQueryParams {
@@ -49,4 +44,29 @@ export interface TBlogPagination {
   limit: number;
   total: number;
   totalPages: number;
+}
+
+export interface TBlogListResponse {
+  blogs: TBlog[];
+  meta: TBlogPagination;
+}
+
+export interface TApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data: T;
+}
+
+export type TBlogResponse = TApiResponse<TBlog>;
+
+export type TBlogsResponse = TApiResponse<TBlogListResponse>;
+
+export interface TBlogDeleteResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface TUpdateBlogRequest {
+  id: string;
+  data: TUpdateBlog;
 }
