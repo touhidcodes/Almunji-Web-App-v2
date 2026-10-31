@@ -3,16 +3,6 @@ export type TDictionaryApiResponse<T> = {
   message?: string;
   data?: T[] | T;
 };
-export interface TCreateDictionaryWord {
-  persianWord: string;
-  transliteration: string;
-  banglaMeaning: string;
-  englishMeaning: string;
-  exampleFA: string;
-  exampleEN: string;
-  exampleBN: string;
-}
-
 export type TDictionary = {
   id: string;
   persianWord: string;
@@ -25,6 +15,16 @@ export type TDictionary = {
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
+};
+
+export type TCreateDictionaryWord = {
+  persianWord: string;
+  transliteration?: string;
+  banglaMeaning: string;
+  englishMeaning?: string;
+  exampleFA?: string;
+  exampleEN?: string;
+  exampleBN?: string;
 };
 
 export type TDictionaryWord = {
@@ -55,7 +55,7 @@ export type TDictionarySuggestionParams = {
 export type TDictionaryAdminParams = {
   page?: number;
   limit?: number;
-  search?: string;
+  searchTerm?: string;
   isDeleted?: boolean;
   sortBy?: string;
   sortOrder?: "asc" | "desc";

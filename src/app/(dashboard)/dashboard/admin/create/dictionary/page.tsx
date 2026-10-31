@@ -65,9 +65,9 @@ const CreateDictionaryPage = () => {
     try {
       const payload: TDictionaryFormValues = {
         persianWord: data.persianWord.trim(),
-        transliteration: data.transliteration?.trim() || undefined,
+        transliteration: data.transliteration?.trim(),
         banglaMeaning: data.banglaMeaning.trim(),
-        englishMeaning: data.englishMeaning?.trim() || undefined,
+        englishMeaning: data.englishMeaning?.trim(),
         exampleFA: data.exampleFA?.trim() || undefined,
         exampleEN: data.exampleEN?.trim() || undefined,
         exampleBN: data.exampleBN?.trim() || undefined,
