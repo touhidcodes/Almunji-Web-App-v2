@@ -13,7 +13,7 @@ export const permissionApi = baseServerApi.injectEndpoints({
     }),
     getAllPermissions: build.query({
       query: () => ({
-        url: "/permission",
+        url: "/permission/all",
         method: "GET",
       }),
       providesTags: [tagTypes.permission],
@@ -35,8 +35,8 @@ export const permissionApi = baseServerApi.injectEndpoints({
       invalidatesTags: [tagTypes.user, tagTypes.permission],
     }),
     getUserPermissions: build.query({
-      query: (userId) => ({
-        url: `/permission/user/${userId}`,
+      query: () => ({
+        url: `/permission`,
         method: "GET",
       }),
       providesTags: [tagTypes.permission],

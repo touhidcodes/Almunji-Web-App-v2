@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getCookie, setCookie } from "@/utils/nextCookies";
 
 // Lazy initialize instance to avoid server-side localStorage errors
 let instancePromise: Promise<axios.AxiosInstance> | null = null;
@@ -24,12 +25,10 @@ const createInstance = async (): Promise<axios.AxiosInstance> => {
   // Request interceptor
   instance.interceptors.request.use(
     async (config) => {
-      if (typeof window !== "undefined") {
-        const { getCookie } = await import("@/utils/nextCookies");
-        const accessToken = await getCookie("accessToken");
-        if (accessToken) {
-          config.headers.Authorization = accessToken.value;
-        }
+      // Set Authorization header with token from cookie
+      const accessToken = await getCookie("accessToken");
+      if (accessToken?.value) {
+        config.headers.Authorization = `Bearer ${accessToken.value}`;
       }
       return config;
     },
@@ -54,7 +53,6 @@ const createInstance = async (): Promise<axios.AxiosInstance> => {
               const newToken = res?.data?.accessToken;
 
               if (newToken) {
-                const { setCookie } = await import("@/utils/nextCookies");
                 await setCookie("refreshToken", newToken);
                 onRefreshed(newToken);
                 isRefreshing = false;
@@ -72,7 +70,7 @@ const createInstance = async (): Promise<axios.AxiosInstance> => {
 
         return new Promise((resolve) => {
           subscribeTokenRefresh((newAccessToken) => {
-            originalRequest.headers.Authorization = newAccessToken;
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
             resolve(instance.request(originalRequest));
           });
         });
