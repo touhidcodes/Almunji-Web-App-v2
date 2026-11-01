@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtDecode } from "jwt-decode";
+import { Permission } from "@/types/permission";
 
 interface DecodedToken {
   role?: string;
   userId?: string;
-  permissions?: any[];
+  permissions?: Permission[];
   exp?: number;
   [key: string]: unknown;
 }
@@ -69,7 +70,7 @@ export function authMiddleware(request: NextRequest) {
   }
 
   const role = decoded.role?.toUpperCase();
-  const permissions = decoded.permissions || (permissionsCookie ? JSON.parse(permissionsCookie) : []);
+  const permissions = decoded.permissions || (permissionsCookie ? (JSON.parse(permissionsCookie) as Permission[]) : []);
 
   // Check if role has access to this route
   const allowedRoutes = roleRoutes[role] || [];
@@ -80,7 +81,7 @@ export function authMiddleware(request: NextRequest) {
   if (!hasRouteAccess) {
     // For MODERATOR role, check specific permissions
     if (role === "MODERATOR" && permissions.length > 0) {
-      const hasPermission = permissions.some((perm: any) => {
+      const hasPermission = permissions.some((perm: Permission) => {
         return path.startsWith(perm.route) && 
                (perm.action === "read" || perm.action === "update" || perm.action === "delete" || perm.action === "create");
       });

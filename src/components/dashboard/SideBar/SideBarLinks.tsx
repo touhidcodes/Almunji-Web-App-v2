@@ -1,15 +1,5 @@
 import { authRole, TAuthRole } from "@/constants/authRoles";
 import {
-  PersonStanding,
-  HomeIcon,
-  LayoutDashboard,
-  Star,
-  KeyRound,
-  FormInput,
-  FormInputIcon,
-  FilePlus2,
-  FilePen,
-  ChartPie,
   User,
   KeySquare,
   Logs,
@@ -21,20 +11,12 @@ import {
   FolderOpen,
   Users,
   FileText,
+  FilePlus2,
+  FilePen,
+  ChartPie,
 } from "lucide-react";
 
-type SidebarGroup = {
-  section: string;
-  items: {
-    label: string;
-    href: string;
-    icon: React.ElementType;
-    permission?: {
-      route: string;
-      action?: "read" | "create" | "update" | "delete";
-    };
-  }[];
-};
+import { Permission, SidebarGroup, SidebarItem } from "@/types/sidebar";
 
 // Route permission mappings
 const routePermissions = {
@@ -83,46 +65,58 @@ const routePermissions = {
   userChangePassword: "/dashboard/change-password",
 };
 
-export const getSidebarLinks = (role: TAuthRole, permissions: any[] = []): SidebarGroup[] => {
+export const getSidebarLinks = (role: TAuthRole, permissions: Permission[] = []): SidebarGroup[] => {
   // Helper to check permission
   const hasPermission = (route: string, action: "read" | "create" | "update" | "delete" = "read") => {
     // Admin has all permissions by default
     if (role === "ADMIN") {
       return true;
     }
-    return permissions.some((perm: any) => perm.route === route && (perm.action === action || perm.action === "read"));
+    return permissions.some((perm) => perm.route === route && (perm.action === action || perm.action === "read"));
   };
 
   // Filter items by permission
-  const filterItems = (items: any[]) => items.filter((item) => {
+  const filterItems = (items: SidebarItem[]): SidebarItem[] => items.filter((item) => {
     if (!item.permission) return true;
     return hasPermission(item.permission.route, item.permission.action);
   });
 
-  const profileSettingsItems = filterItems([
-    {
-      section: "Profile",
-      items: [
-        {
-          label: "Profile",
-          href: routePermissions.adminProfile,
-          icon: User,
-          permission: { route: routePermissions.adminProfile, action: "read" },
-        },
-      ],
-    },
-    {
-      section: "Settings",
-      items: [
-        {
-          label: "Change Password",
-          href: routePermissions.adminChangePassword,
-          icon: KeySquare,
-          permission: { route: routePermissions.adminChangePassword, action: "update" },
-        },
-      ],
-    },
-  ]);
+  // Filter sidebar group by permission
+  const filterGroupItems = (group: SidebarGroup): SidebarGroup[] => {
+    const filteredItems = group.items.filter((item) => {
+      if (!item.permission) return true;
+      return hasPermission(item.permission.route, item.permission.action);
+    });
+    
+    // If all items are filtered out, return empty array
+    if (filteredItems.length === 0) return [];
+    
+    return [{ ...group, items: filteredItems }];
+  };
+
+  const profileSettingsItems: SidebarGroup[] = filterGroupItems({
+    section: "Profile",
+    items: [
+      {
+        label: "Profile",
+        href: routePermissions.adminProfile,
+        icon: User,
+        permission: { route: routePermissions.adminProfile, action: "read" },
+      },
+    ],
+  });
+
+  const settingsItem: SidebarGroup[] = filterGroupItems({
+    section: "Settings",
+    items: [
+      {
+        label: "Change Password",
+        href: routePermissions.adminChangePassword,
+        icon: KeySquare,
+        permission: { route: routePermissions.adminChangePassword, action: "update" },
+      },
+    ],
+  });
 
   switch (role) {
     case authRole.ADMIN:
@@ -278,6 +272,7 @@ export const getSidebarLinks = (role: TAuthRole, permissions: any[] = []): Sideb
           ]),
         },
         ...profileSettingsItems,
+        ...settingsItem,
       ];
 
     case authRole.MODERATOR:
@@ -369,6 +364,7 @@ export const getSidebarLinks = (role: TAuthRole, permissions: any[] = []): Sideb
           ]),
         },
         ...profileSettingsItems,
+        ...settingsItem,
       ];
 
     case authRole.USER:
@@ -413,9 +409,10 @@ export const getSidebarLinks = (role: TAuthRole, permissions: any[] = []): Sideb
           ]),
         },
         ...profileSettingsItems,
+        ...settingsItem,
       ];
 
     default:
-      return profileSettingsItems;
+      return [...profileSettingsItems, ...settingsItem];
   }
 };

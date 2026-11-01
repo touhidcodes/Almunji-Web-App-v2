@@ -8,6 +8,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRef } from "react";
 import { authRole, TAuthRole } from "@/constants/authRoles";
+import { Permission } from "@/types/permission";
 import { getSidebarLinks } from "./SidebarLinks";
 
 type SidebarProps = {
@@ -54,7 +55,7 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
               ))}
             </div>
           ) : (
-            getSidebarLinks((user?.role as TAuthRole) || "USER", user?.permissions || []).map((group, idx) => (
+            getSidebarLinks((user?.role as TAuthRole) || "USER", user?.permissions as Permission[] || []).map((group, idx) => (
               <div key={idx} className="mb-1">
                 {!isCollapsed && group.section !== "Main" && (
                   <div className="px-6 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">

@@ -3,12 +3,13 @@
 import { cookies } from "next/headers";
 import { jwtDecode } from "jwt-decode";
 import { getPermissionsCookie } from "./setPermissionsCookie";
+import { Permission } from "@/types/permission";
 
 export interface UserInfo {
   userId: string;
   email: string;
   role: string;
-  permissions?: any[];
+  permissions?: Permission[];
 }
 
 export async function getUserInfo(): Promise<UserInfo | null> {
@@ -34,7 +35,7 @@ export async function getUserInfo(): Promise<UserInfo | null> {
     const permissionsCookie = cookieStore.get("permissions")?.value;
     if (permissionsCookie) {
       try {
-        const permissions = JSON.parse(permissionsCookie);
+        const permissions = JSON.parse(permissionsCookie) as Permission[];
         return {
           userId: decoded.userId,
           email: decoded.email,
