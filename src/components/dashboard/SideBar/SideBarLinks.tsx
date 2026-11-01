@@ -29,18 +29,84 @@ type SidebarGroup = {
     label: string;
     href: string;
     icon: React.ElementType;
+    permission?: {
+      route: string;
+      action?: "read" | "create" | "update" | "delete";
+    };
   }[];
 };
 
-export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
-  const defaultItems = [
+// Route permission mappings
+const routePermissions = {
+  adminOverview: "/dashboard/admin/overview",
+  adminLogs: "/dashboard/admin/logs",
+  adminManagePara: "/dashboard/admin/manage/para",
+  adminManageSurah: "/dashboard/admin/manage/surah",
+  adminManageAyah: "/dashboard/admin/manage/ayah",
+  adminManageTafsir: "/dashboard/admin/manage/tafsir",
+  adminManageDua: "/dashboard/admin/manage/dua",
+  adminManageDictionary: "/dashboard/admin/manage/dictionary",
+  adminManageBook: "/dashboard/admin/manage/book",
+  adminManageBlog: "/dashboard/admin/manage/blog",
+  adminManageCategory: "/dashboard/admin/manage/category",
+  adminManageUsers: "/dashboard/admin/manage/users",
+  adminCreatePara: "/dashboard/admin/create/para",
+  adminCreateSurah: "/dashboard/admin/create/surah",
+  adminCreateAyah: "/dashboard/admin/create/ayah",
+  adminCreateDua: "/dashboard/admin/create/dua",
+  adminCreateDictionary: "/dashboard/admin/create/dictionary",
+  adminCreateBlog: "/dashboard/admin/create/blog",
+  adminCreateCategory: "/dashboard/admin/create/category",
+  adminCreateBook: "/dashboard/admin/create/book",
+  adminProfile: "/dashboard/profile",
+  adminChangePassword: "/dashboard/change-password",
+  
+  moderatorOverview: "/dashboard/moderator/overview",
+  moderatorManagePara: "/dashboard/moderator/manage/para",
+  moderatorManageSurahs: "/dashboard/moderator/manage/surahs",
+  moderatorManageAyahs: "/dashboard/moderator/manage/ayahs",
+  moderatorManageTafsir: "/dashboard/moderator/manage/tafsir",
+  moderatorDictionary: "/dashboard/moderator/dictionary",
+  moderatorManageDua: "/dashboard/moderator/manage/dua",
+  moderatorManageBook: "/dashboard/moderator/manage/book",
+  moderatorManageCategory: "/dashboard/moderator/manage/category",
+  moderatorManageBlog: "/dashboard/moderator/manage/blog",
+  moderatorManageBookmarks: "/dashboard/moderator/manage/bookmarks",
+  moderatorProfile: "/dashboard/profile",
+  moderatorChangePassword: "/dashboard/change-password",
+  
+  userOverview: "/dashboard/user/overview",
+  userBookmarks: "/dashboard/user/bookmarks",
+  userDaily: "/dashboard/user/daily",
+  userReadings: "/dashboard/user/readings",
+  userProfile: "/dashboard/profile",
+  userChangePassword: "/dashboard/change-password",
+};
+
+export const getSidebarLinks = (role: TAuthRole, permissions: any[] = []): SidebarGroup[] => {
+  // Helper to check permission
+  const hasPermission = (route: string, action: "read" | "create" | "update" | "delete" = "read") => {
+    if (role === "ADMIN" || role === "SUPERADMIN" || role === "SUPER_ADMIN") {
+      return true;
+    }
+    return permissions.some((perm: any) => perm.route === route && (perm.action === action || perm.action === "read"));
+  };
+
+  // Filter items by permission
+  const filterItems = (items: any[]) => items.filter((item) => {
+    if (!item.permission) return true;
+    return hasPermission(item.permission.route, item.permission.action);
+  });
+
+  const profileSettingsItems = filterItems([
     {
       section: "Profile",
       items: [
         {
           label: "Profile",
-          href: "/dashboard/profile",
+          href: routePermissions.adminProfile,
           icon: User,
+          permission: { route: routePermissions.adminProfile, action: "read" },
         },
       ],
     },
@@ -49,270 +115,306 @@ export const getSidebarLinks = (role: TAuthRole): SidebarGroup[] => {
       items: [
         {
           label: "Change Password",
-          href: "/dashboard/change-password",
+          href: routePermissions.adminChangePassword,
           icon: KeySquare,
+          permission: { route: routePermissions.adminChangePassword, action: "update" },
         },
       ],
     },
-  ];
+  ]);
 
   switch (role) {
     case authRole.ADMIN:
       return [
         {
           section: "Dashboard",
-          items: [
+          items: filterItems([
             {
               label: "Overview",
-              href: "/dashboard/admin/overview",
+              href: routePermissions.adminOverview,
               icon: ChartPie,
+              permission: { route: routePermissions.adminOverview, action: "read" },
             },
             {
               label: "System Logs",
-              href: "/dashboard/admin/logs",
+              href: routePermissions.adminLogs,
               icon: Logs,
+              permission: { route: routePermissions.adminLogs, action: "read" },
             },
-          ],
+          ]),
         },
         {
           section: "Quran Management",
-          items: [
+          items: filterItems([
             {
               label: "Paras",
-              href: "/dashboard/admin/manage/para",
+              href: routePermissions.adminManagePara,
               icon: BookOpen,
+              permission: { route: routePermissions.adminManagePara, action: "read" },
             },
             {
               label: "Surahs",
-              href: "/dashboard/admin/manage/surah",
+              href: routePermissions.adminManageSurah,
               icon: BookOpen,
+              permission: { route: routePermissions.adminManageSurah, action: "read" },
             },
             {
               label: "Ayahs",
-              href: "/dashboard/admin/manage/ayah",
+              href: routePermissions.adminManageAyah,
               icon: BookOpen,
+              permission: { route: routePermissions.adminManageAyah, action: "read" },
             },
             {
               label: "Tafsirs",
-              href: "/dashboard/admin/manage/tafsir",
+              href: routePermissions.adminManageTafsir,
               icon: BookOpen,
+              permission: { route: routePermissions.adminManageTafsir, action: "read" },
             },
-          ],
+          ]),
         },
         {
           section: "Islamic Resources",
-          items: [
+          items: filterItems([
             {
               label: "Duas",
-              href: "/dashboard/admin/manage/dua",
+              href: routePermissions.adminManageDua,
               icon: Heart,
+              permission: { route: routePermissions.adminManageDua, action: "read" },
             },
             {
               label: "Dictionary",
-              href: "/dashboard/admin/manage/dictionary",
+              href: routePermissions.adminManageDictionary,
               icon: Globe,
+              permission: { route: routePermissions.adminManageDictionary, action: "read" },
             },
             {
               label: "Books",
-              href: "/dashboard/admin/manage/book",
+              href: routePermissions.adminManageBook,
               icon: BookMarked,
+              permission: { route: routePermissions.adminManageBook, action: "read" },
             },
-          ],
+          ]),
         },
         {
           section: "Content Management",
-          items: [
+          items: filterItems([
             {
               label: "Blogs",
-              href: "/dashboard/admin/manage/blog",
+              href: routePermissions.adminManageBlog,
               icon: FileText,
+              permission: { route: routePermissions.adminManageBlog, action: "read" },
             },
             {
               label: "Categories",
-              href: "/dashboard/admin/manage/category",
+              href: routePermissions.adminManageCategory,
               icon: FolderOpen,
+              permission: { route: routePermissions.adminManageCategory, action: "read" },
             },
-          ],
+          ]),
         },
         {
           section: "User Management",
-          items: [
+          items: filterItems([
             {
               label: "Users",
-              href: "/dashboard/admin/manage/users",
+              href: routePermissions.adminManageUsers,
               icon: Users,
+              permission: { route: routePermissions.adminManageUsers, action: "read" },
             },
-          ],
+          ]),
         },
         {
           section: "Create",
-          items: [
+          items: filterItems([
             {
               label: "Add Para",
-              href: "/dashboard/admin/create/para",
+              href: routePermissions.adminCreatePara,
               icon: FilePlus2,
+              permission: { route: routePermissions.adminCreatePara, action: "create" },
             },
             {
               label: "Add Surah",
-              href: "/dashboard/admin/create/surah",
+              href: routePermissions.adminCreateSurah,
               icon: FilePlus2,
+              permission: { route: routePermissions.adminCreateSurah, action: "create" },
             },
             {
               label: "Add Ayah",
-              href: "/dashboard/admin/create/ayah",
+              href: routePermissions.adminCreateAyah,
               icon: FilePlus2,
+              permission: { route: routePermissions.adminCreateAyah, action: "create" },
             },
             {
               label: "Add Dua",
-              href: "/dashboard/admin/create/dua",
+              href: routePermissions.adminCreateDua,
               icon: FilePlus2,
+              permission: { route: routePermissions.adminCreateDua, action: "create" },
             },
             {
               label: "Add Dictionary Word",
-              href: "/dashboard/admin/create/dictionary",
+              href: routePermissions.adminCreateDictionary,
               icon: FilePlus2,
+              permission: { route: routePermissions.adminCreateDictionary, action: "create" },
             },
             {
               label: "Add Blog",
-              href: "/dashboard/admin/create/blog",
+              href: routePermissions.adminCreateBlog,
               icon: FilePlus2,
+              permission: { route: routePermissions.adminCreateBlog, action: "create" },
             },
             {
               label: "Add Category",
-              href: "/dashboard/admin/create/category",
+              href: routePermissions.adminCreateCategory,
               icon: FilePlus2,
+              permission: { route: routePermissions.adminCreateCategory, action: "create" },
             },
             {
               label: "Add Book",
-              href: "/dashboard/admin/create/book",
+              href: routePermissions.adminCreateBook,
               icon: FilePlus2,
+              permission: { route: routePermissions.adminCreateBook, action: "create" },
             },
-          ],
+          ]),
         },
-        ...defaultItems,
+        ...profileSettingsItems,
       ];
 
     case authRole.MODERATOR:
       return [
         {
           section: "Dashboard",
-          items: [
+          items: filterItems([
             {
               label: "Overview",
-              href: "/dashboard/moderator/overview",
+              href: routePermissions.moderatorOverview,
               icon: ChartPie,
+              permission: { route: routePermissions.moderatorOverview, action: "read" },
             },
-          ],
+          ]),
         },
         {
           section: "Quran Management",
-          items: [
+          items: filterItems([
             {
               label: "Paras",
-              href: "/dashboard/moderator/manage/para",
+              href: routePermissions.moderatorManagePara,
               icon: BookOpen,
+              permission: { route: routePermissions.moderatorManagePara, action: "read" },
             },
             {
               label: "Surahs",
-              href: "/dashboard/moderator/manage/surahs",
+              href: routePermissions.moderatorManageSurahs,
               icon: BookOpen,
+              permission: { route: routePermissions.moderatorManageSurahs, action: "read" },
             },
             {
               label: "Ayahs",
-              href: "/dashboard/moderator/manage/ayahs",
+              href: routePermissions.moderatorManageAyahs,
               icon: BookOpen,
+              permission: { route: routePermissions.moderatorManageAyahs, action: "read" },
             },
             {
               label: "Tafsir",
-              href: "/dashboard/moderator/manage/tafsir",
+              href: routePermissions.moderatorManageTafsir,
               icon: BookOpen,
+              permission: { route: routePermissions.moderatorManageTafsir, action: "read" },
             },
-          ],
+          ]),
         },
         {
           section: "Islamic Resources",
-          items: [
+          items: filterItems([
             {
               label: "Dictionary",
-              href: "/dashboard/moderator/dictionary",
+              href: routePermissions.moderatorDictionary,
               icon: Globe,
+              permission: { route: routePermissions.moderatorDictionary, action: "read" },
             },
             {
               label: "Duas",
-              href: "/dashboard/moderator/manage/dua",
+              href: routePermissions.moderatorManageDua,
               icon: Heart,
+              permission: { route: routePermissions.moderatorManageDua, action: "read" },
             },
             {
               label: "Books",
-              href: "/dashboard/moderator/manage/book",
+              href: routePermissions.moderatorManageBook,
               icon: BookMarked,
+              permission: { route: routePermissions.moderatorManageBook, action: "read" },
             },
-          ],
+          ]),
         },
         {
           section: "Content Management",
-          items: [
+          items: filterItems([
             {
               label: "Categories",
-              href: "/dashboard/moderator/manage/category",
+              href: routePermissions.moderatorManageCategory,
               icon: FolderOpen,
+              permission: { route: routePermissions.moderatorManageCategory, action: "read" },
             },
             {
               label: "Blogs",
-              href: "/dashboard/moderator/manage/blog",
+              href: routePermissions.moderatorManageBlog,
               icon: FilePen,
+              permission: { route: routePermissions.moderatorManageBlog, action: "read" },
             },
             {
               label: "Bookmarks",
-              href: "/dashboard/moderator/manage/bookmarks",
+              href: routePermissions.moderatorManageBookmarks,
               icon: Bookmark,
+              permission: { route: routePermissions.moderatorManageBookmarks, action: "read" },
             },
-          ],
+          ]),
         },
-        ...defaultItems,
+        ...profileSettingsItems,
       ];
 
     case authRole.USER:
       return [
         {
           section: "Dashboard",
-          items: [
+          items: filterItems([
             {
               label: "Overview",
-              href: "/dashboard/user/overview",
+              href: routePermissions.userOverview,
               icon: ChartPie,
+              permission: { route: routePermissions.userOverview, action: "read" },
             },
-          ],
+          ]),
         },
         {
           section: "My Activity",
-          items: [
+          items: filterItems([
             {
               label: "Saved Items",
-              href: "/dashboard/user/bookmarks",
+              href: routePermissions.userBookmarks,
               icon: Bookmark,
+              permission: { route: routePermissions.userBookmarks, action: "read" },
             },
             {
               label: "Daily Duas",
-              href: "/dashboard/user/daily",
+              href: routePermissions.userDaily,
               icon: Heart,
+              permission: { route: routePermissions.userDaily, action: "read" },
             },
-          ],
+          ]),
         },
         {
           section: "Resources",
-          items: [
+          items: filterItems([
             {
               label: "Books",
-              href: "/dashboard/user/readings",
+              href: routePermissions.userReadings,
               icon: BookMarked,
+              permission: { route: routePermissions.userReadings, action: "read" },
             },
-          ],
+          ]),
         },
-        ...defaultItems,
+        ...profileSettingsItems,
       ];
 
     default:
-      return defaultItems;
+      return profileSettingsItems;
   }
 };

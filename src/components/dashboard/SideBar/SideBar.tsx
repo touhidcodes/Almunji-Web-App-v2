@@ -53,7 +53,7 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
               ))}
             </div>
           ) : (
-            getSidebarLinks((user?.role as "ADMIN" | "MODERATOR" | "USER") || "USER").map((group, idx) => (
+            getSidebarLinks((user?.role as "ADMIN" | "MODERATOR" | "USER") || "USER", user?.permissions || []).map((group, idx) => (
               <div key={idx} className="mb-1">
                 {!isCollapsed && group.section !== "Main" && (
                   <div className="px-6 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">

@@ -15,5 +15,10 @@ export const userLogout = async () => {
     maxAge: 0,
   });
 
+  cookieStore.set("permissions", "", {
+    path: "/",
+    maxAge: 0,
+  });
+
   return { success: true };
 };

@@ -22,6 +22,12 @@ export const userLogin = async (data: FieldValues) => {
 
   if (userInfo.data?.token) {
     setClientCookie("accessToken", userInfo.data.token);
+    
+    // Store permissions if available (from backend response)
+    if (userInfo.data.permissions) {
+      setClientCookie("permissions", JSON.stringify(userInfo.data.permissions));
+    }
+    
     toast.success("Login successful!");
   }
 

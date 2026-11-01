@@ -4,28 +4,42 @@ import { jwtDecode } from "jwt-decode";
 interface DecodedToken {
   role?: string;
   userId?: string;
+  permissions?: any[];
   exp?: number;
   [key: string]: unknown;
 }
 
 const protectedRoutes = ["/dashboard"];
-const adminOnlyRoutes = [
-  "/dashboard/admin",
-  "/dashboard/admin/create",
-  "/dashboard/admin/manage",
-  "/dashboard/admin/permissions",
-];
-const moderatorOnlyRoutes = [
-  "/dashboard/moderator",
-  "/dashboard/moderator/create",
-  "/dashboard/moderator/manage",
-];
+
+// Route permission mapping for role-based access
+const roleRoutes: Record<string, string[]> = {
+  ADMIN: [
+    "/dashboard/admin/overview",
+    "/dashboard/admin/logs",
+    "/dashboard/admin/manage",
+    "/dashboard/admin/create",
+    "/dashboard/admin/users",
+  ],
+  MODERATOR: [
+    "/dashboard/moderator/overview",
+    "/dashboard/moderator/manage",
+    "/dashboard/moderator/dictionary",
+    "/dashboard/moderator/bookmarks",
+  ],
+  USER: [
+    "/dashboard/user/overview",
+    "/dashboard/user/bookmarks",
+    "/dashboard/user/daily",
+    "/dashboard/user/readings",
+  ],
+};
 
 export function authMiddleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   
   // Get cookie from Next.js request (server-side)
   const token = request.cookies.get("accessToken")?.value;
+  const permissionsCookie = request.cookies.get("permissions")?.value;
 
   // Public routes don't need auth
   if (!protectedRoutes.some((route) => path.startsWith(route))) {
@@ -39,7 +53,7 @@ export function authMiddleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Decode token to check role
+  // Decode token to check role and permissions
   let decoded: DecodedToken;
   try {
     decoded = jwtDecode(token);
@@ -55,27 +69,28 @@ export function authMiddleware(request: NextRequest) {
   }
 
   const role = decoded.role?.toUpperCase();
+  const permissions = decoded.permissions || (permissionsCookie ? JSON.parse(permissionsCookie) : []);
 
-  // Admin-only routes
-  if (adminOnlyRoutes.some((route) => path.startsWith(route))) {
-    if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+  // Check if role has access to this route
+  const allowedRoutes = roleRoutes[role] || [];
+  
+  // Check if path matches any allowed route
+  const hasRouteAccess = allowedRoutes.some((route) => path.startsWith(route));
+
+  if (!hasRouteAccess) {
+    // For MODERATOR role, check specific permissions
+    if (role === "MODERATOR" && permissions.length > 0) {
+      const hasPermission = permissions.some((perm: any) => {
+        return path.startsWith(perm.route) && 
+               (perm.action === "read" || perm.action === "update" || perm.action === "delete" || perm.action === "create");
+      });
+      
+      if (hasPermission) {
+        return NextResponse.next();
+      }
     }
-    return NextResponse.next();
-  }
-
-  // Moderator-only routes
-  if (moderatorOnlyRoutes.some((route) => path.startsWith(route))) {
-    if (!["ADMIN", "SUPER_ADMIN", "MODERATOR"].includes(role || "")) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
-    return NextResponse.next();
-  }
-
-  // All other protected routes (allow ADMIN, MODERATOR, USER)
-  if (!["ADMIN", "SUPER_ADMIN", "MODERATOR", "USER"].includes(role || "")) {
-    const url = new URL("/auth", request.url);
-    return NextResponse.redirect(url);
+    
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return NextResponse.next();
