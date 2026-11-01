@@ -86,7 +86,8 @@ const routePermissions = {
 export const getSidebarLinks = (role: TAuthRole, permissions: any[] = []): SidebarGroup[] => {
   // Helper to check permission
   const hasPermission = (route: string, action: "read" | "create" | "update" | "delete" = "read") => {
-    if (role === "ADMIN" || role === "SUPERADMIN" || role === "SUPER_ADMIN") {
+    // Admin has all permissions by default
+    if (role === "ADMIN") {
       return true;
     }
     return permissions.some((perm: any) => perm.route === route && (perm.action === action || perm.action === "read"));
