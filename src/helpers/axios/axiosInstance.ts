@@ -1,114 +1,180 @@
-import axios from "axios";
+import axios, {
+  type AxiosError,
+  type AxiosInstance,
+  type AxiosRequestConfig,
+  type InternalAxiosRequestConfig,
+} from "axios";
+
 import { getCookie, setCookie } from "@/utils/nextCookies";
 
-// Lazy initialize instance to avoid server-side localStorage errors
-let instancePromise: Promise<axios.AxiosInstance> | null = null;
+interface RetryableAxiosRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
 
-const createInstance = async (): Promise<axios.AxiosInstance> => {
+// Lazy initialize instance
+let instancePromise: Promise<AxiosInstance> | null = null;
+
+const createInstance = async (): Promise<AxiosInstance> => {
   const instance = axios.create();
+
   instance.defaults.headers.post["Content-Type"] = "application/json";
   instance.defaults.headers["Accept"] = "application/json";
   instance.defaults.timeout = 60000;
 
   let isRefreshing = false;
-  let refreshSubscribers: ((token: string) => void)[] = [];
+
+  let refreshSubscribers: Array<(token: string) => void> = [];
 
   const subscribeTokenRefresh = (callback: (token: string) => void) => {
     refreshSubscribers.push(callback);
   };
 
   const onRefreshed = (token: string) => {
-    refreshSubscribers.forEach((cb) => cb(token));
+    refreshSubscribers.forEach((callback) => callback(token));
+    refreshSubscribers = [];
+  };
+
+  const onRefreshFailed = () => {
     refreshSubscribers = [];
   };
 
   // Request interceptor
   instance.interceptors.request.use(
-    async (config) => {
-      // Set Authorization header with token from cookie
+    async (config: InternalAxiosRequestConfig) => {
       const accessToken = await getCookie("accessToken");
+
       if (accessToken?.value) {
         config.headers.Authorization = `Bearer ${accessToken.value}`;
       }
+
       return config;
     },
-    (error) => Promise.reject(error)
+    (error: AxiosError) => Promise.reject(error),
   );
 
   // Response interceptor
   instance.interceptors.response.use(
     (response) => response,
-    async (error) => {
-      const originalRequest = error.config;
 
-      if (error?.response?.status === 500 && !originalRequest._retry) {
+    async (error: AxiosError) => {
+      const originalRequest = error.config as
+        | RetryableAxiosRequestConfig
+        | undefined;
+
+      if (!originalRequest) {
+        return Promise.reject(error);
+      }
+
+      // Refresh only when the API returns 401
+      if (error.response?.status === 401 && !originalRequest._retry) {
         originalRequest._retry = true;
 
         if (!isRefreshing) {
           isRefreshing = true;
-          try {
-            if (typeof window !== "undefined") {
-              const { getNewAccessToken } = await import("@/services/auth.services");
-              const res = await getNewAccessToken();
-              const newToken = res?.data?.accessToken;
 
-              if (newToken) {
-                await setCookie("refreshToken", newToken);
-                onRefreshed(newToken);
-                isRefreshing = false;
-              }
-            } else {
-              isRefreshing = false;
+          try {
+            if (typeof window === "undefined") {
               return Promise.reject(error);
             }
-          } catch (err) {
+
+            const { getNewAccessToken } =
+              await import("@/services/auth.services");
+
+            const response = await getNewAccessToken();
+            const newToken = response?.data?.accessToken;
+
+            if (!newToken) {
+              throw new Error("Unable to retrieve a new access token");
+            }
+
+            await setCookie("accessToken", newToken);
+
             isRefreshing = false;
-            console.error("Token refresh failed:", err);
-            return Promise.reject(err);
+            onRefreshed(newToken);
+
+            return instance.request({
+              ...originalRequest,
+              headers: {
+                ...originalRequest.headers,
+                Authorization: `Bearer ${newToken}`,
+              },
+            });
+          } catch (refreshError) {
+            isRefreshing = false;
+            onRefreshFailed();
+
+            console.error("Token refresh failed:", refreshError);
+
+            return Promise.reject(refreshError);
           }
         }
 
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
           subscribeTokenRefresh((newAccessToken) => {
             originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+
             resolve(instance.request(originalRequest));
           });
         });
       }
 
       return Promise.reject(error);
-    }
+    },
   );
 
   return instance;
 };
 
-export const getInstance = async (): Promise<axios.AxiosInstance> => {
+// Get Axios instance
+export const getInstance = async (): Promise<AxiosInstance> => {
   if (!instancePromise) {
     instancePromise = createInstance();
   }
+
   return instancePromise;
 };
 
+// Typed Axios wrapper
 export const instance = {
-  request: async (config: any) => {
+  request: async <T = unknown>(config: AxiosRequestConfig) => {
     const inst = await getInstance();
-    return inst.request(config);
+    return inst.request<T>(config);
   },
-  get: async (url: string, config?: any) => {
+
+  get: async <T = unknown>(url: string, config?: AxiosRequestConfig) => {
     const inst = await getInstance();
-    return inst.get(url, config);
+    return inst.get<T>(url, config);
   },
-  post: async (url: string, data?: any, config?: any) => {
+
+  post: async <T = unknown>(
+    url: string,
+    data?: unknown,
+    config?: AxiosRequestConfig,
+  ) => {
     const inst = await getInstance();
-    return inst.post(url, data, config);
+    return inst.post<T>(url, data, config);
   },
-  put: async (url: string, data?: any, config?: any) => {
+
+  put: async <T = unknown>(
+    url: string,
+    data?: unknown,
+    config?: AxiosRequestConfig,
+  ) => {
     const inst = await getInstance();
-    return inst.put(url, data, config);
+    return inst.put<T>(url, data, config);
   },
-  delete: async (url: string, config?: any) => {
+
+  patch: async <T = unknown>(
+    url: string,
+    data?: unknown,
+    config?: AxiosRequestConfig,
+  ) => {
     const inst = await getInstance();
-    return inst.delete(url, config);
+    return inst.patch<T>(url, data, config);
+  },
+
+  delete: async <T = unknown>(url: string, config?: AxiosRequestConfig) => {
+    const inst = await getInstance();
+    return inst.delete<T>(url, config);
   },
 };
