@@ -8,10 +8,10 @@ import {
   type Path,
 } from "react-hook-form";
 
-import { Checkbox } from "../ui/checkbox";
-import { Label } from "../ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
-type TFormCheckboxProps<TFieldValues extends FieldValues = FieldValues> = {
+type TFormCheckboxProps<TFieldValues extends FieldValues> = {
   name: Path<TFieldValues>;
   label: string;
   description?: string;
@@ -20,7 +20,7 @@ type TFormCheckboxProps<TFieldValues extends FieldValues = FieldValues> = {
   className?: string;
 };
 
-function FormCheckbox<TFieldValues extends FieldValues = FieldValues>({
+function FormCheckbox<TFieldValues extends FieldValues>({
   name,
   label,
   description,
@@ -48,9 +48,7 @@ function FormCheckbox<TFieldValues extends FieldValues = FieldValues>({
             <Checkbox
               id={name}
               checked={Boolean(field.value)}
-              onCheckedChange={(checked) => {
-                field.onChange(checked === true);
-              }}
+              onCheckedChange={(checked) => field.onChange(checked === true)}
               onBlur={field.onBlur}
               disabled={disabled}
               aria-invalid={Boolean(error)}
@@ -76,9 +74,7 @@ function FormCheckbox<TFieldValues extends FieldValues = FieldValues>({
               )}
 
               {error?.message && (
-                <p className="text-xs text-destructive">
-                  {String(error.message)}
-                </p>
+                <p className="text-xs text-destructive">{error.message}</p>
               )}
             </div>
           </div>

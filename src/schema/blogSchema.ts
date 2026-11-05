@@ -15,8 +15,8 @@ export const UpdateBlogSchema = z.object({
   thumbnail: z.string().optional(),
   summary: z.string().optional(),
   content: z.string().trim().min(1, "Article content is required"),
-  isPublished: z.boolean().optional(),
-  isFeatured: z.boolean().optional(),
+  isPublished: z.boolean(),
+  isFeatured: z.boolean(),
 });
 
 // Inferred Types

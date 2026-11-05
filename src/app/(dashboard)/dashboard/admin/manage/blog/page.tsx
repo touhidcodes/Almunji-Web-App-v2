@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { FormProvider, useForm, useFormContext } from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
@@ -34,6 +34,7 @@ import type { LucideIcon } from "lucide-react";
 
 import FormInput from "@/components/forms/FormInput";
 import FormTextarea from "@/components/forms/FormTextarea";
+import FormCheckbox from "@/components/forms/FormCheckbox";
 import RichTextEditor from "@/components/forms/RichTextEditor";
 
 import {
@@ -79,19 +80,14 @@ type TStatItem = {
 // RUNTIME TYPE GUARDS
 // ==================================================
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null;
-};
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
 
-const isOptionalString = (
-  value: unknown,
-): value is string | null | undefined => {
-  return value === undefined || value === null || typeof value === "string";
-};
+const isOptionalString = (value: unknown): value is string | null | undefined =>
+  value === undefined || value === null || typeof value === "string";
 
-const isOptionalBoolean = (value: unknown): value is boolean | undefined => {
-  return value === undefined || typeof value === "boolean";
-};
+const isOptionalBoolean = (value: unknown): value is boolean | undefined =>
+  value === undefined || typeof value === "boolean";
 
 const isBlog = (value: unknown): value is TBlog => {
   if (!isRecord(value)) return false;
@@ -119,9 +115,7 @@ const extractBlogs = (response: unknown): TBlog[] => {
     return response.filter(isBlog);
   }
 
-  if (!isRecord(response)) {
-    return [];
-  }
+  if (!isRecord(response)) return [];
 
   if (Array.isArray(response.blogs)) {
     return response.blogs.filter(isBlog);
@@ -139,9 +133,7 @@ const extractBlogs = (response: unknown): TBlog[] => {
 // ==================================================
 
 const getErrorMessage = (error: unknown, fallback: string): string => {
-  if (!isRecord(error)) {
-    return fallback;
-  }
+  if (!isRecord(error)) return fallback;
 
   if (isRecord(error.data) && typeof error.data.message === "string") {
     return error.data.message;
@@ -179,46 +171,19 @@ const formatDate = (date?: string | null): string => {
 // ==================================================
 
 function BlogStatusControls() {
-  const { register } = useFormContext<TUpdateBlogFormValues>();
-
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 p-4 transition hover:border-teal-300 hover:bg-teal-50/40">
-        <input
-          type="checkbox"
-          {...register("isPublished")}
-          className="mt-1 h-4 w-4 accent-teal-600"
-        />
+      <FormCheckbox<TUpdateBlogFormValues>
+        name="isPublished"
+        label="Publish Article"
+        description="Make this article publicly visible to readers."
+      />
 
-        <span>
-          <span className="block text-sm font-semibold text-gray-800">
-            Publish article
-          </span>
-
-          <span className="mt-1 block text-xs leading-5 text-gray-500">
-            Make this article visible to readers.
-          </span>
-        </span>
-      </label>
-
-      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 p-4 transition hover:border-amber-300 hover:bg-amber-50/40">
-        <input
-          type="checkbox"
-          {...register("isFeatured")}
-          className="mt-1 h-4 w-4 accent-amber-500"
-        />
-
-        <span>
-          <span className="flex items-center gap-1.5 text-sm font-semibold text-gray-800">
-            <Star className="h-4 w-4 text-amber-500" />
-            Featured article
-          </span>
-
-          <span className="mt-1 block text-xs leading-5 text-gray-500">
-            Highlight this article in featured content.
-          </span>
-        </span>
-      </label>
+      <FormCheckbox<TUpdateBlogFormValues>
+        name="isFeatured"
+        label="Featured Article"
+        description="Highlight this article in the featured content section."
+      />
     </div>
   );
 }
@@ -235,7 +200,6 @@ function EditBlogForm({
 }: TEditBlogFormProps) {
   const form = useForm<TUpdateBlogFormValues>({
     resolver: zodResolver(UpdateBlogSchema),
-
     defaultValues: {
       title: blog.title,
       slug: blog.slug,
@@ -245,7 +209,6 @@ function EditBlogForm({
       isPublished: blog.isPublished ?? false,
       isFeatured: blog.isFeatured ?? false,
     },
-
     mode: "onSubmit",
   });
 
@@ -254,6 +217,8 @@ function EditBlogForm({
     register,
     formState: { errors, isSubmitting },
   } = form;
+
+  const isBusy = isUpdating || isSubmitting;
 
   const handleValidSubmit = async (
     values: TUpdateBlogFormValues,
@@ -275,8 +240,6 @@ function EditBlogForm({
           : `Please check the ${field} field.`,
     });
   };
-
-  const isBusy = isUpdating || isSubmitting;
 
   return (
     <FormProvider {...form}>
@@ -395,19 +358,19 @@ function EditBlogForm({
         {/* FORM ACTIONS */}
 
         <footer className="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={onCancel}
             disabled={isBusy}
-            className="rounded-lg border border-gray-200 px-5 py-2.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
           >
             Cancel
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="submit"
             disabled={isBusy}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="gap-2 bg-teal-600 text-white hover:bg-teal-700"
           >
             {isBusy ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -416,7 +379,7 @@ function EditBlogForm({
             )}
 
             {isBusy ? "Saving Changes..." : "Save Changes"}
-          </button>
+          </Button>
         </footer>
       </form>
     </FormProvider>
@@ -456,9 +419,7 @@ export default function ManageBlogPage() {
   const [editingBlog, setEditingBlog] = useState<TBlog | null>(null);
   const [deletingBlog, setDeletingBlog] = useState<TBlog | null>(null);
 
-  // --------------------------------------------------
   // API
-  // --------------------------------------------------
 
   const {
     data: blogsData,
@@ -472,9 +433,7 @@ export default function ManageBlogPage() {
 
   const [deleteBlog, { isLoading: isDeleting }] = useSoftDeleteBlogMutation();
 
-  // --------------------------------------------------
   // BLOG DATA
-  // --------------------------------------------------
 
   const blogs = useMemo(() => extractBlogs(blogsData?.data), [blogsData]);
 
@@ -490,9 +449,7 @@ export default function ManageBlogPage() {
     );
   }, [blogs, searchTerm]);
 
-  // --------------------------------------------------
   // STATISTICS
-  // --------------------------------------------------
 
   const publishedCount = blogs.filter((blog) => blog.isPublished).length;
 
@@ -527,9 +484,7 @@ export default function ManageBlogPage() {
     },
   ];
 
-  // --------------------------------------------------
   // MODAL CONTROLS
-  // --------------------------------------------------
 
   const closeEditModal = (): void => {
     if (!isUpdating) {
@@ -543,25 +498,22 @@ export default function ManageBlogPage() {
     }
   };
 
-  // --------------------------------------------------
   // EDIT BLOG
-  // --------------------------------------------------
 
   const handleEdit = (blog: TBlog): void => {
     setEditingBlog(blog);
   };
 
-  // --------------------------------------------------
   // UPDATE BLOG
-  // --------------------------------------------------
 
   const handleUpdate = async (values: TUpdateBlogFormValues): Promise<void> => {
     if (!editingBlog || isUpdating) return;
 
     const title = values.title.trim();
     const content = values.content.trim();
+    const slug = values.slug.trim();
 
-    if (!title || !content || !values.slug.trim()) {
+    if (!title || !content || !slug) {
       toast.error("Required fields are missing", {
         description: "Blog title, slug, and article content are required.",
       });
@@ -569,16 +521,16 @@ export default function ManageBlogPage() {
       return;
     }
 
-    // Slug is intentionally excluded.
-    // Backend generated it during blog creation.
+    // Slug is intentionally excluded from the update payload.
+    // The backend generated it during blog creation.
 
     const payload: TUpdateBlog = {
       title,
       thumbnail: values.thumbnail?.trim() ?? "",
       summary: values.summary?.trim() ?? "",
       content: values.content,
-      isPublished: values.isPublished ?? false,
-      isFeatured: values.isFeatured ?? false,
+      isPublished: values.isPublished,
+      isFeatured: values.isFeatured,
     };
 
     try {
@@ -605,9 +557,7 @@ export default function ManageBlogPage() {
     }
   };
 
-  // --------------------------------------------------
   // FEATURED TOGGLE
-  // --------------------------------------------------
 
   const handleToggleFeatured = async (blog: TBlog): Promise<void> => {
     if (isUpdating) return;
@@ -642,9 +592,7 @@ export default function ManageBlogPage() {
     }
   };
 
-  // --------------------------------------------------
   // SOFT DELETE
-  // --------------------------------------------------
 
   const handleDeleteClick = (blog: TBlog): void => {
     setDeletingBlog(blog);
@@ -673,9 +621,7 @@ export default function ManageBlogPage() {
     }
   };
 
-  // --------------------------------------------------
   // INITIAL LOADING
-  // --------------------------------------------------
 
   if (isLoading) {
     return (
@@ -691,9 +637,7 @@ export default function ManageBlogPage() {
     );
   }
 
-  // ==================================================
   // RENDER
-  // ==================================================
 
   return (
     <main className="min-h-screen bg-gray-50/70 p-4 font-poppins sm:p-6 lg:p-8">
@@ -872,8 +816,6 @@ export default function ManageBlogPage() {
                           Created At
                         </th>
 
-                        {/* STICKY ACTIONS HEADER */}
-
                         <th className="sticky right-0 z-30 w-[150px] min-w-[150px] border-l border-gray-200 bg-gray-50 px-4 py-4 text-center font-semibold shadow-[-8px_0_12px_-10px_rgba(0,0,0,0.5)]">
                           Actions
                         </th>
@@ -972,8 +914,6 @@ export default function ManageBlogPage() {
 
                           <td className="sticky right-0 z-20 border-l border-gray-200 bg-white px-3 py-4 shadow-[-8px_0_12px_-10px_rgba(0,0,0,0.5)]">
                             <div className="flex items-center justify-center gap-1">
-                              {/* FEATURED TOGGLE */}
-
                               <Button
                                 type="button"
                                 size="icon"
@@ -1003,8 +943,6 @@ export default function ManageBlogPage() {
                                 />
                               </Button>
 
-                              {/* EDIT */}
-
                               <Button
                                 type="button"
                                 size="icon"
@@ -1016,8 +954,6 @@ export default function ManageBlogPage() {
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
-
-                              {/* DELETE */}
 
                               <Button
                                 type="button"
@@ -1063,9 +999,7 @@ export default function ManageBlogPage() {
           )}
         </section>
 
-        {/* =========================================
-            EDIT BLOG MODAL
-        ========================================= */}
+        {/* EDIT BLOG MODAL */}
 
         {editingBlog && (
           <div
@@ -1082,8 +1016,6 @@ export default function ManageBlogPage() {
               aria-labelledby="edit-blog-title"
               className="flex max-h-[95vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
             >
-              {/* MODAL HEADER */}
-
               <header className="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-4 sm:px-6">
                 <div>
                   <h2
@@ -1109,8 +1041,6 @@ export default function ManageBlogPage() {
                 </button>
               </header>
 
-              {/* MODAL CONTENT */}
-
               <div className="overflow-y-auto p-5 sm:p-6">
                 <EditBlogForm
                   key={editingBlog.id}
@@ -1124,9 +1054,7 @@ export default function ManageBlogPage() {
           </div>
         )}
 
-        {/* =========================================
-            DELETE CONFIRMATION MODAL
-        ========================================= */}
+        {/* DELETE CONFIRMATION MODAL */}
 
         {deletingBlog && (
           <div
@@ -1163,20 +1091,20 @@ export default function ManageBlogPage() {
               </p>
 
               <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={closeDeleteModal}
                   disabled={isDeleting}
-                  className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:opacity-60"
                 >
                   Cancel
-                </button>
+                </Button>
 
-                <button
+                <Button
                   type="button"
                   onClick={handleDelete}
                   disabled={isDeleting}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="gap-2 bg-rose-600 text-white hover:bg-rose-700"
                 >
                   {isDeleting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -1185,7 +1113,7 @@ export default function ManageBlogPage() {
                   )}
 
                   {isDeleting ? "Deleting..." : "Confirm Delete"}
-                </button>
+                </Button>
               </div>
             </section>
           </div>
