@@ -1,8 +1,15 @@
 "use client";
 
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { FormProvider, useForm, useFormContext } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
+
 import {
   useGetAllBlogsAdminQuery,
   useSoftDeleteBlogMutation,
+  useUpdateBlogMutation,
 } from "@/redux/api/blogApi";
 
 import {
@@ -14,38 +21,402 @@ import {
   Loader2,
   Plus,
   Search,
+  Star,
   Trash2,
   X,
+  Save,
+  Pencil,
 } from "lucide-react";
 
-import Image from "next/image";
-import Link from "next/link";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
+import type { LucideIcon } from "lucide-react";
+
+import FormInput from "@/components/forms/FormInput";
+import FormTextarea from "@/components/forms/FormTextarea";
+import RichTextEditor from "@/components/forms/RichTextEditor";
+
+import {
+  UpdateBlogSchema,
+  type TUpdateBlogFormValues,
+} from "@/schema/blogSchema";
+
+import type { TUpdateBlog } from "@/types/blog";
+import { Button } from "@/components/ui/button";
+
+// --------------------------------------------------
+// Types
+// --------------------------------------------------
 
 type TBlog = {
   id: string;
   title: string;
-  slug: string;
+  slug?: string;
   summary?: string | null;
   thumbnail?: string | null;
   content?: string | null;
   isPublished?: boolean;
+  isFeatured?: boolean;
   createdAt?: string;
   updatedAt?: string;
 };
 
-type TApiError = {
-  data?: {
-    message?: string;
-  };
+type TEditBlogFormProps = {
+  blog: TBlog;
+  isUpdating: boolean;
+  onCancel: () => void;
+  onSubmit: (data: TUpdateBlogFormValues) => Promise<void>;
 };
+
+type TStatItem = {
+  label: string;
+  value: number;
+  icon: LucideIcon;
+  style: string;
+};
+
+// --------------------------------------------------
+// Runtime Type Guards
+// --------------------------------------------------
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null;
+};
+
+const isOptionalString = (
+  value: unknown,
+): value is string | null | undefined => {
+  return value === undefined || value === null || typeof value === "string";
+};
+
+const isOptionalBoolean = (value: unknown): value is boolean | undefined => {
+  return value === undefined || typeof value === "boolean";
+};
+
+const isBlog = (value: unknown): value is TBlog => {
+  if (!isRecord(value)) return false;
+
+  return (
+    typeof value.id === "string" &&
+    typeof value.title === "string" &&
+    typeof value.slug === "string" &&
+    isOptionalString(value.summary) &&
+    isOptionalString(value.thumbnail) &&
+    isOptionalString(value.content) &&
+    isOptionalBoolean(value.isPublished) &&
+    isOptionalBoolean(value.isFeatured) &&
+    isOptionalString(value.createdAt) &&
+    isOptionalString(value.updatedAt)
+  );
+};
+
+// --------------------------------------------------
+// API Response Parsing
+// --------------------------------------------------
+
+const extractBlogs = (response: unknown): TBlog[] => {
+  if (Array.isArray(response)) {
+    return response.filter(isBlog);
+  }
+
+  if (!isRecord(response)) {
+    return [];
+  }
+
+  if (Array.isArray(response.blogs)) {
+    return response.blogs.filter(isBlog);
+  }
+
+  if (Array.isArray(response.data)) {
+    return response.data.filter(isBlog);
+  }
+
+  return [];
+};
+
+// --------------------------------------------------
+// Error Handling
+// --------------------------------------------------
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (!isRecord(error)) {
+    return fallback;
+  }
+
+  if (isRecord(error.data) && typeof error.data.message === "string") {
+    return error.data.message;
+  }
+
+  if (typeof error.message === "string") {
+    return error.message;
+  }
+
+  return fallback;
+};
+
+// --------------------------------------------------
+// Helpers
+// --------------------------------------------------
+
+const formatDate = (date?: string): string => {
+  if (!date) return "—";
+
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "—";
+  }
+
+  return parsedDate.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+// --------------------------------------------------
+// Edit Form Controls
+// --------------------------------------------------
+
+function BlogStatusControls() {
+  const { register } = useFormContext<TUpdateBlogFormValues>();
+
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {/* Published */}
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 p-4 transition hover:border-teal-300 hover:bg-teal-50/40">
+        <input
+          type="checkbox"
+          {...register("isPublished")}
+          className="mt-1 h-4 w-4 accent-teal-600"
+        />
+
+        <span>
+          <span className="block text-sm font-semibold text-gray-800">
+            Publish article
+          </span>
+
+          <span className="mt-1 block text-xs leading-5 text-gray-500">
+            Make this article visible to readers.
+          </span>
+        </span>
+      </label>
+
+      {/* Featured */}
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 p-4 transition hover:border-amber-300 hover:bg-amber-50/40">
+        <input
+          type="checkbox"
+          {...register("isFeatured")}
+          className="mt-1 h-4 w-4 accent-amber-500"
+        />
+
+        <span>
+          <span className="flex items-center gap-1.5 text-sm font-semibold text-gray-800">
+            <Star className="h-4 w-4 text-amber-500" />
+            Featured article
+          </span>
+
+          <span className="mt-1 block text-xs leading-5 text-gray-500">
+            Highlight this article in featured content.
+          </span>
+        </span>
+      </label>
+    </div>
+  );
+}
+
+// --------------------------------------------------
+// Edit Blog Form
+// --------------------------------------------------
+
+function EditBlogForm({
+  blog,
+  isUpdating,
+  onCancel,
+  onSubmit,
+}: TEditBlogFormProps) {
+  const form = useForm<TUpdateBlogFormValues>({
+    resolver: zodResolver(UpdateBlogSchema),
+
+    defaultValues: {
+      title: blog.title,
+      thumbnail: blog.thumbnail ?? "",
+      summary: blog.summary ?? "",
+      content: blog.content ?? "",
+      isPublished: blog.isPublished ?? false,
+      isFeatured: blog.isFeatured ?? false,
+    },
+
+    mode: "onSubmit",
+  });
+
+  const {
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = form;
+
+  const handleValidSubmit = async (
+    values: TUpdateBlogFormValues,
+  ): Promise<void> => {
+    await onSubmit(values);
+  };
+
+  const handleInvalidSubmit = (): void => {
+    const firstError = Object.entries(errors)[0];
+
+    if (!firstError) return;
+
+    const [field, error] = firstError;
+
+    toast.error("Form validation failed", {
+      description:
+        typeof error?.message === "string"
+          ? `${field}: ${error.message}`
+          : `Please check the ${field} field.`,
+    });
+  };
+
+  const isBusy = isUpdating || isSubmitting;
+
+  return (
+    <FormProvider {...form}>
+      <form
+        onSubmit={handleSubmit(handleValidSubmit, handleInvalidSubmit)}
+        noValidate
+        className="space-y-6"
+      >
+        {/* Article Metadata */}
+        <section className="space-y-5">
+          <div className="border-b border-gray-100 pb-3">
+            <h3 className="text-sm font-bold text-gray-900">
+              Article Information
+            </h3>
+
+            <p className="mt-1 text-xs text-gray-500">
+              Update the basic information of your blog.
+            </p>
+          </div>
+
+          <FormInput
+            name="title"
+            label="Blog Title"
+            required
+            placeholder="Enter blog title..."
+          />
+
+          <FormInput
+            name="thumbnail"
+            label="Thumbnail Image URL"
+            placeholder="https://example.com/image.jpg"
+          />
+
+          <FormTextarea
+            name="summary"
+            label="Blog Summary"
+            rows={3}
+            placeholder="Write a short introduction..."
+          />
+        </section>
+
+        {/* Article Content */}
+        <section className="space-y-4 border-t border-gray-100 pt-6">
+          <div>
+            <h3 className="text-sm font-bold text-gray-900">Article Content</h3>
+
+            <p className="mt-1 text-xs text-gray-500">
+              Edit your article using the rich text editor.
+            </p>
+          </div>
+
+          <RichTextEditor
+            name="content"
+            label="Full Article Content"
+            required
+            placeholder="Start writing your article..."
+          />
+        </section>
+
+        {/* Publication Settings */}
+        <section className="space-y-4 border-t border-gray-100 pt-6">
+          <div>
+            <h3 className="text-sm font-bold text-gray-900">
+              Publication Settings
+            </h3>
+
+            <p className="mt-1 text-xs text-gray-500">
+              Control the visibility and featured status of this article.
+            </p>
+          </div>
+
+          <BlogStatusControls />
+        </section>
+
+        {/* Actions */}
+        <footer className="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isBusy}
+            className="rounded-lg border border-gray-200 px-5 py-2.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            disabled={isBusy}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isBusy ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+
+            {isBusy ? "Saving Changes..." : "Save Changes"}
+          </button>
+        </footer>
+      </form>
+    </FormProvider>
+  );
+}
+
+// --------------------------------------------------
+// Statistics Card
+// --------------------------------------------------
+
+function StatCard({ item }: { item: TStatItem }) {
+  const Icon = item.icon;
+
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-500">{item.label}</p>
+
+          <p className="mt-2 text-3xl font-black text-gray-900">{item.value}</p>
+        </div>
+
+        <div className={`rounded-xl p-3 ${item.style}`}>
+          <Icon className="h-6 w-6" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --------------------------------------------------
+// Manage Blog Page
+// --------------------------------------------------
 
 export default function ManageBlogPage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedBlog, setSelectedBlog] = useState<TBlog | null>(null);
 
-  const [deleteBlog, { isLoading: isDeleting }] = useSoftDeleteBlogMutation();
+  const [editingBlog, setEditingBlog] = useState<TBlog | null>(null);
+
+  const [deletingBlog, setDeletingBlog] = useState<TBlog | null>(null);
+
+  // --------------------------------------------------
+  // API
+  // --------------------------------------------------
 
   const {
     data: blogsData,
@@ -55,25 +426,15 @@ export default function ManageBlogPage() {
     refetch,
   } = useGetAllBlogsAdminQuery({ searchTerm });
 
-  // Supports both a direct array and a nested paginated API response.
-  const blogs: TBlog[] = useMemo(() => {
-    const response = blogsData?.data;
+  const [updateBlog, { isLoading: isUpdating }] = useUpdateBlogMutation();
 
-    if (Array.isArray(response)) {
-      return response as TBlog[];
-    }
+  const [deleteBlog, { isLoading: isDeleting }] = useSoftDeleteBlogMutation();
 
-    if (
-      response &&
-      typeof response === "object" &&
-      "data" in response &&
-      Array.isArray(response.data)
-    ) {
-      return response.data as TBlog[];
-    }
+  // --------------------------------------------------
+  // Blog Data
+  // --------------------------------------------------
 
-    return [];
-  }, [blogsData]);
+  const blogs = useMemo(() => extractBlogs(blogsData?.data), [blogsData]);
 
   const filteredBlogs = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
@@ -82,34 +443,201 @@ export default function ManageBlogPage() {
 
     return blogs.filter(
       (blog) =>
-        blog.title?.toLowerCase().includes(query) ||
-        blog.slug?.toLowerCase().includes(query),
+        blog.title.toLowerCase().includes(query) ||
+        blog.slug.toLowerCase().includes(query),
     );
   }, [blogs, searchTerm]);
 
-  const handleDelete = async () => {
-    if (!selectedBlog) return;
+  // --------------------------------------------------
+  // Statistics
+  // --------------------------------------------------
 
-    try {
-      await deleteBlog(selectedBlog.id).unwrap();
+  const publishedCount = blogs.filter((blog) => blog.isPublished).length;
 
-      toast.success("Blog deleted successfully", {
-        description: `"${selectedBlog.title}" has been removed.`,
-      });
+  const featuredCount = blogs.filter((blog) => blog.isFeatured).length;
 
-      setSelectedBlog(null);
-    } catch (error: unknown) {
-      const apiError = error as TApiError;
+  const draftCount = blogs.filter((blog) => !blog.isPublished).length;
 
-      toast.error(apiError.data?.message || "Failed to delete the blog.");
+  const stats: TStatItem[] = [
+    {
+      label: "Total Blogs",
+      value: blogs.length,
+      icon: FileText,
+      style: "bg-teal-50 text-teal-600",
+    },
+    {
+      label: "Published",
+      value: publishedCount,
+      icon: ArrowUpRight,
+      style: "bg-green-50 text-green-600",
+    },
+    {
+      label: "Featured",
+      value: featuredCount,
+      icon: Star,
+      style: "bg-amber-50 text-amber-600",
+    },
+    {
+      label: "Drafts",
+      value: draftCount,
+      icon: BookOpen,
+      style: "bg-gray-100 text-gray-600",
+    },
+  ];
+
+  // --------------------------------------------------
+  // Modal Controls
+  // --------------------------------------------------
+
+  const closeEditModal = (): void => {
+    if (!isUpdating) {
+      setEditingBlog(null);
     }
   };
+
+  const closeDeleteModal = (): void => {
+    if (!isDeleting) {
+      setDeletingBlog(null);
+    }
+  };
+
+  // --------------------------------------------------
+  // Edit Blog
+  // --------------------------------------------------
+
+  const handleEdit = (blog: TBlog): void => {
+    setEditingBlog(blog);
+  };
+
+  // --------------------------------------------------
+  // Update Blog
+  // --------------------------------------------------
+
+  const handleUpdate = async (values: TUpdateBlogFormValues): Promise<void> => {
+    if (!editingBlog || isUpdating) return;
+
+    const title = values.title?.trim() ?? "";
+    const content = values.content?.trim() ?? "";
+
+    if (!title || !content) {
+      toast.error("Required fields are missing", {
+        description: "Blog title and article content are required.",
+      });
+
+      return;
+    }
+
+    const payload: TUpdateBlog = {
+      title,
+      thumbnail: values.thumbnail?.trim() ?? "",
+      summary: values.summary?.trim() ?? "",
+      content: values.content,
+      isPublished: values.isPublished ?? false,
+      isFeatured: values.isFeatured ?? false,
+    };
+
+    try {
+      await updateBlog({
+        id: editingBlog.id,
+        data: payload,
+      }).unwrap();
+
+      toast.success("Blog updated successfully", {
+        description: `"${title}" has been updated.`,
+      });
+
+      setEditingBlog(null);
+    } catch (error: unknown) {
+      toast.error("Failed to update blog", {
+        description: getErrorMessage(
+          error,
+          "The server rejected the update. Please try again.",
+        ),
+        duration: 6000,
+      });
+
+      console.error("Update blog failed:", error);
+    }
+  };
+
+  // --------------------------------------------------
+  // Featured Toggle
+  // --------------------------------------------------
+
+  const handleToggleFeatured = async (blog: TBlog): Promise<void> => {
+    if (isUpdating) return;
+
+    const nextFeaturedStatus = !blog.isFeatured;
+
+    try {
+      await updateBlog({
+        id: blog.id,
+        data: {
+          isFeatured: nextFeaturedStatus,
+        },
+      }).unwrap();
+
+      toast.success(
+        nextFeaturedStatus
+          ? "Blog marked as featured"
+          : "Blog removed from featured",
+        {
+          description: blog.title,
+        },
+      );
+    } catch (error: unknown) {
+      toast.error("Failed to update featured status", {
+        description: getErrorMessage(
+          error,
+          "Could not update the blog's featured status.",
+        ),
+      });
+
+      console.error("Featured update failed:", error);
+    }
+  };
+
+  // --------------------------------------------------
+  // Soft Delete
+  // --------------------------------------------------
+
+  const handleDeleteClick = (blog: TBlog): void => {
+    setDeletingBlog(blog);
+  };
+
+  const handleDelete = async (): Promise<void> => {
+    if (!deletingBlog || isDeleting) return;
+
+    try {
+      await deleteBlog(deletingBlog.id).unwrap();
+
+      toast.success("Blog deleted successfully", {
+        description: `"${deletingBlog.title}" has been removed.`,
+      });
+
+      setDeletingBlog(null);
+    } catch (error: unknown) {
+      toast.error("Failed to delete blog", {
+        description: getErrorMessage(
+          error,
+          "Could not delete this blog. Please try again.",
+        ),
+      });
+
+      console.error("Delete blog failed:", error);
+    }
+  };
+
+  // --------------------------------------------------
+  // Loading State
+  // --------------------------------------------------
 
   if (isLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-9 w-9 animate-spin text-teal-600" />
+
           <p className="text-sm font-medium text-gray-500">
             Loading blog posts...
           </p>
@@ -118,14 +646,18 @@ export default function ManageBlogPage() {
     );
   }
 
+  // --------------------------------------------------
+  // Render
+  // --------------------------------------------------
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4 font-poppins sm:p-6 lg:p-10">
-      <div className="mx-auto max-w-7xl space-y-8">
+    <main className="min-h-screen bg-gray-50/70 p-4 font-poppins sm:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl space-y-7">
         {/* Navigation */}
         <nav className="flex items-center justify-between border-b border-gray-200 pb-5">
           <Link
             href="/dashboard/admin"
-            className="text-xs font-semibold uppercase tracking-widest text-gray-500 transition-colors hover:text-teal-600"
+            className="text-xs font-semibold uppercase tracking-widest text-gray-500 transition hover:text-teal-600"
           >
             Admin Dashboard
           </Link>
@@ -137,7 +669,7 @@ export default function ManageBlogPage() {
         </nav>
 
         {/* Header */}
-        <header className="flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
+        <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
           <div className="flex items-center gap-4">
             <div className="rounded-2xl bg-teal-600 p-4 shadow-lg shadow-teal-100">
               <BookOpen className="h-8 w-8 text-white" />
@@ -152,15 +684,15 @@ export default function ManageBlogPage() {
                 Manage Blogs
               </h1>
 
-              <p className="mt-2 text-sm text-gray-500 sm:text-base">
-                Create, review, and manage your blog articles.
+              <p className="mt-2 text-sm text-gray-500">
+                Create, edit, publish, feature, and manage your articles.
               </p>
             </div>
           </div>
 
           <Link
             href="/dashboard/admin/create/blog"
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-teal-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-teal-100 transition-all hover:bg-teal-700"
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-teal-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-teal-100 transition hover:bg-teal-700"
           >
             <Plus className="h-5 w-5" />
             Create Blog
@@ -168,45 +700,13 @@ export default function ManageBlogPage() {
         </header>
 
         {/* Statistics */}
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">
-                  Loaded Blog Posts
-                </p>
-
-                <p className="mt-2 text-3xl font-black text-gray-900">
-                  {blogs.length}
-                </p>
-              </div>
-
-              <div className="rounded-xl bg-teal-50 p-3">
-                <FileText className="h-6 w-6 text-teal-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">
-                  Published Posts
-                </p>
-
-                <p className="mt-2 text-3xl font-black text-gray-900">
-                  {blogs.filter((blog) => blog.isPublished === true).length}
-                </p>
-              </div>
-
-              <div className="rounded-xl bg-green-50 p-3">
-                <ArrowUpRight className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </div>
+        <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {stats.map((item) => (
+            <StatCard key={item.label} item={item} />
+          ))}
         </section>
 
-        {/* Blog Table */}
+        {/* Blog Records */}
         <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
           {/* Search */}
           <div className="flex flex-col justify-between gap-4 border-b border-gray-100 p-5 sm:flex-row sm:items-center">
@@ -233,13 +733,15 @@ export default function ManageBlogPage() {
             </div>
           </div>
 
-          {isFetching && !isLoading && (
+          {/* Fetching Indicator */}
+          {isFetching && (
             <div className="flex items-center gap-2 border-b border-gray-100 bg-teal-50/50 px-5 py-2 text-xs font-medium text-teal-700">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Updating blog posts...
             </div>
           )}
 
+          {/* Error State */}
           {isError ? (
             <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
               <AlertTriangle className="h-10 w-10 text-red-400" />
@@ -255,12 +757,13 @@ export default function ManageBlogPage() {
               <button
                 type="button"
                 onClick={() => refetch()}
-                className="mt-5 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-700"
+                className="mt-5 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
               >
                 Try Again
               </button>
             </div>
           ) : filteredBlogs.length === 0 ? (
+            /* Empty State */
             <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
               <div className="rounded-2xl bg-gray-100 p-4">
                 <BookOpen className="h-8 w-8 text-gray-400" />
@@ -272,14 +775,14 @@ export default function ManageBlogPage() {
 
               <p className="mt-2 max-w-sm text-sm text-gray-500">
                 {searchTerm
-                  ? "Try another title or slug, or clear your search."
-                  : "You haven't created any blog posts yet. Create your first post to get started."}
+                  ? "Try another title or slug."
+                  : "Create your first blog post to get started."}
               </p>
 
               {!searchTerm && (
                 <Link
                   href="/dashboard/admin/create/blog"
-                  className="mt-5 inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700"
+                  className="mt-5 inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700"
                 >
                   <Plus className="h-4 w-4" />
                   Create Your First Blog
@@ -288,128 +791,193 @@ export default function ManageBlogPage() {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[850px] border-collapse text-left">
-                  <thead>
-                    <tr className="bg-gray-50/80 text-xs font-bold uppercase tracking-wider text-gray-500">
-                      <th className="px-6 py-4">Blog Post</th>
-                      <th className="px-6 py-4">Slug</th>
-                      <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4">Last Updated</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
+              {/* Responsive Table */}
+              <div className="w-full overflow-hidden">
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full min-w-[1050px] border-collapse text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100 bg-gray-50/80 text-xs uppercase tracking-wider text-gray-500">
+                        <th className="w-[280px] min-w-[280px] px-5 py-4 font-semibold">
+                          Blog
+                        </th>
 
-                  <tbody className="divide-y divide-gray-100">
-                    {filteredBlogs.map((blog) => (
-                      <tr
-                        key={blog.id}
-                        className="transition-colors hover:bg-gray-50/70"
-                      >
-                        {/* Blog Information */}
-                        <td className="px-6 py-5">
-                          <div className="flex items-center gap-4">
-                            <div className="relative flex h-14 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-gray-100 bg-gray-100">
-                              {blog.thumbnail ? (
-                                <Image
-                                  src={blog.thumbnail}
-                                  alt={blog.title}
-                                  fill
-                                  sizes="64px"
-                                  className="object-cover"
-                                  unoptimized
-                                />
-                              ) : (
-                                <BookOpen className="h-6 w-6 text-gray-400" />
-                              )}
-                            </div>
+                        <th className="w-[200px] min-w-[200px] px-5 py-4 font-semibold">
+                          Slug
+                        </th>
 
-                            <div className="max-w-xs">
-                              <p className="line-clamp-2 font-bold text-gray-900">
-                                {blog.title}
-                              </p>
+                        <th className="w-[130px] min-w-[130px] px-5 py-4 font-semibold">
+                          Status
+                        </th>
 
-                              {blog.summary && (
-                                <p className="mt-1 line-clamp-1 text-xs text-gray-500">
-                                  {blog.summary}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </td>
+                        <th className="w-[130px] min-w-[130px] px-5 py-4 font-semibold">
+                          Featured
+                        </th>
 
-                        {/* Slug */}
-                        <td className="px-6 py-5">
-                          <span className="block max-w-[220px] truncate rounded-md bg-gray-100 px-2.5 py-1.5 font-mono text-xs text-gray-600">
-                            {blog.slug}
-                          </span>
-                        </td>
+                        <th className="w-[150px] min-w-[150px] px-5 py-4 font-semibold">
+                          Created At
+                        </th>
 
-                        {/* Publication Status */}
-                        <td className="px-6 py-5">
-                          {blog.isPublished === true ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700">
-                              <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                              Published
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700">
-                              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                              Draft / Unpublished
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Date */}
-                        <td className="px-6 py-5">
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <CalendarDays className="h-4 w-4 shrink-0" />
-
-                            <span>
-                              {blog.updatedAt
-                                ? new Date(blog.updatedAt).toLocaleDateString(
-                                    "en-GB",
-                                    {
-                                      day: "2-digit",
-                                      month: "short",
-                                      year: "numeric",
-                                    },
-                                  )
-                                : blog.createdAt
-                                  ? new Date(blog.createdAt).toLocaleDateString(
-                                      "en-GB",
-                                      {
-                                        day: "2-digit",
-                                        month: "short",
-                                        year: "numeric",
-                                      },
-                                    )
-                                  : "—"}
-                            </span>
-                          </div>
-                        </td>
-
-                        {/* Actions */}
-                        <td className="px-6 py-5">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedBlog(blog)}
-                              aria-label={`Delete ${blog.title}`}
-                              title="Delete blog"
-                              className="inline-flex items-center gap-2 rounded-lg border border-red-100 px-3 py-2 text-xs font-bold text-red-600 transition hover:border-red-200 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              Delete
-                            </button>
-                          </div>
-                        </td>
+                        {/* Sticky Actions Header */}
+                        <th className="sticky right-0 z-30 w-[150px] min-w-[150px] border-l border-gray-200 bg-gray-50 px-4 py-4 text-center font-semibold shadow-[-8px_0_12px_-10px_rgba(0,0,0,0.5)]">
+                          Actions
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+
+                    <tbody className="divide-y divide-gray-100">
+                      {filteredBlogs.map((blog) => (
+                        <tr
+                          key={blog.id}
+                          className="transition hover:bg-gray-50/70"
+                        >
+                          {/* Blog Information */}
+                          <td className="max-w-[280px] px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="h-12 w-16 shrink-0 overflow-hidden rounded-lg border border-gray-100 bg-gray-100">
+                                {blog.thumbnail ? (
+                                  <img
+                                    src={blog.thumbnail}
+                                    alt={blog.title}
+                                    loading="lazy"
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-full items-center justify-center">
+                                    <FileText className="h-5 w-5 text-gray-400" />
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="min-w-0">
+                                <p className="truncate font-semibold text-gray-800">
+                                  {blog.title}
+                                </p>
+
+                                <p className="mt-1 line-clamp-1 text-xs text-gray-500">
+                                  {blog.summary || "No summary available"}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Slug */}
+                          <td className="px-5 py-4">
+                            <span className="block max-w-[180px] truncate text-xs text-gray-500">
+                              {blog.slug}
+                            </span>
+                          </td>
+
+                          {/* Publication Status */}
+                          <td className="px-5 py-4">
+                            {blog.isPublished ? (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700">
+                                <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                                Published
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-600">
+                                <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
+                                Draft
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Featured Status */}
+                          <td className="px-5 py-4">
+                            {blog.isFeatured ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700">
+                                <Star className="h-3 w-3 fill-current" />
+                                Featured
+                              </span>
+                            ) : (
+                              <span className="text-xs text-gray-400">
+                                Not Featured
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Created Date */}
+                          <td className="whitespace-nowrap px-5 py-4">
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                              <CalendarDays className="h-4 w-4" />
+                              {formatDate(blog.createdAt)}
+                            </div>
+                          </td>
+
+                          {/* Sticky Actions */}
+                          <td className="sticky right-0 z-20 border-l border-gray-200 bg-white px-3 py-4 shadow-[-8px_0_12px_-10px_rgba(0,0,0,0.5)]">
+                            <div className="flex items-center justify-center gap-1">
+                              {/* Featured Toggle */}
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                title={
+                                  blog.isFeatured
+                                    ? "Remove from featured"
+                                    : "Mark as featured"
+                                }
+                                aria-label={
+                                  blog.isFeatured
+                                    ? `Remove ${blog.title} from featured`
+                                    : `Feature ${blog.title}`
+                                }
+                                disabled={isUpdating}
+                                onClick={() => handleToggleFeatured(blog)}
+                                className={
+                                  blog.isFeatured
+                                    ? "text-amber-500 hover:bg-amber-50 hover:text-amber-600"
+                                    : "text-gray-400 hover:text-amber-500"
+                                }
+                              >
+                                <Star
+                                  className={`h-4 w-4 ${
+                                    blog.isFeatured ? "fill-current" : ""
+                                  }`}
+                                />
+                              </Button>
+
+                              {/* Edit */}
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                title="Edit blog"
+                                aria-label={`Edit ${blog.title}`}
+                                onClick={() => handleEdit(blog)}
+                                className="text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+
+                              {/* Delete */}
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                title="Delete blog"
+                                aria-label={`Delete ${blog.title}`}
+                                onClick={() => handleDeleteClick(blog)}
+                                className="text-rose-500 hover:bg-rose-50 hover:text-rose-600"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Scroll Hint */}
+                <div className="flex items-center justify-center gap-2 border-t border-gray-100 bg-gray-50 px-4 py-2 text-xs text-gray-400 sm:hidden">
+                  Swipe horizontally to view all columns
+                  <span aria-hidden="true">↔</span>
+                </div>
               </div>
 
+              {/* Table Footer */}
               <div className="flex flex-col justify-between gap-2 border-t border-gray-100 bg-gray-50/50 px-5 py-4 text-xs text-gray-500 sm:flex-row sm:items-center">
                 <p>
                   Showing{" "}
@@ -425,58 +993,109 @@ export default function ManageBlogPage() {
           )}
         </section>
 
-        {/* Delete Confirmation Modal */}
-        {selectedBlog && (
+        {/* =========================================
+            EDIT BLOG MODAL
+        ========================================= */}
+
+        {editingBlog && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 p-4 backdrop-blur-sm"
-            onClick={() => {
-              if (!isDeleting) setSelectedBlog(null);
+            className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 p-3 backdrop-blur-sm sm:p-6"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget && !isUpdating) {
+                closeEditModal();
+              }
             }}
           >
-            <div
+            <section
               role="dialog"
               aria-modal="true"
-              aria-labelledby="delete-blog-title"
-              className="w-full max-w-md rounded-2xl border border-gray-100 bg-white p-6 shadow-2xl sm:p-8"
-              onClick={(event) => event.stopPropagation()}
+              aria-labelledby="edit-blog-title"
+              className="flex max-h-[95vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
             >
-              <div className="flex items-start justify-between">
-                <div className="rounded-xl bg-red-50 p-3">
-                  <AlertTriangle className="h-6 w-6 text-red-600" />
+              {/* Modal Header */}
+              <header className="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-4 sm:px-6">
+                <div>
+                  <h2
+                    id="edit-blog-title"
+                    className="text-lg font-semibold text-gray-900"
+                  >
+                    Edit Blog
+                  </h2>
+
+                  <p className="mt-1 text-sm text-gray-500">
+                    Update article information and publication settings.
+                  </p>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => setSelectedBlog(null)}
-                  disabled={isDeleting}
-                  aria-label="Close confirmation dialog"
+                  onClick={closeEditModal}
+                  disabled={isUpdating}
+                  aria-label="Close edit modal"
                   className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50"
                 >
                   <X className="h-5 w-5" />
                 </button>
+              </header>
+
+              {/* Modal Content */}
+              <div className="overflow-y-auto p-5 sm:p-6">
+                <EditBlogForm
+                  key={editingBlog.id}
+                  blog={editingBlog}
+                  isUpdating={isUpdating}
+                  onCancel={closeEditModal}
+                  onSubmit={handleUpdate}
+                />
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* =========================================
+            DELETE CONFIRMATION MODAL
+        ========================================= */}
+
+        {deletingBlog && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 p-4 backdrop-blur-sm"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget && !isDeleting) {
+                closeDeleteModal();
+              }
+            }}
+          >
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-blog-title"
+              className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+            >
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
+                <AlertTriangle className="h-5 w-5" />
               </div>
 
               <h2
                 id="delete-blog-title"
-                className="mt-5 text-xl font-black text-gray-900"
+                className="mt-4 text-lg font-semibold text-gray-900"
               >
-                Delete this blog?
+                Delete Blog?
               </h2>
 
-              <p className="mt-3 text-sm leading-6 text-gray-500">
-                Are you sure you want to delete{" "}
-                <span className="font-bold text-gray-800">
-                  &quot;{selectedBlog.title}&quot;
-                </span>
-                ? This action will remove the blog from the active listing.
+              <p className="mt-2 break-words text-sm leading-6 text-gray-500">
+                <span className="font-semibold text-gray-800">
+                  {deletingBlog.title}
+                </span>{" "}
+                will be removed from the active blog listing. This operation
+                uses soft-delete rather than permanently removing the record.
               </p>
 
-              <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                 <button
                   type="button"
-                  onClick={() => setSelectedBlog(null)}
+                  onClick={closeDeleteModal}
                   disabled={isDeleting}
-                  className="rounded-xl border border-gray-200 px-5 py-3 text-sm font-bold text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:opacity-60"
                 >
                   Cancel
                 </button>
@@ -485,7 +1104,7 @@ export default function ManageBlogPage() {
                   type="button"
                   onClick={handleDelete}
                   disabled={isDeleting}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isDeleting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -496,7 +1115,7 @@ export default function ManageBlogPage() {
                   {isDeleting ? "Deleting..." : "Confirm Delete"}
                 </button>
               </div>
-            </div>
+            </section>
           </div>
         )}
 
@@ -507,6 +1126,6 @@ export default function ManageBlogPage() {
           </p>
         </footer>
       </div>
-    </div>
+    </main>
   );
 }
