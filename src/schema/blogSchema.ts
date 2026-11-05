@@ -9,19 +9,15 @@ export const CreateBlogSchema = z.object({
 });
 
 // Update Blog
-export const UpdateBlogSchema = z
-  .object({
-    title: z.string().trim().min(1, "Title cannot be empty").optional(),
-    thumbnail: z.string().optional(),
-    summary: z.string().optional(),
-    content: z.string().trim().min(1, "Content cannot be empty").optional(),
-    isPublished: z.boolean().optional(),
-    isFeatured: z.boolean().optional(),
-  })
-  .refine(
-    (data) => Object.keys(data).length > 0,
-    "At least one field is required to update a blog",
-  );
+export const UpdateBlogSchema = z.object({
+  title: z.string().trim().min(1, "Blog title is required"),
+  slug: z.string().trim().min(1, "Blog slug is required"),
+  thumbnail: z.string().optional(),
+  summary: z.string().optional(),
+  content: z.string().trim().min(1, "Article content is required"),
+  isPublished: z.boolean().optional(),
+  isFeatured: z.boolean().optional(),
+});
 
 // Inferred Types
 export type TCreateBlogFormValues = z.infer<typeof CreateBlogSchema>;

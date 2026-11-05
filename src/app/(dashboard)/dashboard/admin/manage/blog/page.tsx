@@ -26,6 +26,8 @@ import {
   X,
   Save,
   Pencil,
+  Link2,
+  RefreshCw,
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
@@ -42,21 +44,21 @@ import {
 import type { TUpdateBlog } from "@/types/blog";
 import { Button } from "@/components/ui/button";
 
-// --------------------------------------------------
-// Types
-// --------------------------------------------------
+// ==================================================
+// TYPES
+// ==================================================
 
 type TBlog = {
   id: string;
   title: string;
-  slug?: string;
+  slug: string;
   summary?: string | null;
   thumbnail?: string | null;
   content?: string | null;
   isPublished?: boolean;
   isFeatured?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 };
 
 type TEditBlogFormProps = {
@@ -73,9 +75,9 @@ type TStatItem = {
   style: string;
 };
 
-// --------------------------------------------------
-// Runtime Type Guards
-// --------------------------------------------------
+// ==================================================
+// RUNTIME TYPE GUARDS
+// ==================================================
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null;
@@ -108,9 +110,9 @@ const isBlog = (value: unknown): value is TBlog => {
   );
 };
 
-// --------------------------------------------------
-// API Response Parsing
-// --------------------------------------------------
+// ==================================================
+// API RESPONSE PARSING
+// ==================================================
 
 const extractBlogs = (response: unknown): TBlog[] => {
   if (Array.isArray(response)) {
@@ -132,9 +134,9 @@ const extractBlogs = (response: unknown): TBlog[] => {
   return [];
 };
 
-// --------------------------------------------------
-// Error Handling
-// --------------------------------------------------
+// ==================================================
+// ERROR HANDLING
+// ==================================================
 
 const getErrorMessage = (error: unknown, fallback: string): string => {
   if (!isRecord(error)) {
@@ -152,11 +154,11 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
   return fallback;
 };
 
-// --------------------------------------------------
-// Helpers
-// --------------------------------------------------
+// ==================================================
+// HELPERS
+// ==================================================
 
-const formatDate = (date?: string): string => {
+const formatDate = (date?: string | null): string => {
   if (!date) return "—";
 
   const parsedDate = new Date(date);
@@ -172,16 +174,15 @@ const formatDate = (date?: string): string => {
   });
 };
 
-// --------------------------------------------------
-// Edit Form Controls
-// --------------------------------------------------
+// ==================================================
+// BLOG STATUS CONTROLS
+// ==================================================
 
 function BlogStatusControls() {
   const { register } = useFormContext<TUpdateBlogFormValues>();
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {/* Published */}
       <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 p-4 transition hover:border-teal-300 hover:bg-teal-50/40">
         <input
           type="checkbox"
@@ -200,7 +201,6 @@ function BlogStatusControls() {
         </span>
       </label>
 
-      {/* Featured */}
       <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 p-4 transition hover:border-amber-300 hover:bg-amber-50/40">
         <input
           type="checkbox"
@@ -223,9 +223,9 @@ function BlogStatusControls() {
   );
 }
 
-// --------------------------------------------------
-// Edit Blog Form
-// --------------------------------------------------
+// ==================================================
+// EDIT BLOG FORM
+// ==================================================
 
 function EditBlogForm({
   blog,
@@ -238,6 +238,7 @@ function EditBlogForm({
 
     defaultValues: {
       title: blog.title,
+      slug: blog.slug,
       thumbnail: blog.thumbnail ?? "",
       summary: blog.summary ?? "",
       content: blog.content ?? "",
@@ -250,6 +251,7 @@ function EditBlogForm({
 
   const {
     handleSubmit,
+    register,
     formState: { errors, isSubmitting },
   } = form;
 
@@ -283,7 +285,8 @@ function EditBlogForm({
         noValidate
         className="space-y-6"
       >
-        {/* Article Metadata */}
+        {/* ARTICLE INFORMATION */}
+
         <section className="space-y-5">
           <div className="border-b border-gray-100 pb-3">
             <h3 className="text-sm font-bold text-gray-900">
@@ -302,6 +305,44 @@ function EditBlogForm({
             placeholder="Enter blog title..."
           />
 
+          {/* READ-ONLY SLUG */}
+
+          <div className="space-y-2">
+            <label
+              htmlFor="blog-slug"
+              className="flex items-center gap-2 text-sm font-semibold text-gray-700"
+            >
+              Blog Slug
+              <span className="text-red-500">*</span>
+              <span className="rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-500">
+                Read only
+              </span>
+            </label>
+
+            <div className="relative">
+              <Link2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+
+              <input
+                id="blog-slug"
+                type="text"
+                readOnly
+                required
+                {...register("slug")}
+                placeholder="Generated blog slug"
+                className="w-full cursor-not-allowed rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-4 text-sm text-gray-600 outline-none"
+              />
+            </div>
+
+            {errors.slug && (
+              <p className="text-xs text-red-500">{errors.slug.message}</p>
+            )}
+
+            <p className="text-xs leading-5 text-gray-400">
+              This slug was generated during blog creation. It remains unchanged
+              to preserve the existing blog URL.
+            </p>
+          </div>
+
           <FormInput
             name="thumbnail"
             label="Thumbnail Image URL"
@@ -316,7 +357,8 @@ function EditBlogForm({
           />
         </section>
 
-        {/* Article Content */}
+        {/* ARTICLE CONTENT */}
+
         <section className="space-y-4 border-t border-gray-100 pt-6">
           <div>
             <h3 className="text-sm font-bold text-gray-900">Article Content</h3>
@@ -334,7 +376,8 @@ function EditBlogForm({
           />
         </section>
 
-        {/* Publication Settings */}
+        {/* PUBLICATION SETTINGS */}
+
         <section className="space-y-4 border-t border-gray-100 pt-6">
           <div>
             <h3 className="text-sm font-bold text-gray-900">
@@ -349,7 +392,8 @@ function EditBlogForm({
           <BlogStatusControls />
         </section>
 
-        {/* Actions */}
+        {/* FORM ACTIONS */}
+
         <footer className="flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end">
           <button
             type="button"
@@ -379,9 +423,9 @@ function EditBlogForm({
   );
 }
 
-// --------------------------------------------------
-// Statistics Card
-// --------------------------------------------------
+// ==================================================
+// STATISTICS CARD
+// ==================================================
 
 function StatCard({ item }: { item: TStatItem }) {
   const Icon = item.icon;
@@ -403,15 +447,13 @@ function StatCard({ item }: { item: TStatItem }) {
   );
 }
 
-// --------------------------------------------------
-// Manage Blog Page
-// --------------------------------------------------
+// ==================================================
+// MAIN MANAGE BLOG PAGE
+// ==================================================
 
 export default function ManageBlogPage() {
   const [searchTerm, setSearchTerm] = useState("");
-
   const [editingBlog, setEditingBlog] = useState<TBlog | null>(null);
-
   const [deletingBlog, setDeletingBlog] = useState<TBlog | null>(null);
 
   // --------------------------------------------------
@@ -431,7 +473,7 @@ export default function ManageBlogPage() {
   const [deleteBlog, { isLoading: isDeleting }] = useSoftDeleteBlogMutation();
 
   // --------------------------------------------------
-  // Blog Data
+  // BLOG DATA
   // --------------------------------------------------
 
   const blogs = useMemo(() => extractBlogs(blogsData?.data), [blogsData]);
@@ -449,7 +491,7 @@ export default function ManageBlogPage() {
   }, [blogs, searchTerm]);
 
   // --------------------------------------------------
-  // Statistics
+  // STATISTICS
   // --------------------------------------------------
 
   const publishedCount = blogs.filter((blog) => blog.isPublished).length;
@@ -486,7 +528,7 @@ export default function ManageBlogPage() {
   ];
 
   // --------------------------------------------------
-  // Modal Controls
+  // MODAL CONTROLS
   // --------------------------------------------------
 
   const closeEditModal = (): void => {
@@ -502,7 +544,7 @@ export default function ManageBlogPage() {
   };
 
   // --------------------------------------------------
-  // Edit Blog
+  // EDIT BLOG
   // --------------------------------------------------
 
   const handleEdit = (blog: TBlog): void => {
@@ -510,22 +552,25 @@ export default function ManageBlogPage() {
   };
 
   // --------------------------------------------------
-  // Update Blog
+  // UPDATE BLOG
   // --------------------------------------------------
 
   const handleUpdate = async (values: TUpdateBlogFormValues): Promise<void> => {
     if (!editingBlog || isUpdating) return;
 
-    const title = values.title?.trim() ?? "";
-    const content = values.content?.trim() ?? "";
+    const title = values.title.trim();
+    const content = values.content.trim();
 
-    if (!title || !content) {
+    if (!title || !content || !values.slug.trim()) {
       toast.error("Required fields are missing", {
-        description: "Blog title and article content are required.",
+        description: "Blog title, slug, and article content are required.",
       });
 
       return;
     }
+
+    // Slug is intentionally excluded.
+    // Backend generated it during blog creation.
 
     const payload: TUpdateBlog = {
       title,
@@ -561,7 +606,7 @@ export default function ManageBlogPage() {
   };
 
   // --------------------------------------------------
-  // Featured Toggle
+  // FEATURED TOGGLE
   // --------------------------------------------------
 
   const handleToggleFeatured = async (blog: TBlog): Promise<void> => {
@@ -598,7 +643,7 @@ export default function ManageBlogPage() {
   };
 
   // --------------------------------------------------
-  // Soft Delete
+  // SOFT DELETE
   // --------------------------------------------------
 
   const handleDeleteClick = (blog: TBlog): void => {
@@ -629,7 +674,7 @@ export default function ManageBlogPage() {
   };
 
   // --------------------------------------------------
-  // Loading State
+  // INITIAL LOADING
   // --------------------------------------------------
 
   if (isLoading) {
@@ -646,14 +691,15 @@ export default function ManageBlogPage() {
     );
   }
 
-  // --------------------------------------------------
-  // Render
-  // --------------------------------------------------
+  // ==================================================
+  // RENDER
+  // ==================================================
 
   return (
     <main className="min-h-screen bg-gray-50/70 p-4 font-poppins sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl space-y-7">
-        {/* Navigation */}
+        {/* NAVIGATION */}
+
         <nav className="flex items-center justify-between border-b border-gray-200 pb-5">
           <Link
             href="/dashboard/admin"
@@ -668,7 +714,8 @@ export default function ManageBlogPage() {
           </div>
         </nav>
 
-        {/* Header */}
+        {/* HEADER */}
+
         <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
           <div className="flex items-center gap-4">
             <div className="rounded-2xl bg-teal-600 p-4 shadow-lg shadow-teal-100">
@@ -699,16 +746,19 @@ export default function ManageBlogPage() {
           </Link>
         </header>
 
-        {/* Statistics */}
+        {/* STATISTICS */}
+
         <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {stats.map((item) => (
             <StatCard key={item.label} item={item} />
           ))}
         </section>
 
-        {/* Blog Records */}
+        {/* BLOG RECORDS */}
+
         <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-          {/* Search */}
+          {/* SEARCH */}
+
           <div className="flex flex-col justify-between gap-4 border-b border-gray-100 p-5 sm:flex-row sm:items-center">
             <div>
               <h2 className="text-lg font-bold text-gray-900">
@@ -733,7 +783,8 @@ export default function ManageBlogPage() {
             </div>
           </div>
 
-          {/* Fetching Indicator */}
+          {/* FETCHING INDICATOR */}
+
           {isFetching && (
             <div className="flex items-center gap-2 border-b border-gray-100 bg-teal-50/50 px-5 py-2 text-xs font-medium text-teal-700">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -741,7 +792,8 @@ export default function ManageBlogPage() {
             </div>
           )}
 
-          {/* Error State */}
+          {/* ERROR STATE */}
+
           {isError ? (
             <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
               <AlertTriangle className="h-10 w-10 text-red-400" />
@@ -757,13 +809,15 @@ export default function ManageBlogPage() {
               <button
                 type="button"
                 onClick={() => refetch()}
-                className="mt-5 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
+                className="mt-5 inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
               >
+                <RefreshCw className="h-4 w-4" />
                 Try Again
               </button>
             </div>
           ) : filteredBlogs.length === 0 ? (
-            /* Empty State */
+            /* EMPTY STATE */
+
             <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
               <div className="rounded-2xl bg-gray-100 p-4">
                 <BookOpen className="h-8 w-8 text-gray-400" />
@@ -790,8 +844,9 @@ export default function ManageBlogPage() {
               )}
             </div>
           ) : (
+            /* RESPONSIVE TABLE */
+
             <>
-              {/* Responsive Table */}
               <div className="w-full overflow-hidden">
                 <div className="w-full overflow-x-auto">
                   <table className="w-full min-w-[1050px] border-collapse text-left text-sm">
@@ -817,7 +872,8 @@ export default function ManageBlogPage() {
                           Created At
                         </th>
 
-                        {/* Sticky Actions Header */}
+                        {/* STICKY ACTIONS HEADER */}
+
                         <th className="sticky right-0 z-30 w-[150px] min-w-[150px] border-l border-gray-200 bg-gray-50 px-4 py-4 text-center font-semibold shadow-[-8px_0_12px_-10px_rgba(0,0,0,0.5)]">
                           Actions
                         </th>
@@ -830,7 +886,8 @@ export default function ManageBlogPage() {
                           key={blog.id}
                           className="transition hover:bg-gray-50/70"
                         >
-                          {/* Blog Information */}
+                          {/* BLOG INFORMATION */}
+
                           <td className="max-w-[280px] px-5 py-4">
                             <div className="flex items-center gap-3">
                               <div className="h-12 w-16 shrink-0 overflow-hidden rounded-lg border border-gray-100 bg-gray-100">
@@ -860,14 +917,19 @@ export default function ManageBlogPage() {
                             </div>
                           </td>
 
-                          {/* Slug */}
+                          {/* SLUG */}
+
                           <td className="px-5 py-4">
-                            <span className="block max-w-[180px] truncate text-xs text-gray-500">
+                            <span
+                              title={blog.slug}
+                              className="block max-w-[180px] truncate text-xs text-gray-500"
+                            >
                               {blog.slug}
                             </span>
                           </td>
 
-                          {/* Publication Status */}
+                          {/* PUBLICATION STATUS */}
+
                           <td className="px-5 py-4">
                             {blog.isPublished ? (
                               <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700">
@@ -882,7 +944,8 @@ export default function ManageBlogPage() {
                             )}
                           </td>
 
-                          {/* Featured Status */}
+                          {/* FEATURED STATUS */}
+
                           <td className="px-5 py-4">
                             {blog.isFeatured ? (
                               <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700">
@@ -896,7 +959,8 @@ export default function ManageBlogPage() {
                             )}
                           </td>
 
-                          {/* Created Date */}
+                          {/* CREATED DATE */}
+
                           <td className="whitespace-nowrap px-5 py-4">
                             <div className="flex items-center gap-2 text-xs text-gray-500">
                               <CalendarDays className="h-4 w-4" />
@@ -904,10 +968,12 @@ export default function ManageBlogPage() {
                             </div>
                           </td>
 
-                          {/* Sticky Actions */}
+                          {/* STICKY ACTIONS */}
+
                           <td className="sticky right-0 z-20 border-l border-gray-200 bg-white px-3 py-4 shadow-[-8px_0_12px_-10px_rgba(0,0,0,0.5)]">
                             <div className="flex items-center justify-center gap-1">
-                              {/* Featured Toggle */}
+                              {/* FEATURED TOGGLE */}
+
                               <Button
                                 type="button"
                                 size="icon"
@@ -937,7 +1003,8 @@ export default function ManageBlogPage() {
                                 />
                               </Button>
 
-                              {/* Edit */}
+                              {/* EDIT */}
+
                               <Button
                                 type="button"
                                 size="icon"
@@ -950,7 +1017,8 @@ export default function ManageBlogPage() {
                                 <Pencil className="h-4 w-4" />
                               </Button>
 
-                              {/* Delete */}
+                              {/* DELETE */}
+
                               <Button
                                 type="button"
                                 size="icon"
@@ -970,14 +1038,16 @@ export default function ManageBlogPage() {
                   </table>
                 </div>
 
-                {/* Mobile Scroll Hint */}
+                {/* MOBILE SCROLL HINT */}
+
                 <div className="flex items-center justify-center gap-2 border-t border-gray-100 bg-gray-50 px-4 py-2 text-xs text-gray-400 sm:hidden">
                   Swipe horizontally to view all columns
                   <span aria-hidden="true">↔</span>
                 </div>
               </div>
 
-              {/* Table Footer */}
+              {/* TABLE FOOTER */}
+
               <div className="flex flex-col justify-between gap-2 border-t border-gray-100 bg-gray-50/50 px-5 py-4 text-xs text-gray-500 sm:flex-row sm:items-center">
                 <p>
                   Showing{" "}
@@ -1012,7 +1082,8 @@ export default function ManageBlogPage() {
               aria-labelledby="edit-blog-title"
               className="flex max-h-[95vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
             >
-              {/* Modal Header */}
+              {/* MODAL HEADER */}
+
               <header className="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-4 sm:px-6">
                 <div>
                   <h2
@@ -1038,7 +1109,8 @@ export default function ManageBlogPage() {
                 </button>
               </header>
 
-              {/* Modal Content */}
+              {/* MODAL CONTENT */}
+
               <div className="overflow-y-auto p-5 sm:p-6">
                 <EditBlogForm
                   key={editingBlog.id}
@@ -1119,7 +1191,8 @@ export default function ManageBlogPage() {
           </div>
         )}
 
-        {/* Footer */}
+        {/* FOOTER */}
+
         <footer className="pb-8 text-center">
           <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
             Almunji Global Archival System • Blog Services

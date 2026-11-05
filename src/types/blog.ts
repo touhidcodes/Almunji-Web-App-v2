@@ -19,14 +19,14 @@ export interface TCreateBlog {
   content: string;
 }
 
-export interface TUpdateBlog {
+export type TUpdateBlog = {
   title?: string;
   thumbnail?: string;
   summary?: string;
   content?: string;
   isPublished?: boolean;
   isFeatured?: boolean;
-}
+};
 
 export interface TBlogQueryParams {
   page?: number;
