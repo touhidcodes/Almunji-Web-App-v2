@@ -10,3 +10,15 @@ export type TApiError = {
   };
   message?: string;
 };
+
+export interface TPaginatedResponse<T> {
+  success: boolean;
+  message: string;
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  data: T[];
+}

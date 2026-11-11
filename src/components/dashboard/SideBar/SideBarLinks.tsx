@@ -38,11 +38,10 @@ const routePermissions = {
   adminCreateDua: "/dashboard/admin/create/dua",
   adminCreateDictionary: "/dashboard/admin/create/dictionary",
   adminCreateBlog: "/dashboard/admin/create/blog",
-  adminCreateCategory: "/dashboard/admin/create/category",
   adminCreateBook: "/dashboard/admin/create/book",
   adminProfile: "/dashboard/profile",
   adminChangePassword: "/dashboard/change-password",
-  
+
   moderatorOverview: "/dashboard/moderator/overview",
   moderatorManagePara: "/dashboard/moderator/manage/para",
   moderatorManageSurahs: "/dashboard/moderator/manage/surahs",
@@ -56,7 +55,7 @@ const routePermissions = {
   moderatorManageBookmarks: "/dashboard/moderator/manage/bookmarks",
   moderatorProfile: "/dashboard/profile",
   moderatorChangePassword: "/dashboard/change-password",
-  
+
   userOverview: "/dashboard/user/overview",
   userBookmarks: "/dashboard/user/bookmarks",
   userDaily: "/dashboard/user/daily",
@@ -65,21 +64,32 @@ const routePermissions = {
   userChangePassword: "/dashboard/change-password",
 };
 
-export const getSidebarLinks = (role: TAuthRole, permissions: Permission[] = []): SidebarGroup[] => {
+export const getSidebarLinks = (
+  role: TAuthRole,
+  permissions: Permission[] = [],
+): SidebarGroup[] => {
   // Helper to check permission
-  const hasPermission = (route: string, action: "read" | "create" | "update" | "delete" = "read") => {
+  const hasPermission = (
+    route: string,
+    action: "read" | "create" | "update" | "delete" = "read",
+  ) => {
     // Admin has all permissions by default
     if (role === "ADMIN") {
       return true;
     }
-    return permissions.some((perm) => perm.route === route && (perm.action === action || perm.action === "read"));
+    return permissions.some(
+      (perm) =>
+        perm.route === route &&
+        (perm.action === action || perm.action === "read"),
+    );
   };
 
   // Filter items by permission
-  const filterItems = (items: SidebarItem[]): SidebarItem[] => items.filter((item) => {
-    if (!item.permission) return true;
-    return hasPermission(item.permission.route, item.permission.action);
-  });
+  const filterItems = (items: SidebarItem[]): SidebarItem[] =>
+    items.filter((item) => {
+      if (!item.permission) return true;
+      return hasPermission(item.permission.route, item.permission.action);
+    });
 
   // Filter sidebar group by permission
   const filterGroupItems = (group: SidebarGroup): SidebarGroup[] => {
@@ -87,10 +97,10 @@ export const getSidebarLinks = (role: TAuthRole, permissions: Permission[] = [])
       if (!item.permission) return true;
       return hasPermission(item.permission.route, item.permission.action);
     });
-    
+
     // If all items are filtered out, return empty array
     if (filteredItems.length === 0) return [];
-    
+
     return [{ ...group, items: filteredItems }];
   };
 
@@ -113,7 +123,10 @@ export const getSidebarLinks = (role: TAuthRole, permissions: Permission[] = [])
         label: "Change Password",
         href: routePermissions.adminChangePassword,
         icon: KeySquare,
-        permission: { route: routePermissions.adminChangePassword, action: "update" },
+        permission: {
+          route: routePermissions.adminChangePassword,
+          action: "update",
+        },
       },
     ],
   });
@@ -128,7 +141,10 @@ export const getSidebarLinks = (role: TAuthRole, permissions: Permission[] = [])
               label: "Overview",
               href: routePermissions.adminOverview,
               icon: ChartPie,
-              permission: { route: routePermissions.adminOverview, action: "read" },
+              permission: {
+                route: routePermissions.adminOverview,
+                action: "read",
+              },
             },
             {
               label: "System Logs",
@@ -145,25 +161,37 @@ export const getSidebarLinks = (role: TAuthRole, permissions: Permission[] = [])
               label: "Paras",
               href: routePermissions.adminManagePara,
               icon: BookOpen,
-              permission: { route: routePermissions.adminManagePara, action: "read" },
+              permission: {
+                route: routePermissions.adminManagePara,
+                action: "read",
+              },
             },
             {
               label: "Surahs",
               href: routePermissions.adminManageSurah,
               icon: BookOpen,
-              permission: { route: routePermissions.adminManageSurah, action: "read" },
+              permission: {
+                route: routePermissions.adminManageSurah,
+                action: "read",
+              },
             },
             {
               label: "Ayahs",
               href: routePermissions.adminManageAyah,
               icon: BookOpen,
-              permission: { route: routePermissions.adminManageAyah, action: "read" },
+              permission: {
+                route: routePermissions.adminManageAyah,
+                action: "read",
+              },
             },
             {
               label: "Tafsirs",
               href: routePermissions.adminManageTafsir,
               icon: BookOpen,
-              permission: { route: routePermissions.adminManageTafsir, action: "read" },
+              permission: {
+                route: routePermissions.adminManageTafsir,
+                action: "read",
+              },
             },
           ]),
         },
@@ -174,19 +202,28 @@ export const getSidebarLinks = (role: TAuthRole, permissions: Permission[] = [])
               label: "Duas",
               href: routePermissions.adminManageDua,
               icon: Heart,
-              permission: { route: routePermissions.adminManageDua, action: "read" },
+              permission: {
+                route: routePermissions.adminManageDua,
+                action: "read",
+              },
             },
             {
               label: "Dictionary",
               href: routePermissions.adminManageDictionary,
               icon: Globe,
-              permission: { route: routePermissions.adminManageDictionary, action: "read" },
+              permission: {
+                route: routePermissions.adminManageDictionary,
+                action: "read",
+              },
             },
             {
               label: "Books",
               href: routePermissions.adminManageBook,
               icon: BookMarked,
-              permission: { route: routePermissions.adminManageBook, action: "read" },
+              permission: {
+                route: routePermissions.adminManageBook,
+                action: "read",
+              },
             },
           ]),
         },
@@ -197,13 +234,19 @@ export const getSidebarLinks = (role: TAuthRole, permissions: Permission[] = [])
               label: "Blogs",
               href: routePermissions.adminManageBlog,
               icon: FileText,
-              permission: { route: routePermissions.adminManageBlog, action: "read" },
+              permission: {
+                route: routePermissions.adminManageBlog,
+                action: "read",
+              },
             },
             {
               label: "Categories",
               href: routePermissions.adminManageCategory,
               icon: FolderOpen,
-              permission: { route: routePermissions.adminManageCategory, action: "read" },
+              permission: {
+                route: routePermissions.adminManageCategory,
+                action: "read",
+              },
             },
           ]),
         },
@@ -214,7 +257,10 @@ export const getSidebarLinks = (role: TAuthRole, permissions: Permission[] = [])
               label: "Users",
               href: routePermissions.adminManageUsers,
               icon: Users,
-              permission: { route: routePermissions.adminManageUsers, action: "read" },
+              permission: {
+                route: routePermissions.adminManageUsers,
+                action: "read",
+              },
             },
           ]),
         },
@@ -225,49 +271,64 @@ export const getSidebarLinks = (role: TAuthRole, permissions: Permission[] = [])
               label: "Add Para",
               href: routePermissions.adminCreatePara,
               icon: FilePlus2,
-              permission: { route: routePermissions.adminCreatePara, action: "create" },
+              permission: {
+                route: routePermissions.adminCreatePara,
+                action: "create",
+              },
             },
             {
               label: "Add Surah",
               href: routePermissions.adminCreateSurah,
               icon: FilePlus2,
-              permission: { route: routePermissions.adminCreateSurah, action: "create" },
+              permission: {
+                route: routePermissions.adminCreateSurah,
+                action: "create",
+              },
             },
             {
               label: "Add Ayah",
               href: routePermissions.adminCreateAyah,
               icon: FilePlus2,
-              permission: { route: routePermissions.adminCreateAyah, action: "create" },
+              permission: {
+                route: routePermissions.adminCreateAyah,
+                action: "create",
+              },
             },
             {
               label: "Add Dua",
               href: routePermissions.adminCreateDua,
               icon: FilePlus2,
-              permission: { route: routePermissions.adminCreateDua, action: "create" },
+              permission: {
+                route: routePermissions.adminCreateDua,
+                action: "create",
+              },
             },
             {
               label: "Add Dictionary Word",
               href: routePermissions.adminCreateDictionary,
               icon: FilePlus2,
-              permission: { route: routePermissions.adminCreateDictionary, action: "create" },
+              permission: {
+                route: routePermissions.adminCreateDictionary,
+                action: "create",
+              },
             },
             {
               label: "Add Blog",
               href: routePermissions.adminCreateBlog,
               icon: FilePlus2,
-              permission: { route: routePermissions.adminCreateBlog, action: "create" },
-            },
-            {
-              label: "Add Category",
-              href: routePermissions.adminCreateCategory,
-              icon: FilePlus2,
-              permission: { route: routePermissions.adminCreateCategory, action: "create" },
+              permission: {
+                route: routePermissions.adminCreateBlog,
+                action: "create",
+              },
             },
             {
               label: "Add Book",
               href: routePermissions.adminCreateBook,
               icon: FilePlus2,
-              permission: { route: routePermissions.adminCreateBook, action: "create" },
+              permission: {
+                route: routePermissions.adminCreateBook,
+                action: "create",
+              },
             },
           ]),
         },
@@ -284,7 +345,10 @@ export const getSidebarLinks = (role: TAuthRole, permissions: Permission[] = [])
               label: "Overview",
               href: routePermissions.moderatorOverview,
               icon: ChartPie,
-              permission: { route: routePermissions.moderatorOverview, action: "read" },
+              permission: {
+                route: routePermissions.moderatorOverview,
+                action: "read",
+              },
             },
           ]),
         },
@@ -295,25 +359,37 @@ export const getSidebarLinks = (role: TAuthRole, permissions: Permission[] = [])
               label: "Paras",
               href: routePermissions.moderatorManagePara,
               icon: BookOpen,
-              permission: { route: routePermissions.moderatorManagePara, action: "read" },
+              permission: {
+                route: routePermissions.moderatorManagePara,
+                action: "read",
+              },
             },
             {
               label: "Surahs",
               href: routePermissions.moderatorManageSurahs,
               icon: BookOpen,
-              permission: { route: routePermissions.moderatorManageSurahs, action: "read" },
+              permission: {
+                route: routePermissions.moderatorManageSurahs,
+                action: "read",
+              },
             },
             {
               label: "Ayahs",
               href: routePermissions.moderatorManageAyahs,
               icon: BookOpen,
-              permission: { route: routePermissions.moderatorManageAyahs, action: "read" },
+              permission: {
+                route: routePermissions.moderatorManageAyahs,
+                action: "read",
+              },
             },
             {
               label: "Tafsir",
               href: routePermissions.moderatorManageTafsir,
               icon: BookOpen,
-              permission: { route: routePermissions.moderatorManageTafsir, action: "read" },
+              permission: {
+                route: routePermissions.moderatorManageTafsir,
+                action: "read",
+              },
             },
           ]),
         },
@@ -324,19 +400,28 @@ export const getSidebarLinks = (role: TAuthRole, permissions: Permission[] = [])
               label: "Dictionary",
               href: routePermissions.moderatorDictionary,
               icon: Globe,
-              permission: { route: routePermissions.moderatorDictionary, action: "read" },
+              permission: {
+                route: routePermissions.moderatorDictionary,
+                action: "read",
+              },
             },
             {
               label: "Duas",
               href: routePermissions.moderatorManageDua,
               icon: Heart,
-              permission: { route: routePermissions.moderatorManageDua, action: "read" },
+              permission: {
+                route: routePermissions.moderatorManageDua,
+                action: "read",
+              },
             },
             {
               label: "Books",
               href: routePermissions.moderatorManageBook,
               icon: BookMarked,
-              permission: { route: routePermissions.moderatorManageBook, action: "read" },
+              permission: {
+                route: routePermissions.moderatorManageBook,
+                action: "read",
+              },
             },
           ]),
         },
@@ -347,19 +432,28 @@ export const getSidebarLinks = (role: TAuthRole, permissions: Permission[] = [])
               label: "Categories",
               href: routePermissions.moderatorManageCategory,
               icon: FolderOpen,
-              permission: { route: routePermissions.moderatorManageCategory, action: "read" },
+              permission: {
+                route: routePermissions.moderatorManageCategory,
+                action: "read",
+              },
             },
             {
               label: "Blogs",
               href: routePermissions.moderatorManageBlog,
               icon: FilePen,
-              permission: { route: routePermissions.moderatorManageBlog, action: "read" },
+              permission: {
+                route: routePermissions.moderatorManageBlog,
+                action: "read",
+              },
             },
             {
               label: "Bookmarks",
               href: routePermissions.moderatorManageBookmarks,
               icon: Bookmark,
-              permission: { route: routePermissions.moderatorManageBookmarks, action: "read" },
+              permission: {
+                route: routePermissions.moderatorManageBookmarks,
+                action: "read",
+              },
             },
           ]),
         },
@@ -376,7 +470,10 @@ export const getSidebarLinks = (role: TAuthRole, permissions: Permission[] = [])
               label: "Overview",
               href: routePermissions.userOverview,
               icon: ChartPie,
-              permission: { route: routePermissions.userOverview, action: "read" },
+              permission: {
+                route: routePermissions.userOverview,
+                action: "read",
+              },
             },
           ]),
         },
@@ -387,7 +484,10 @@ export const getSidebarLinks = (role: TAuthRole, permissions: Permission[] = [])
               label: "Saved Items",
               href: routePermissions.userBookmarks,
               icon: Bookmark,
-              permission: { route: routePermissions.userBookmarks, action: "read" },
+              permission: {
+                route: routePermissions.userBookmarks,
+                action: "read",
+              },
             },
             {
               label: "Daily Duas",
@@ -404,7 +504,10 @@ export const getSidebarLinks = (role: TAuthRole, permissions: Permission[] = [])
               label: "Books",
               href: routePermissions.userReadings,
               icon: BookMarked,
-              permission: { route: routePermissions.userReadings, action: "read" },
+              permission: {
+                route: routePermissions.userReadings,
+                action: "read",
+              },
             },
           ]),
         },

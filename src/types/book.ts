@@ -1,82 +1,35 @@
-import type { ElementType } from "react";
-
-export interface TAdminBook {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string | null;
-  isDeleted: boolean;
-  createdAt: string;
-  updatedAt: string;
+export interface TBookContentCreatePayload {
+  bookId: string;
+  section: string;
+  index: number;
+  text: string;
 }
 
-export interface TBook {
-  id: number | string;
-  title: string;
-  author: string;
-  description: string;
-  category: string;
-  language: string;
-  pages: number;
-  rating: number;
-  downloads: number;
-  coverImage: string;
-  isPremium: boolean;
+export interface TBookContentUpdatePayload {
+  section?: string;
+  index?: number;
+  text?: string;
+  isDeleted?: boolean;
 }
 
-export interface TLibraryBook {
-  id: number;
-  title: string;
-  author: string;
-  category: string;
-  format: string;
-  pages: number;
-  downloads: number;
-  rating: number;
-  reviews: number;
-  language: string;
-  publishYear: string;
-  description: string;
-  cover: string;
-  badge: string;
-  badgeColor: string;
-  fileSize: string;
-  difficulty: string;
-  readTime: string;
+export interface TBookUpdatePayload {
+  name?: string;
+  description?: string;
+  cover?: string;
+  categoryId?: string;
+  isFeatured?: boolean;
+  isDeleted?: boolean;
 }
 
-export interface TBookCategory {
-  name: string;
-  count: number;
-  icon: ElementType;
-}
+export type TBookQueryParams = {
+  page?: number;
+  limit?: number;
+  sort?: string;
+  search?: string;
+  categoryId?: string;
+  isFeatured?: boolean;
+};
 
-export interface Book {
-  id: string;
-  title: string;
-  author: string;
-  category: string;
-  progress: number;
-  totalPages: number;
-  currentPage: number;
-  totalChapters?: number;
-  currentChapter?: number;
-  lastRead: string;
-  lastReadDate: Date;
-  cover: string;
-  rating?: number;
-  readingTime: string;
-  isCompleted: boolean;
-  tags: string[];
-  description: string;
-}
-
-export type ViewMode = "grid" | "list";
-export type CategoryFilter =
-  | "all"
-  | "hadith"
-  | "tafsir"
-  | "seerah"
-  | "fiqh"
-  | "aqidah"
-  | "other";
+export type TBookContentQueryParams = TBookQueryParams & {
+  bookId?: string;
+};
