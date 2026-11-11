@@ -1,12 +1,26 @@
-import type { TBook, TBookContent, TCreateBook } from "@/types/book";
+import type {
+  TBook,
+  TBookContent,
+  TBookQueryParams,
+  TBookContentQueryParams,
+  TCreateBookPayload,
+  TUpdateBookPayload,
+  TCreateBookContentPayload,
+  TUpdateBookContentPayload,
+} from "@/types/book";
+
+import type { TApiResponse, TPaginatedResponse } from "@/types/api";
 
 import { tagTypes } from "../tags";
 import { baseServerApi } from "./baseApi";
 
 export const bookApi = baseServerApi.injectEndpoints({
   endpoints: (build) => ({
-    // Book endpoints
-    createBook: build.mutation<TApiResponse<TBook>, TCreateBook>({
+    // ============================================
+    // Book Endpoints
+    // ============================================
+
+    createBook: build.mutation<TApiResponse<TBook>, TCreateBookPayload>({
       query: (data) => ({
         url: "/book",
         method: "POST",
@@ -65,7 +79,7 @@ export const bookApi = baseServerApi.injectEndpoints({
 
     updateBook: build.mutation<
       TApiResponse<TBook>,
-      { id: string; data: TBookUpdatePayload }
+      { id: string; data: TUpdateBookPayload }
     >({
       query: ({ id, data }) => ({
         url: `/book/${id}`,
@@ -91,10 +105,13 @@ export const bookApi = baseServerApi.injectEndpoints({
       invalidatesTags: [tagTypes.book],
     }),
 
-    // Book content endpoints
+    // ============================================
+    // Book Content Endpoints
+    // ============================================
+
     createBookContent: build.mutation<
       TApiResponse<TBookContent>,
-      TBookContentCreatePayload
+      TCreateBookContentPayload
     >({
       query: (data) => ({
         url: "/book/content",
@@ -142,7 +159,7 @@ export const bookApi = baseServerApi.injectEndpoints({
 
     updateBookContent: build.mutation<
       TApiResponse<TBookContent>,
-      { id: string; data: TBookContentUpdatePayload }
+      { id: string; data: TUpdateBookContentPayload }
     >({
       query: ({ id, data }) => ({
         url: `/book/content/${id}`,
@@ -180,6 +197,7 @@ export const {
   useUpdateBookMutation,
   useSoftDeleteBookMutation,
   useHardDeleteBookMutation,
+
   useCreateBookContentMutation,
   useGetAllBookContentsAdminQuery,
   useGetSingleBookContentQuery,
