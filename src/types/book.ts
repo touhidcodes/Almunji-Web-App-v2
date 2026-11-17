@@ -32,7 +32,7 @@ export interface TBookCategory {
 
 export interface TCreateBookPayload {
   name: string;
-  slug: string;
+  slug?: string;
   description?: string | null;
   cover: string;
   categoryId: string;

@@ -28,7 +28,7 @@ export const CreateBookSchema = z.object({
   description: z.string().optional(),
   cover: z.string().url("Enter a valid cover image URL"),
   categoryId: z.string().uuid("Select a valid book category"),
-  isFeatured: z.boolean().default(true),
+  isFeatured: z.boolean(),
 });
 
 export const BookSchema = CreateBookSchema.extend({

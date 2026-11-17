@@ -21,15 +21,21 @@ import { useGetAllCategoriesAdminQuery } from "@/redux/api/categoryApi";
 
 import { CreateBookWithContentsSchema } from "@/schema/bookSchema";
 
-// ============================================================
+// ------------------------------------------------------------
 // Types
-// ============================================================
+// ------------------------------------------------------------
 
 type TBookFormValues = z.infer<typeof CreateBookWithContentsSchema>;
 
-// ============================================================
+type TSubmissionProgress = {
+  stage: "book" | "contents";
+  current: number;
+  total: number;
+};
+
+// ------------------------------------------------------------
 // Error Handler
-// ============================================================
+// ------------------------------------------------------------
 
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) {
@@ -58,9 +64,22 @@ const getErrorMessage = (error: unknown): string => {
   return "Something went wrong. Please try again.";
 };
 
-// ============================================================
+// ------------------------------------------------------------
+// API Response Validation
+// ------------------------------------------------------------
+
+const ensureApiSuccess = (
+  response: { success: boolean; message?: string },
+  fallbackMessage: string,
+): void => {
+  if (!response.success) {
+    throw new Error(response.message || fallbackMessage);
+  }
+};
+
+// ------------------------------------------------------------
 // Section Header
-// ============================================================
+// ------------------------------------------------------------
 
 const SectionHeader = ({
   number,
@@ -68,39 +87,37 @@ const SectionHeader = ({
 }: {
   number: number;
   onRemove: () => void;
-}) => {
-  return (
-    <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-      <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-sm font-bold text-teal-600">
-          {number}
-        </div>
-
-        <div>
-          <h3 className="text-sm font-bold text-gray-800">Section {number}</h3>
-
-          <p className="text-xs text-gray-400">
-            Add the content for this section
-          </p>
-        </div>
+}) => (
+  <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+    <div className="flex items-center gap-3">
+      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-sm font-bold text-teal-600">
+        {number}
       </div>
 
-      <button
-        type="button"
-        onClick={onRemove}
-        className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
-        title={`Remove section ${number}`}
-        aria-label={`Remove section ${number}`}
-      >
-        <Trash2 className="h-4 w-4" />
-      </button>
-    </div>
-  );
-};
+      <div>
+        <h3 className="text-sm font-bold text-gray-800">Section {number}</h3>
 
-// ============================================================
+        <p className="text-xs text-gray-400">
+          Add the content for this section
+        </p>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      onClick={onRemove}
+      className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+      title={`Remove section ${number}`}
+      aria-label={`Remove section ${number}`}
+    >
+      <Trash2 className="h-4 w-4" />
+    </button>
+  </div>
+);
+
+// ------------------------------------------------------------
 // Featured Toggle
-// ============================================================
+// ------------------------------------------------------------
 
 const FeaturedToggle = () => {
   const { control } = useFormContext<TBookFormValues>();
@@ -138,9 +155,9 @@ const FeaturedToggle = () => {
   );
 };
 
-// ============================================================
+// ------------------------------------------------------------
 // Category Select
-// ============================================================
+// ------------------------------------------------------------
 
 const CategorySelect = () => {
   const {
@@ -177,9 +194,9 @@ const CategorySelect = () => {
   );
 };
 
-// ============================================================
+// ------------------------------------------------------------
 // Book Content Item
-// ============================================================
+// ------------------------------------------------------------
 
 const BookContentItem = ({
   index,
@@ -189,42 +206,40 @@ const BookContentItem = ({
   index: number;
   sectionNumber: number;
   onRemove: () => void;
-}) => {
-  return (
-    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-      <SectionHeader number={sectionNumber} onRemove={onRemove} />
+}) => (
+  <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <SectionHeader number={sectionNumber} onRemove={onRemove} />
 
-      <div className="space-y-6 p-6">
-        <FormInput
-          name={`contents.${index}.section`}
-          label="Section Title"
-          placeholder="e.g. Introduction, Chapter One, Conclusion"
-          required
+    <div className="space-y-6 p-6">
+      <FormInput
+        name={`contents.${index}.section`}
+        label="Section Title"
+        placeholder="e.g. Introduction, Chapter One, Conclusion"
+        required
+      />
+
+      <div>
+        <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-gray-500">
+          Section Content
+        </label>
+
+        <RichTextEditor
+          name={`contents.${index}.text`}
+          placeholder="Write the book content here..."
         />
 
-        <div>
-          <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-gray-500">
-            Section Content
-          </label>
-
-          <RichTextEditor
-            name={`contents.${index}.text`}
-            placeholder="Write the book content here..."
-          />
-
-          <p className="mt-2 text-xs text-gray-400">
-            Use the editor toolbar to format headings, paragraphs, lists,
-            quotes, links and other content.
-          </p>
-        </div>
+        <p className="mt-2 text-xs text-gray-400">
+          Use the editor toolbar to format headings, paragraphs, lists, quotes,
+          links and other content.
+        </p>
       </div>
     </div>
-  );
-};
+  </div>
+);
 
-// ============================================================
+// ------------------------------------------------------------
 // Book Contents
-// ============================================================
+// ------------------------------------------------------------
 
 const BookContents = () => {
   const { control } = useFormContext<TBookFormValues>();
@@ -294,12 +309,13 @@ const BookContents = () => {
   );
 };
 
-// ============================================================
+// ------------------------------------------------------------
 // Main Page
-// ============================================================
+// ------------------------------------------------------------
 
 const CreateBookPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [progress, setProgress] = useState<TSubmissionProgress | null>(null);
 
   const [createBook] = useCreateBookMutation();
   const [createBookContent] = useCreateBookContentMutation();
@@ -314,14 +330,25 @@ const CreateBookPage = () => {
   };
 
   // ----------------------------------------------------------
-  // Submit Handler
+  // Sequential Book + Content Creation
   // ----------------------------------------------------------
 
   const handleSubmit = async (data: TBookFormValues) => {
+    if (isSubmitting) return;
+
     setIsSubmitting(true);
+
+    let createdBookId: string | null = null;
+    let createdContentCount = 0;
 
     try {
       // Step 1: Create the book
+      setProgress({
+        stage: "book",
+        current: 0,
+        total: data.contents.length,
+      });
+
       const bookResponse = await createBook({
         name: data.name.trim(),
         description: data.description?.trim() || undefined,
@@ -330,31 +357,87 @@ const CreateBookPage = () => {
         isFeatured: data.isFeatured,
       }).unwrap();
 
-      if (!bookResponse.success || !bookResponse.data?.id) {
-        throw new Error("Book creation failed.");
+      ensureApiSuccess(bookResponse, "Book creation failed.");
+
+      const bookId = bookResponse.data?.id;
+
+      if (!bookId) {
+        throw new Error(
+          "Book was created, but the server did not return its ID.",
+        );
       }
 
-      const bookId = bookResponse.data.id;
+      // Keep the created book ID as the reference
+      createdBookId = bookId;
 
-      // Step 2: Create book content sections
-      for (const [index, content] of data.contents.entries()) {
-        await createBookContent({
-          bookId,
+      // Step 2: Create contents sequentially
+      const totalContents = data.contents.length;
+
+      for (let index = 0; index < totalContents; index++) {
+        const content = data.contents[index];
+
+        setProgress({
+          stage: "contents",
+          current: index + 1,
+          total: totalContents,
+        });
+
+        // Wait for the current section before creating the next one
+        const contentResponse = await createBookContent({
+          bookId: createdBookId,
           section: content.section.trim(),
           index: index + 1,
           text: content.text,
         }).unwrap();
+
+        ensureApiSuccess(
+          contentResponse,
+          `Failed to create section ${index + 1}: ${content.section}`,
+        );
+
+        createdContentCount++;
       }
 
-      // Step 3: Success
+      // Step 3: All operations completed
       toast.success("Book created successfully!", {
-        description: `${data.name} and all ${data.contents.length} sections have been added.`,
+        description: `${data.name} and all ${createdContentCount} sections have been created.`,
       });
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error));
+      const errorMessage = getErrorMessage(error);
+
+      if (createdBookId && createdContentCount > 0) {
+        toast.error("Book creation partially completed", {
+          description: `Book ID: ${createdBookId}. ${createdContentCount} of ${data.contents.length} sections were created. Error: ${errorMessage}`,
+          duration: 8000,
+        });
+      } else if (createdBookId) {
+        toast.error("Book created, but content creation failed", {
+          description: `Book ID: ${createdBookId}. ${errorMessage}`,
+          duration: 8000,
+        });
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsSubmitting(false);
+      setProgress(null);
     }
+  };
+
+  // ----------------------------------------------------------
+  // Submission Button Text
+  // ----------------------------------------------------------
+
+  const getSubmitLabel = (): string => {
+    if (!isSubmitting || !progress) {
+      return "Create Book";
+    }
+
+    if (progress.stage === "book") {
+      return "Creating Book...";
+    }
+
+    return `Creating Section ${progress.current}/${progress.total}...`;
   };
 
   // ----------------------------------------------------------
@@ -413,8 +496,6 @@ const CreateBookPage = () => {
               </div>
 
               <div className="space-y-6 p-6">
-                {/* Book Name + Category */}
-
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <FormInput
                     name="name"
@@ -426,8 +507,6 @@ const CreateBookPage = () => {
                   <CategorySelect />
                 </div>
 
-                {/* Cover */}
-
                 <FormInput
                   name="cover"
                   label="Cover Image URL"
@@ -435,16 +514,12 @@ const CreateBookPage = () => {
                   required
                 />
 
-                {/* Description */}
-
                 <FormTextarea
                   name="description"
                   label="Description"
                   placeholder="Write a short description about this book..."
                   rows={5}
                 />
-
-                {/* Featured */}
 
                 <FeaturedToggle />
               </div>
@@ -472,6 +547,39 @@ const CreateBookPage = () => {
               <BookContents />
             </section>
 
+            {/* Submission Progress */}
+
+            {isSubmitting && progress && (
+              <div className="rounded-xl border border-teal-100 bg-teal-50 p-4">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="h-5 w-5 animate-spin text-teal-600" />
+
+                  <div>
+                    <p className="text-sm font-semibold text-teal-800">
+                      {progress.stage === "book"
+                        ? "Creating book..."
+                        : `Creating section ${progress.current} of ${progress.total}`}
+                    </p>
+
+                    <p className="mt-1 text-xs text-teal-600">
+                      Please do not close or refresh this page.
+                    </p>
+                  </div>
+                </div>
+
+                {progress.stage === "contents" && (
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-teal-100">
+                    <div
+                      className="h-full rounded-full bg-teal-600 transition-all"
+                      style={{
+                        width: `${(progress.current / progress.total) * 100}%`,
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Submit */}
 
             <div className="flex flex-col-reverse gap-3 border-t border-gray-200 pt-6 sm:flex-row sm:justify-end">
@@ -483,7 +591,7 @@ const CreateBookPage = () => {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Creating Book...
+                    {getSubmitLabel()}
                   </>
                 ) : (
                   <>
