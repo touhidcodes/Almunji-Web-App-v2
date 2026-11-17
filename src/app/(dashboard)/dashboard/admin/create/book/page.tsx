@@ -1,17 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useFieldArray, useFormContext } from "react-hook-form";
-import { z } from "zod";
-import {
-  Book,
-  ChevronDown,
-  FileText,
-  Loader2,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { Controller, useFieldArray, useFormContext } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Book, FileText, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod/v3";
 
 import FormContainer from "@/components/forms/FormContainer";
 import FormInput from "@/components/forms/FormInput";
@@ -19,65 +13,54 @@ import FormSelect from "@/components/forms/FormSelect";
 import FormTextarea from "@/components/forms/FormTextarea";
 import RichTextEditor from "@/components/forms/RichTextEditor";
 
-import { useCreateBookMutation } from "@/redux/api/bookApi";
-import { useCreateBookContentMutation } from "@/redux/api/bookApi";
+import {
+  useCreateBookMutation,
+  useCreateBookContentMutation,
+} from "@/redux/api/bookApi";
 import { useGetAllCategoriesAdminQuery } from "@/redux/api/categoryApi";
 
-const MAX_CONTENT_LENGTH = 100000;
+import { CreateBookWithContentsSchema } from "@/schema/bookSchema";
 
-/* -------------------------------------------------------------------------- */
-/*                                   Schema                                   */
-/* -------------------------------------------------------------------------- */
+// ============================================================
+// Types
+// ============================================================
 
-const BookSectionSchema = z.object({
-  section: z.string({
-    required_error: "Section title is required",
-  }),
-  index: z
-    .number({
-      required_error: "Index number is required",
-    })
-    .int()
-    .min(1, "Index must be a positive integer"),
-  text: z
-    .string({
-      required_error: "Content text is required",
-    })
-    .min(1, "Content text is required")
-    .max(
-      MAX_CONTENT_LENGTH,
-      `Content must be under ${MAX_CONTENT_LENGTH} characters`,
-    ),
-});
+type TBookFormValues = z.infer<typeof CreateBookWithContentsSchema>;
 
-const BookSchema = z.object({
-  name: z.string({
-    required_error: "Book name is required",
-  }),
-  description: z.string().optional(),
-  cover: z.string({
-    required_error: "Cover is required",
-  }),
-  categoryId: z.string({
-    required_error: "Category ID is required",
-  }),
-  isFeatured: z.boolean().default(true),
-  contents: z
-    .array(BookSectionSchema)
-    .min(1, "At least one book section is required"),
-});
+// ============================================================
+// Error Handler
+// ============================================================
 
-type TBookFormValues = z.infer<typeof BookSchema>;
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
 
-type TApiError = {
-  data?: {
-    message?: string;
-  };
+  if (typeof error === "object" && error !== null) {
+    if ("data" in error) {
+      const errorData = error.data;
+
+      if (
+        typeof errorData === "object" &&
+        errorData !== null &&
+        "message" in errorData &&
+        typeof errorData.message === "string"
+      ) {
+        return errorData.message;
+      }
+    }
+
+    if ("message" in error && typeof error.message === "string") {
+      return error.message;
+    }
+  }
+
+  return "Something went wrong. Please try again.";
 };
 
-/* -------------------------------------------------------------------------- */
-/*                              Section Header                                */
-/* -------------------------------------------------------------------------- */
+// ============================================================
+// Section Header
+// ============================================================
 
 const SectionHeader = ({
   number,
@@ -107,6 +90,7 @@ const SectionHeader = ({
         onClick={onRemove}
         className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
         title={`Remove section ${number}`}
+        aria-label={`Remove section ${number}`}
       >
         <Trash2 className="h-4 w-4" />
       </button>
@@ -114,40 +98,49 @@ const SectionHeader = ({
   );
 };
 
-/* -------------------------------------------------------------------------- */
-/*                              Featured Toggle                               */
-/* -------------------------------------------------------------------------- */
+// ============================================================
+// Featured Toggle
+// ============================================================
 
 const FeaturedToggle = () => {
-  const { register } = useFormContext<TBookFormValues>();
+  const { control } = useFormContext<TBookFormValues>();
 
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-teal-100 bg-teal-50/50 p-5">
-      <div>
-        <p className="text-sm font-bold text-gray-800">Featured Book</p>
+    <Controller
+      name="isFeatured"
+      control={control}
+      render={({ field }) => (
+        <div className="flex items-center justify-between rounded-2xl border border-teal-100 bg-teal-50/50 p-5">
+          <div>
+            <p className="text-sm font-bold text-gray-800">Featured Book</p>
 
-        <p className="mt-1 text-xs font-medium text-gray-500">
-          Show this book in featured library sections.
-        </p>
-      </div>
+            <p className="mt-1 text-xs font-medium text-gray-500">
+              Show this book in featured library sections.
+            </p>
+          </div>
 
-      <label className="relative inline-flex cursor-pointer items-center">
-        <input
-          type="checkbox"
-          className="peer sr-only"
-          defaultChecked
-          {...register("isFeatured")}
-        />
+          <label className="relative inline-flex cursor-pointer items-center">
+            <input
+              type="checkbox"
+              className="peer sr-only"
+              checked={field.value}
+              onChange={(event) => field.onChange(event.target.checked)}
+              onBlur={field.onBlur}
+              ref={field.ref}
+              aria-label="Featured Book"
+            />
 
-        <div className="h-6 w-11 rounded-full bg-gray-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-teal-600 peer-checked:after:translate-x-full peer-checked:after:border-white" />
-      </label>
-    </div>
+            <div className="h-6 w-11 rounded-full bg-gray-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-teal-600 peer-checked:after:translate-x-full peer-checked:after:border-white" />
+          </label>
+        </div>
+      )}
+    />
   );
 };
 
-/* -------------------------------------------------------------------------- */
-/*                              Category Select                               */
-/* -------------------------------------------------------------------------- */
+// ============================================================
+// Category Select
+// ============================================================
 
 const CategorySelect = () => {
   const {
@@ -184,9 +177,9 @@ const CategorySelect = () => {
   );
 };
 
-/* -------------------------------------------------------------------------- */
-/*                              Book Content Item                             */
-/* -------------------------------------------------------------------------- */
+// ============================================================
+// Book Content Item
+// ============================================================
 
 const BookContentItem = ({
   index,
@@ -229,9 +222,9 @@ const BookContentItem = ({
   );
 };
 
-/* -------------------------------------------------------------------------- */
-/*                              Book Contents                                 */
-/* -------------------------------------------------------------------------- */
+// ============================================================
+// Book Contents
+// ============================================================
 
 const BookContents = () => {
   const { control } = useFormContext<TBookFormValues>();
@@ -301,9 +294,9 @@ const BookContents = () => {
   );
 };
 
-/* -------------------------------------------------------------------------- */
-/*                              Main Page                                     */
-/* -------------------------------------------------------------------------- */
+// ============================================================
+// Main Page
+// ============================================================
 
 const CreateBookPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -320,14 +313,15 @@ const CreateBookPage = () => {
     contents: [],
   };
 
+  // ----------------------------------------------------------
+  // Submit Handler
+  // ----------------------------------------------------------
+
   const handleSubmit = async (data: TBookFormValues) => {
     setIsSubmitting(true);
 
     try {
-      /* -------------------------------------------------------------------- */
-      /* Step 1: Create the book                                             */
-      /* -------------------------------------------------------------------- */
-
+      // Step 1: Create the book
       const bookResponse = await createBook({
         name: data.name.trim(),
         description: data.description?.trim() || undefined,
@@ -342,10 +336,7 @@ const CreateBookPage = () => {
 
       const bookId = bookResponse.data.id;
 
-      /* -------------------------------------------------------------------- */
-      /* Step 2: Create book contents section by section                     */
-      /* -------------------------------------------------------------------- */
-
+      // Step 2: Create book content sections
       for (const [index, content] of data.contents.entries()) {
         await createBookContent({
           bookId,
@@ -355,31 +346,25 @@ const CreateBookPage = () => {
         }).unwrap();
       }
 
-      /* -------------------------------------------------------------------- */
-      /* Step 3: Success                                                      */
-      /* -------------------------------------------------------------------- */
-
+      // Step 3: Success
       toast.success("Book created successfully!", {
         description: `${data.name} and all ${data.contents.length} sections have been added.`,
       });
     } catch (error: unknown) {
-      const apiError = error as TApiError;
-
-      toast.error(
-        apiError.data?.message ||
-          (error instanceof Error ? error.message : "Failed to create book."),
-      );
+      toast.error(getErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // ----------------------------------------------------------
+  // Page UI
+  // ----------------------------------------------------------
+
   return (
     <div className="min-h-screen bg-gray-50/50 p-6 lg:p-8">
       <div className="mx-auto max-w-7xl">
-        {/* ---------------------------------------------------------------- */}
-        {/* Page Header                                                      */}
-        {/* ---------------------------------------------------------------- */}
+        {/* Page Header */}
 
         <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
@@ -398,48 +383,15 @@ const CreateBookPage = () => {
           </div>
         </div>
 
-        {/* ---------------------------------------------------------------- */}
-        {/* Form                                                              */}
-        {/* ---------------------------------------------------------------- */}
+        {/* Form */}
 
         <FormContainer
           onSubmit={handleSubmit}
           defaultValues={defaultValues}
-          resolver={async (values) => {
-            const result = BookSchema.safeParse(values);
-
-            if (result.success) {
-              return {
-                values: result.data,
-                errors: {},
-              };
-            }
-
-            const errors = result.error.issues.reduce<
-              Record<string, { type: string; message: string }>
-            >((accumulator, issue) => {
-              const path = issue.path.join(".");
-
-              if (!accumulator[path]) {
-                accumulator[path] = {
-                  type: "validation",
-                  message: issue.message,
-                };
-              }
-
-              return accumulator;
-            }, {});
-
-            return {
-              values: {},
-              errors,
-            };
-          }}
+          resolver={zodResolver(CreateBookWithContentsSchema)}
         >
           <div className="space-y-8">
-            {/* ------------------------------------------------------------ */}
-            {/* Book Information                                             */}
-            {/* ------------------------------------------------------------ */}
+            {/* Book Information */}
 
             <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
               <div className="border-b border-gray-100 px-6 py-5">
@@ -461,7 +413,8 @@ const CreateBookPage = () => {
               </div>
 
               <div className="space-y-6 p-6">
-                {/* Book name + category */}
+                {/* Book Name + Category */}
+
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <FormInput
                     name="name"
@@ -474,6 +427,7 @@ const CreateBookPage = () => {
                 </div>
 
                 {/* Cover */}
+
                 <FormInput
                   name="cover"
                   label="Cover Image URL"
@@ -482,6 +436,7 @@ const CreateBookPage = () => {
                 />
 
                 {/* Description */}
+
                 <FormTextarea
                   name="description"
                   label="Description"
@@ -490,13 +445,12 @@ const CreateBookPage = () => {
                 />
 
                 {/* Featured */}
+
                 <FeaturedToggle />
               </div>
             </section>
 
-            {/* ------------------------------------------------------------ */}
-            {/* Book Content                                                  */}
-            {/* ------------------------------------------------------------ */}
+            {/* Book Content */}
 
             <section>
               <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
@@ -518,9 +472,7 @@ const CreateBookPage = () => {
               <BookContents />
             </section>
 
-            {/* ------------------------------------------------------------ */}
-            {/* Submit                                                        */}
-            {/* ------------------------------------------------------------ */}
+            {/* Submit */}
 
             <div className="flex flex-col-reverse gap-3 border-t border-gray-200 pt-6 sm:flex-row sm:justify-end">
               <button
@@ -543,10 +495,13 @@ const CreateBookPage = () => {
             </div>
           </div>
         </FormContainer>
-        <footer className="flex flex-col items-center gap-4 py-8">
-          <div className="h-1 w-16 bg-gray-200 rounded-full" />
 
-          <p className="text-xs font-semibold uppercase text-gray-400 tracking-widest">
+        {/* Footer */}
+
+        <footer className="flex flex-col items-center gap-4 py-8">
+          <div className="h-1 w-16 rounded-full bg-gray-200" />
+
+          <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">
             Almunji Global Archival System • Library Services
           </p>
         </footer>
