@@ -226,6 +226,8 @@ const BookContentItem = ({
         <RichTextEditor
           name={`contents.${index}.text`}
           placeholder="Write the book content here..."
+          minHeight={500}
+          maxWords={10000}
         />
 
         <p className="mt-2 text-xs text-gray-400">

@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
+
 import {
   BookOpen,
   BookMarked,
@@ -19,6 +26,7 @@ import {
   Star,
   Layers3,
 } from "lucide-react";
+
 import { toast } from "sonner";
 
 import {
@@ -33,8 +41,7 @@ import {
 
 import { useGetAllCategoriesAdminQuery } from "@/redux/api/categoryApi";
 
-import type { TBook, TBookContent } from "@/types/book";
-import type { TApiError } from "@/types/api";
+import type { TBook } from "@/types/book";
 
 // ============================================================
 // Types
@@ -44,6 +51,13 @@ interface TBookCategoryOption {
   id: string;
   name: string;
   isDeleted?: boolean;
+}
+
+interface TBookContentResponse {
+  id: string;
+  section: string;
+  index: number;
+  text: string;
 }
 
 interface TBookContentDraft {
@@ -63,6 +77,7 @@ interface TBookFormValues {
 
 interface TBookEditModalProps {
   book: TBook;
+  categories: TBookCategoryOption[];
   onClose: () => void;
   onSaved: () => Promise<void>;
 }
@@ -77,18 +92,106 @@ interface TStatCardProps {
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
 // ============================================================
-// Helpers
+// API Response Helpers
 // ============================================================
 
-const getErrorMessage = (error: unknown): string => {
-  if (typeof error === "object" && error !== null) {
-    const apiError = error as TApiError;
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null;
+};
+
+/**
+ * Handles API response structures such as:
+ *
+ * { data: [...] }
+ * { data: { data: [...] } }
+ * { data: { books: [...] } }
+ * { data: { categories: [...] } }
+ * { data: { content: [...] } }
+ */
+const extractArray = <T,>(response: unknown): T[] => {
+  if (Array.isArray(response)) {
+    return response as T[];
+  }
+
+  if (!isRecord(response)) {
+    return [];
+  }
+
+  const possibleKeys = [
+    "data",
+    "content",
+    "contents",
+    "books",
+    "categories",
+    "results",
+  ] as const;
+
+  for (const key of possibleKeys) {
+    const value = response[key];
+
+    if (Array.isArray(value)) {
+      return value as T[];
+    }
+
+    if (isRecord(value)) {
+      const result = extractArray<T>(value);
+
+      if (result.length > 0) {
+        return result;
+      }
+    }
+  }
+
+  return [];
+};
+
+/**
+ * Specifically extracts book contents from the actual API response:
+ *
+ * {
+ *   success: true,
+ *   data: {
+ *     id: "...",
+ *     book: "...",
+ *     slug: "...",
+ *     content: [...]
+ *   }
+ * }
+ */
+const extractBookContents = (response: unknown): TBookContentResponse[] => {
+  if (!isRecord(response)) return [];
+
+  const responseData = response.data;
+
+  if (!isRecord(responseData)) return [];
+
+  const content = responseData.content;
+
+  if (!Array.isArray(content)) return [];
+
+  return content.filter((item): item is TBookContentResponse => {
+    if (!isRecord(item)) return false;
 
     return (
-      apiError.data?.message ??
-      apiError.message ??
-      "Something went wrong. Please try again."
+      typeof item.id === "string" &&
+      typeof item.section === "string" &&
+      typeof item.text === "string" &&
+      typeof item.index === "number"
     );
+  });
+};
+
+const getErrorMessage = (error: unknown): string => {
+  if (isRecord(error)) {
+    const data = error.data;
+
+    if (isRecord(data) && typeof data.message === "string") {
+      return data.message;
+    }
+
+    if (typeof error.message === "string") {
+      return error.message;
+    }
   }
 
   if (error instanceof Error) {
@@ -96,56 +199,6 @@ const getErrorMessage = (error: unknown): string => {
   }
 
   return "Something went wrong. Please try again.";
-};
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null;
-};
-
-/**
- * Safely extracts arrays from common API response structures:
- *
- * data: []
- * data: { data: [] }
- * data: { contents: [] }
- * data: { results: [] }
- *
- * This prevents runtime errors when API responses are nested.
- */
-const extractArray = <T,>(value: unknown): T[] => {
-  if (Array.isArray(value)) {
-    return value as T[];
-  }
-
-  if (!isRecord(value)) {
-    return [];
-  }
-
-  const possibleKeys = [
-    "data",
-    "contents",
-    "categories",
-    "books",
-    "results",
-  ] as const;
-
-  for (const key of possibleKeys) {
-    const nestedValue = value[key];
-
-    if (Array.isArray(nestedValue)) {
-      return nestedValue as T[];
-    }
-
-    if (isRecord(nestedValue)) {
-      const nestedArray = extractArray<T>(nestedValue);
-
-      if (nestedArray.length > 0) {
-        return nestedArray;
-      }
-    }
-  }
-
-  return [];
 };
 
 const truncateText = (
@@ -203,21 +256,19 @@ const EmptyState = ({
 }: {
   title: string;
   description: string;
-}) => {
-  return (
-    <div className="px-5 py-16 text-center">
-      <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-slate-100">
-        <BookOpen className="size-7 text-slate-400" />
-      </div>
-
-      <h3 className="mt-4 font-semibold text-slate-900">{title}</h3>
-
-      <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">
-        {description}
-      </p>
+}) => (
+  <div className="px-5 py-16 text-center">
+    <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-slate-100">
+      <BookOpen className="size-7 text-slate-400" />
     </div>
-  );
-};
+
+    <h3 className="mt-4 font-semibold text-slate-900">{title}</h3>
+
+    <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">
+      {description}
+    </p>
+  </div>
+);
 
 // ============================================================
 // Book Content Editor
@@ -239,16 +290,11 @@ const BookContentEditor = ({
     field: keyof TBookContentDraft,
     value: string | number,
   ) => {
-    const updatedContents = contents.map((content, currentIndex) =>
-      currentIndex === index
-        ? {
-            ...content,
-            [field]: value,
-          }
-        : content,
+    onChange(
+      contents.map((content, currentIndex) =>
+        currentIndex === index ? { ...content, [field]: value } : content,
+      ),
     );
-
-    onChange(updatedContents);
   };
 
   const addContent = () => {
@@ -379,7 +425,7 @@ const BookContentEditor = ({
 
               <div className="mt-3">
                 <label className="mb-1.5 block text-xs font-semibold text-slate-600">
-                  Section Content
+                  Section Content (HTML)
                 </label>
 
                 <textarea
@@ -389,9 +435,14 @@ const BookContentEditor = ({
                     updateContent(index, "text", event.target.value)
                   }
                   placeholder="Write or edit the section content..."
-                  rows={6}
-                  className="w-full resize-y rounded-xl border border-slate-200 bg-white p-3 text-sm leading-6 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:opacity-60"
+                  rows={8}
+                  className="w-full resize-y rounded-xl border border-slate-200 bg-white p-3 font-mono text-sm leading-6 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:opacity-60"
                 />
+
+                <p className="mt-1.5 text-xs text-slate-400">
+                  Existing HTML content is preserved. This editor currently
+                  edits the HTML source.
+                </p>
               </div>
             </div>
           ))}
@@ -415,7 +466,12 @@ const BookContentEditor = ({
 // Book Edit Modal
 // ============================================================
 
-const BookEditModal = ({ book, onClose, onSaved }: TBookEditModalProps) => {
+const BookEditModal = ({
+  book,
+  categories,
+  onClose,
+  onSaved,
+}: TBookEditModalProps) => {
   const [updateBook] = useUpdateBookMutation();
   const [updateBookContent] = useUpdateBookContentMutation();
   const [createBookContent] = useCreateBookContentMutation();
@@ -430,8 +486,10 @@ const BookEditModal = ({ book, onClose, onSaved }: TBookEditModalProps) => {
     skip: !book.id,
   });
 
+  // IMPORTANT:
+  // The API returns the array at data.content, not data directly.
   const contents = useMemo(
-    () => extractArray<TBookContent>(contentResponse),
+    () => extractBookContents(contentResponse),
     [contentResponse],
   );
 
@@ -447,16 +505,10 @@ const BookEditModal = ({ book, onClose, onSaved }: TBookEditModalProps) => {
 
   const [bookContents, setBookContents] = useState<TBookContentDraft[]>([]);
 
-  const originalContentIds = useMemo(
-    () => new Set(contents.map((content) => content.id)),
-    [contents],
-  );
+  // Track whether the server contents have been initialized.
+  const [hasInitializedContents, setHasInitializedContents] = useState(false);
 
-  // Initialize the form only after the contents query finishes.
-  // Memoizing contents prevents unnecessary form resets.
   useEffect(() => {
-    if (isContentsLoading) return;
-
     setFormValues({
       name: book.name,
       description: book.description ?? "",
@@ -464,6 +516,12 @@ const BookEditModal = ({ book, onClose, onSaved }: TBookEditModalProps) => {
       categoryId: book.categoryId,
       isFeatured: book.isFeatured,
     });
+  }, [book]);
+
+  useEffect(() => {
+    if (isContentsLoading || isContentsError || hasInitializedContents) {
+      return;
+    }
 
     setBookContents(
       contents.map((content) => ({
@@ -473,7 +531,9 @@ const BookEditModal = ({ book, onClose, onSaved }: TBookEditModalProps) => {
         text: content.text,
       })),
     );
-  }, [book, contents, isContentsLoading]);
+
+    setHasInitializedContents(true);
+  }, [contents, isContentsLoading, isContentsError, hasInitializedContents]);
 
   const updateBookField = <K extends keyof TBookFormValues>(
     field: K,
@@ -485,7 +545,7 @@ const BookEditModal = ({ book, onClose, onSaved }: TBookEditModalProps) => {
     }));
   };
 
-  const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSave = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!book.id) {
@@ -508,7 +568,7 @@ const BookEditModal = ({ book, onClose, onSaved }: TBookEditModalProps) => {
       return;
     }
 
-    if (isContentsLoading || isContentsError) {
+    if (isContentsLoading || isContentsError || !hasInitializedContents) {
       toast.error("Please load the book contents before saving.");
       return;
     }
@@ -548,22 +608,23 @@ const BookEditModal = ({ book, onClose, onSaved }: TBookEditModalProps) => {
         },
       }).unwrap();
 
-      // Step 2: Soft-delete removed sections.
+      // Step 2: Identify removed sections.
       const currentContentIds = new Set(
         bookContents
           .map((content) => content.id)
           .filter((id): id is string => Boolean(id)),
       );
 
-      const removedContentIds = [...originalContentIds].filter(
-        (id) => !currentContentIds.has(id),
-      );
+      const removedContentIds = contents
+        .map((content) => content.id)
+        .filter((id) => !currentContentIds.has(id));
 
+      // Step 3: Soft-delete removed sections.
       for (const contentId of removedContentIds) {
         await softDeleteBookContent(contentId).unwrap();
       }
 
-      // Step 3: Update existing sections and create new sections.
+      // Step 4: Update existing sections and create new sections.
       const sortedContents = [...bookContents].sort(
         (a, b) => a.index - b.index,
       );
@@ -614,7 +675,7 @@ const BookEditModal = ({ book, onClose, onSaved }: TBookEditModalProps) => {
       }}
     >
       <div className="flex max-h-[95vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-        {/* Modal Header */}
+        {/* Header */}
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
@@ -641,7 +702,7 @@ const BookEditModal = ({ book, onClose, onSaved }: TBookEditModalProps) => {
           </button>
         </div>
 
-        {/* Modal Body */}
+        {/* Form */}
         <form onSubmit={handleSave} className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 space-y-7 overflow-y-auto p-4 sm:p-6">
             {/* Book Information */}
@@ -690,6 +751,30 @@ const BookEditModal = ({ book, onClose, onSaved }: TBookEditModalProps) => {
                     placeholder="https://example.com/book-cover.jpg"
                     className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:opacity-60"
                   />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="mb-1.5 block text-xs font-semibold text-slate-600">
+                    Category
+                  </label>
+
+                  <select
+                    value={formValues.categoryId}
+                    onChange={(event) =>
+                      updateBookField("categoryId", event.target.value)
+                    }
+                    disabled={isSaving}
+                    required
+                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:opacity-60"
+                  >
+                    <option value="">Select a category</option>
+
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="sm:col-span-2">
@@ -776,7 +861,7 @@ const BookEditModal = ({ book, onClose, onSaved }: TBookEditModalProps) => {
             )}
           </div>
 
-          {/* Modal Footer */}
+          {/* Footer */}
           <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-100 bg-white px-4 py-4 sm:flex-row sm:justify-end sm:px-6">
             <button
               type="button"
@@ -789,7 +874,12 @@ const BookEditModal = ({ book, onClose, onSaved }: TBookEditModalProps) => {
 
             <button
               type="submit"
-              disabled={isSaving || isContentsLoading || isContentsError}
+              disabled={
+                isSaving ||
+                isContentsLoading ||
+                isContentsError ||
+                !hasInitializedContents
+              }
               className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving ? (
@@ -817,8 +907,8 @@ const BookEditModal = ({ book, onClose, onSaved }: TBookEditModalProps) => {
 
 const ManageBooksPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
@@ -828,10 +918,7 @@ const ManageBooksPage = () => {
 
   const [softDeleteBook] = useSoftDeleteBookMutation();
 
-  // ----------------------------------------------------------
-  // Debounced Search
-  // ----------------------------------------------------------
-
+  // Debounced search
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       setDebouncedSearch(searchTerm.trim());
@@ -844,10 +931,7 @@ const ManageBooksPage = () => {
     setPage(1);
   }, [debouncedSearch, selectedCategory, limit]);
 
-  // ----------------------------------------------------------
-  // API Queries
-  // ----------------------------------------------------------
-
+  // API queries
   const {
     data: bookResponse,
     isLoading,
@@ -859,16 +943,12 @@ const ManageBooksPage = () => {
   const { data: categoryResponse, isLoading: isCategoriesLoading } =
     useGetAllCategoriesAdminQuery({});
 
-  // ----------------------------------------------------------
-  // Safely Normalize API Responses
-  // ----------------------------------------------------------
-
+  // Normalize responses
   const books = useMemo(
     () => extractArray<TBook>(bookResponse),
     [bookResponse],
   );
 
-  // Explicit category type: no implicit any.
   const categories = useMemo(
     () =>
       extractArray<TBookCategoryOption>(categoryResponse).filter(
@@ -877,10 +957,7 @@ const ManageBooksPage = () => {
     [categoryResponse],
   );
 
-  // ----------------------------------------------------------
-  // Filtering
-  // ----------------------------------------------------------
-
+  // Filter books
   const filteredBooks = useMemo(() => {
     const normalizedSearch = debouncedSearch.toLowerCase();
 
@@ -897,14 +974,9 @@ const ManageBooksPage = () => {
     });
   }, [books, debouncedSearch, selectedCategory]);
 
-  // ----------------------------------------------------------
   // Pagination
-  // ----------------------------------------------------------
-
   const total = filteredBooks.length;
-
   const totalPages = Math.max(1, Math.ceil(total / limit));
-
   const currentPage = Math.min(page, totalPages);
 
   const startItem = total === 0 ? 0 : (currentPage - 1) * limit + 1;
@@ -917,20 +989,14 @@ const ManageBooksPage = () => {
     return filteredBooks.slice(startIndex, startIndex + limit);
   }, [filteredBooks, currentPage, limit]);
 
-  // ----------------------------------------------------------
   // Statistics
-  // ----------------------------------------------------------
+  const activeCount = books.filter((book) => !book.isDeleted).length;
 
   const featuredCount = books.filter(
     (book) => book.isFeatured && !book.isDeleted,
   ).length;
 
-  const activeCount = books.filter((book) => !book.isDeleted).length;
-
-  // ----------------------------------------------------------
-  // Category Lookup
-  // ----------------------------------------------------------
-
+  // Category lookup
   const getCategoryName = (categoryId: string): string => {
     return (
       categories.find(
@@ -939,10 +1005,7 @@ const ManageBooksPage = () => {
     );
   };
 
-  // ----------------------------------------------------------
-  // Actions
-  // ----------------------------------------------------------
-
+  // Delete book
   const handleDelete = async (book: TBook) => {
     if (!book.id) {
       toast.error("Invalid book ID.");
@@ -980,10 +1043,6 @@ const ManageBooksPage = () => {
   const handleModalSaved = async () => {
     await refetch();
   };
-
-  // ----------------------------------------------------------
-  // UI
-  // ----------------------------------------------------------
 
   return (
     <main className="min-h-screen bg-slate-50/70 p-4 sm:p-6 lg:p-8">
@@ -1074,7 +1133,7 @@ const ManageBooksPage = () => {
             >
               <option value="">All Categories</option>
 
-              {categories.map((category: TBookCategoryOption) => (
+              {categories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
                 </option>
@@ -1105,7 +1164,7 @@ const ManageBooksPage = () => {
           </div>
         </section>
 
-        {/* Books Table */}
+        {/* Table */}
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-col gap-2 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             <div>
@@ -1158,7 +1217,6 @@ const ManageBooksPage = () => {
             />
           ) : (
             <>
-              {/* Responsive table with sticky actions */}
               <div className="w-full overflow-x-auto">
                 <table className="w-full min-w-[1050px] border-collapse text-left text-sm">
                   <thead>
@@ -1246,7 +1304,7 @@ const ManageBooksPage = () => {
                           {formatDate(book.createdAt)}
                         </td>
 
-                        {/* Sticky Actions Column */}
+                        {/* Sticky Actions */}
                         <td className="sticky right-0 z-10 border-l border-slate-200 bg-white px-5 py-4 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.25)]">
                           <div className="flex items-center justify-center gap-2">
                             <button
@@ -1323,6 +1381,7 @@ const ManageBooksPage = () => {
         <BookEditModal
           key={selectedBook.id}
           book={selectedBook}
+          categories={categories}
           onClose={() => setSelectedBook(null)}
           onSaved={handleModalSaved}
         />

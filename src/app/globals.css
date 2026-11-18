@@ -140,3 +140,383 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* =========================================
+   Almunji Rich Text Editor
+========================================= */
+
+.rich-text-editor-wrapper {
+  width: 100%;
+}
+
+/* Main editor frame */
+
+.rich-text-editor-frame {
+  width: 100%;
+  overflow: visible;
+  background: #ffffff;
+}
+
+/* Toolbar */
+
+.rich-text-toolbar {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.rich-text-toolbar button {
+  flex-shrink: 0;
+}
+
+/* =========================================
+   Editable Area
+========================================= */
+
+.rich-text-editor-body {
+  width: 100%;
+  min-height: 450px;
+  padding: 28px 32px;
+  overflow-x: auto;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+/* Actual TipTap / ProseMirror surface */
+
+.rich-text-editor-body .rich-text-content {
+  width: 100%;
+  min-height: 394px;
+  margin: 0 auto;
+  padding: 8px 4px 32px;
+  outline: none;
+  box-sizing: border-box;
+
+  color: #374151;
+  font-size: 16px;
+  line-height: 1.9;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+/* First and last elements */
+
+.rich-text-content > :first-child {
+  margin-top: 0;
+}
+
+.rich-text-content > :last-child {
+  margin-bottom: 0;
+}
+
+/* =========================================
+   Paragraphs
+========================================= */
+
+.rich-text-content p {
+  margin: 0 0 1.25rem;
+  line-height: 1.9;
+}
+
+/* =========================================
+   Headings
+========================================= */
+
+.rich-text-content h1 {
+  margin: 2rem 0 1rem;
+  color: #111827;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.rich-text-content h2 {
+  margin: 1.75rem 0 0.875rem;
+  color: #1f2937;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.rich-text-content h3 {
+  margin: 1.5rem 0 0.75rem;
+  color: #374151;
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+/* =========================================
+   Inline Formatting
+========================================= */
+
+.rich-text-content strong {
+  font-weight: 700;
+}
+
+.rich-text-content em {
+  font-style: italic;
+}
+
+.rich-text-content u {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.rich-text-content s {
+  text-decoration: line-through;
+}
+
+/* Highlight */
+
+.rich-text-content mark {
+  padding: 0.1rem 0.25rem;
+  border-radius: 0.2rem;
+  background: #fef08a;
+  color: #713f12;
+}
+
+/* Subscript and Superscript */
+
+.rich-text-content sub {
+  font-size: 0.75em;
+  vertical-align: sub;
+}
+
+.rich-text-content sup {
+  font-size: 0.75em;
+  vertical-align: super;
+}
+
+/* =========================================
+   Links
+========================================= */
+
+.rich-text-content a {
+  color: #0d9488;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.rich-text-content a:hover {
+  color: #0f766e;
+}
+
+/* =========================================
+   Lists
+========================================= */
+
+.rich-text-content ul,
+.rich-text-content ol {
+  margin: 1.25rem 0;
+  padding-left: 2rem;
+}
+
+.rich-text-content ul {
+  list-style-type: disc;
+}
+
+.rich-text-content ol {
+  list-style-type: decimal;
+}
+
+.rich-text-content li {
+  margin: 0.5rem 0;
+  padding-left: 0.25rem;
+}
+
+.rich-text-content li p {
+  margin: 0.25rem 0;
+}
+
+.rich-text-content ul ul {
+  list-style-type: circle;
+}
+
+.rich-text-content ul ul ul {
+  list-style-type: square;
+}
+
+/* =========================================
+   Blockquote
+========================================= */
+
+.rich-text-content blockquote {
+  margin: 1.5rem 0;
+  padding: 1.1rem 1.4rem;
+  border-left: 4px solid #0d9488;
+  border-radius: 0 0.6rem 0.6rem 0;
+  background: #f0fdfa;
+  color: #475569;
+}
+
+.rich-text-content blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* =========================================
+   Horizontal Rule
+========================================= */
+
+.rich-text-content hr {
+  margin: 2rem 0;
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* =========================================
+   Images
+========================================= */
+
+.rich-text-content img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.75rem auto;
+  border-radius: 0.75rem;
+  object-fit: contain;
+}
+
+.rich-text-content img.ProseMirror-selectednode {
+  outline: 3px solid #0d9488;
+  outline-offset: 3px;
+}
+
+/* =========================================
+   Tables
+========================================= */
+
+.rich-text-content .tableWrapper {
+  width: 100%;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+}
+
+.rich-text-content table {
+  width: 100%;
+  min-width: 450px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  border: 1px solid #e5e7eb;
+}
+
+.rich-text-content th,
+.rich-text-content td {
+  position: relative;
+  min-width: 80px;
+  padding: 0.85rem 1rem;
+  border: 1px solid #e5e7eb;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: break-word;
+}
+
+.rich-text-content th {
+  background: #f0fdfa;
+  color: #134e4a;
+  font-weight: 700;
+}
+
+.rich-text-content td {
+  background: #ffffff;
+}
+
+.rich-text-content th p,
+.rich-text-content td p {
+  margin: 0;
+}
+
+/* Selected table cells */
+
+.rich-text-content .selectedCell::after {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: rgba(13, 148, 136, 0.12);
+  content: "";
+  pointer-events: none;
+}
+
+/* Table resizing */
+
+.rich-text-content .column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  bottom: -2px;
+  width: 4px;
+  background: #0d9488;
+  pointer-events: none;
+}
+
+.rich-text-content .resize-cursor {
+  cursor: col-resize;
+}
+
+/* =========================================
+   Placeholder
+========================================= */
+
+.rich-text-content p.is-editor-empty:first-child::before {
+  float: left;
+  height: 0;
+  color: #9ca3af;
+  content: attr(data-placeholder);
+  pointer-events: none;
+}
+
+/* =========================================
+   Editor Focus and Selection
+========================================= */
+
+.rich-text-content:focus {
+  outline: none;
+}
+
+.rich-text-content ::selection {
+  background: #99f6e4;
+}
+
+/* =========================================
+   Responsive
+========================================= */
+
+@media (max-width: 768px) {
+  .rich-text-editor-body {
+    padding: 22px 20px;
+  }
+
+  .rich-text-editor-body .rich-text-content {
+    padding: 6px 2px 24px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 640px) {
+  .rich-text-editor-body {
+    padding: 16px;
+  }
+
+  .rich-text-editor-body .rich-text-content {
+    min-height: 418px;
+    padding: 4px 2px 20px;
+    font-size: 15px;
+  }
+
+  .rich-text-content h1 {
+    font-size: 1.65rem;
+  }
+
+  .rich-text-content h2 {
+    font-size: 1.4rem;
+  }
+
+  .rich-text-content h3 {
+    font-size: 1.2rem;
+  }
+
+  .rich-text-content th,
+  .rich-text-content td {
+    padding: 0.65rem 0.75rem;
+  }
+}
