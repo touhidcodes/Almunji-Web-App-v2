@@ -1,69 +1,58 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import {
-  useEffect,
-  useMemo,
-  useState,
-  type FormEvent,
-  type ReactNode,
-} from "react";
-
-import { FormProvider, useForm, useWatch } from "react-hook-form";
-
+  FormProvider,
+  useFieldArray,
+  useForm,
+  useWatch,
+  type FieldPath,
+} from "react-hook-form";
 import {
   BookOpen,
-  BookMarked,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  CircleAlert,
-  FileText,
-  LoaderCircle,
-  Pencil,
+  Edit,
+  Loader2,
   Plus,
-  RefreshCw,
   Search,
   Trash2,
   X,
-  Star,
-  Layers3,
 } from "lucide-react";
-
 import { toast } from "sonner";
 
 import {
-  useGetAllBooksAdminQuery,
+  useGetAllBooksWithContentsQuery,
   useUpdateBookMutation,
   useSoftDeleteBookMutation,
-  useGetContentsByBookQuery,
   useUpdateBookContentMutation,
   useCreateBookContentMutation,
   useSoftDeleteBookContentMutation,
 } from "@/redux/api/bookApi";
-
 import { useGetAllCategoriesAdminQuery } from "@/redux/api/categoryApi";
-
-import type { TBook } from "@/types/book";
 import RichTextEditor from "@/components/forms/RichTextEditor";
 
-// ============================================================
-// Types
-// ============================================================
+import type {
+  TBookWithContents,
+  TBookContentWithDetails,
+  TBookContentQueryParams,
+} from "@/types/book";
+import type {
+  TUpdateBookPayload,
+  TUpdateBookContentPayload,
+} from "@/types/book";
 
-interface TBookCategoryOption {
+// ------------------------------------------------------
+// Types
+// ------------------------------------------------------
+
+interface TBookCategory {
   id: string;
   name: string;
   isDeleted?: boolean;
 }
 
-interface TBookContentResponse {
-  id: string;
-  section: string;
-  index: number;
-  text: string;
-}
-
-interface TBookContentDraft {
+interface TBookContentForm {
   id?: string;
   section: string;
   index: number;
@@ -76,598 +65,623 @@ interface TBookFormValues {
   cover: string;
   categoryId: string;
   isFeatured: boolean;
+  contents: TBookContentForm[];
 }
 
-interface TBookContentFormValues {
-  contents: TBookContentDraft[];
-}
-
-interface TBookEditModalProps {
-  book: TBook;
-  categories: TBookCategoryOption[];
+interface TEditBookModalProps {
+  book: TBookWithContents;
+  categories: TBookCategory[];
   onClose: () => void;
-  onSaved: () => Promise<void>;
+  onSuccess: () => void;
 }
 
-interface TStatCardProps {
-  label: string;
-  value: string;
-  description: string;
-  icon: ReactNode;
-}
+// ------------------------------------------------------
+// Helpers
+// ------------------------------------------------------
 
-const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
 
-// ============================================================
-// API Response Helpers
-// ============================================================
+const isBookCategory = (value: unknown): value is TBookCategory => {
+  if (!isRecord(value)) return false;
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null;
-};
-
-const extractArray = <T,>(response: unknown): T[] => {
-  if (Array.isArray(response)) {
-    return response as T[];
-  }
-
-  if (!isRecord(response)) {
-    return [];
-  }
-
-  const possibleKeys = [
-    "data",
-    "content",
-    "contents",
-    "books",
-    "categories",
-    "results",
-  ] as const;
-
-  for (const key of possibleKeys) {
-    const value = response[key];
-
-    if (Array.isArray(value)) {
-      return value as T[];
-    }
-
-    if (isRecord(value)) {
-      const result = extractArray<T>(value);
-
-      if (result.length > 0) {
-        return result;
-      }
-    }
-  }
-
-  return [];
-};
-
-const extractBookContents = (response: unknown): TBookContentResponse[] => {
-  if (!isRecord(response)) return [];
-
-  const responseData = response.data;
-
-  if (!isRecord(responseData)) return [];
-
-  const content = responseData.content;
-
-  if (!Array.isArray(content)) return [];
-
-  return content.filter((item): item is TBookContentResponse => {
-    if (!isRecord(item)) return false;
-
-    return (
-      typeof item.id === "string" &&
-      typeof item.section === "string" &&
-      typeof item.text === "string" &&
-      typeof item.index === "number"
-    );
-  });
+  return (
+    typeof value.id === "string" &&
+    typeof value.name === "string" &&
+    (value.isDeleted === undefined || typeof value.isDeleted === "boolean")
+  );
 };
 
 const getErrorMessage = (error: unknown): string => {
   if (isRecord(error)) {
-    const data = error.data;
+    if (typeof error.message === "string") return error.message;
 
-    if (isRecord(data) && typeof data.message === "string") {
-      return data.message;
+    if (isRecord(error.data) && typeof error.data.message === "string") {
+      return error.data.message;
     }
-
-    if (typeof error.message === "string") {
-      return error.message;
-    }
-  }
-
-  if (error instanceof Error) {
-    return error.message;
   }
 
   return "Something went wrong. Please try again.";
 };
 
-const truncateText = (
-  text: string | null | undefined,
-  maxLength = 45,
-): string => {
-  if (!text) return "—";
+const formatDate = (date: string): string => {
+  if (!date) return "—";
 
-  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
-};
-
-const formatDate = (date: string | Date): string => {
   const parsedDate = new Date(date);
 
-  if (Number.isNaN(parsedDate.getTime())) {
-    return "—";
-  }
+  if (Number.isNaN(parsedDate.getTime())) return "—";
 
-  return parsedDate.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
+  return parsedDate.toLocaleDateString("en-US", {
     year: "numeric",
+    month: "short",
+    day: "numeric",
   });
 };
 
-// Supports either categoryId or a nested category relation.
-const getBookCategoryId = (book: TBook): string | undefined => {
-  const record: unknown = book;
-
-  if (!isRecord(record)) return undefined;
-
-  if (typeof record.categoryId === "string") {
-    return record.categoryId;
-  }
-
-  if (isRecord(record.category)) {
-    return typeof record.category.id === "string"
-      ? record.category.id
-      : undefined;
-  }
-
-  return undefined;
-};
-
-const getBookCategoryName = (
-  book: TBook,
-  categoryMap: Map<string, string>,
+const getCategoryId = (
+  categoryName: string,
+  categories: TBookCategory[],
 ): string => {
-  const record: unknown = book;
-
-  if (isRecord(record) && isRecord(record.category)) {
-    const categoryName = record.category.name;
-
-    if (typeof categoryName === "string" && categoryName.trim()) {
-      return categoryName;
-    }
-  }
-
-  const categoryId = getBookCategoryId(book);
-
-  if (!categoryId) return "Uncategorized";
-
-  return categoryMap.get(categoryId) ?? "Uncategorized";
+  return (
+    categories.find(
+      (category) =>
+        !category.isDeleted &&
+        category.name.toLowerCase() === categoryName.toLowerCase(),
+    )?.id ?? ""
+  );
 };
 
-// ============================================================
-// Reusable Components
-// ============================================================
-
-const StatCard = ({ label, value, description, icon }: TStatCardProps) => {
+const getNextContentIndex = (contents: TBookContentForm[]): number => {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-slate-500">{label}</p>
+    contents.reduce(
+      (maximum, content) => Math.max(maximum, content.index || 0),
+      0,
+    ) + 1
+  );
+};
 
-          <h3 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-            {value}
-          </h3>
+const hasDuplicateIndexes = (contents: TBookContentForm[]): boolean => {
+  const indexes = contents.map((content) => content.index);
 
-          <p className="mt-1 text-xs text-slate-400">{description}</p>
+  return new Set(indexes).size !== indexes.length;
+};
+
+const hasEditorContent = (html: string): boolean => {
+  // Reject empty editor output such as <p></p> or <p><br></p>.
+  const text = html
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .trim();
+
+  return text.length > 0;
+};
+
+// ------------------------------------------------------
+// Manage Books Page
+// ------------------------------------------------------
+
+const ManageBooksPage = () => {
+  // ----------------------------------------------------
+  // State
+  // ----------------------------------------------------
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [selectedBook, setSelectedBook] = useState<TBookWithContents | null>(
+    null,
+  );
+
+  // ----------------------------------------------------
+  // Queries
+  // ----------------------------------------------------
+
+  const queryParams: TBookContentQueryParams = {
+    page: currentPage,
+    limit: pageSize,
+    ...(searchTerm.trim() ? { searchTerm: searchTerm.trim() } : {}),
+  };
+
+  const {
+    data: booksResponse,
+    isLoading: isBooksLoading,
+    isFetching: isBooksFetching,
+    isError: isBooksError,
+    refetch: refetchBooks,
+  } = useGetAllBooksWithContentsQuery(queryParams);
+
+  const { data: categoriesResponse } = useGetAllCategoriesAdminQuery({});
+
+  // Category API response is converted from unknown safely.
+  const categories = useMemo<TBookCategory[]>(() => {
+    const data: unknown = categoriesResponse?.data;
+
+    if (!Array.isArray(data)) return [];
+
+    return data.filter(isBookCategory);
+  }, [categoriesResponse]);
+
+  // The new endpoint already returns contents with every book.
+  const books = useMemo(() => booksResponse?.data ?? [], [booksResponse]);
+
+  // The response contains category.name, not categoryId.
+  const filteredBooks = useMemo(() => {
+    if (categoryFilter === "all") return books;
+
+    return books.filter((book) => book.category.name === categoryFilter);
+  }, [books, categoryFilter]);
+
+  const meta = booksResponse?.meta;
+
+  const totalBooks = meta?.total ?? filteredBooks.length;
+  const totalPages = Math.max(1, meta?.totalPages ?? 1);
+
+  // ----------------------------------------------------
+  // Mutations
+  // ----------------------------------------------------
+
+  const [softDeleteBook, { isLoading: isDeletingBook }] =
+    useSoftDeleteBookMutation();
+
+  // ----------------------------------------------------
+  // Effects
+  // ----------------------------------------------------
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, categoryFilter, pageSize]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  // ----------------------------------------------------
+  // Handlers
+  // ----------------------------------------------------
+
+  const handleDeleteBook = async (book: TBookWithContents) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${book.name}"?`,
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await softDeleteBook(book.id).unwrap();
+
+      toast.success("Book deleted successfully.");
+      await refetchBooks();
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const handleEditSuccess = async () => {
+    await refetchBooks();
+    setSelectedBook(null);
+  };
+
+  // ----------------------------------------------------
+  // Statistics
+  // ----------------------------------------------------
+
+  const featuredBooks = books.filter((book) => book.isFeatured).length;
+
+  const totalContents = books.reduce(
+    (total, book) => total + book.contents.length,
+    0,
+  );
+
+  // ----------------------------------------------------
+  // Render
+  // ----------------------------------------------------
+
+  return (
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Manage Books</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Manage books, sections, and their formatted content.
+          </p>
         </div>
 
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
-          {icon}
+        <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5">
+          <BookOpen className="h-5 w-5 text-teal-600" />
+          <span className="text-sm font-medium text-gray-700">
+            {totalBooks} Books
+          </span>
         </div>
       </div>
+
+      {/* Statistics */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <p className="text-sm text-gray-500">Total Books</p>
+          <p className="mt-2 text-2xl font-bold text-gray-900">{totalBooks}</p>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <p className="text-sm text-gray-500">Featured Books</p>
+          <p className="mt-2 text-2xl font-bold text-teal-600">
+            {featuredBooks}
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <p className="text-sm text-gray-500">Loaded Sections</p>
+          <p className="mt-2 text-2xl font-bold text-gray-900">
+            {totalContents}
+          </p>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 md:flex-row">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Search by book name or slug..."
+            className="h-11 w-full rounded-lg border border-gray-200 pl-10 pr-4 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-50"
+          />
+        </div>
+
+        <select
+          value={categoryFilter}
+          onChange={(event) => setCategoryFilter(event.target.value)}
+          className="h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none focus:border-teal-500"
+        >
+          <option value="all">All Categories</option>
+
+          {categories
+            .filter((category) => !category.isDeleted)
+            .map((category) => (
+              <option key={category.id} value={category.name}>
+                {category.name}
+              </option>
+            ))}
+        </select>
+
+        <select
+          value={pageSize}
+          onChange={(event) => setPageSize(Number(event.target.value))}
+          className="h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none focus:border-teal-500"
+        >
+          <option value={10}>10 per page</option>
+          <option value={20}>20 per page</option>
+          <option value={50}>50 per page</option>
+        </select>
+      </div>
+
+      {/* Books Table */}
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        {isBooksLoading ? (
+          <div className="flex min-h-64 items-center justify-center">
+            <Loader2 className="h-7 w-7 animate-spin text-teal-600" />
+          </div>
+        ) : isBooksError ? (
+          <div className="flex min-h-64 flex-col items-center justify-center px-4 text-center">
+            <p className="font-semibold text-red-600">Failed to load books</p>
+            <p className="mt-1 text-sm text-gray-500">Please try again.</p>
+            <button
+              type="button"
+              onClick={() => void refetchBooks()}
+              className="mt-4 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
+            >
+              Retry
+            </button>
+          </div>
+        ) : filteredBooks.length === 0 ? (
+          <div className="flex min-h-64 flex-col items-center justify-center px-4 text-center">
+            <BookOpen className="mb-3 h-10 w-10 text-gray-300" />
+            <h3 className="font-semibold text-gray-800">No books found</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Try changing your search or category filter.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[850px] text-left text-sm">
+                <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+                  <tr>
+                    <th className="px-5 py-4">Book</th>
+                    <th className="px-5 py-4">Category</th>
+                    <th className="px-5 py-4">Sections</th>
+                    <th className="px-5 py-4">Featured</th>
+                    <th className="px-5 py-4">Created</th>
+                    <th className="sticky right-0 z-10 bg-gray-50 px-5 py-4 text-right">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-gray-100">
+                  {filteredBooks.map((book) => (
+                    <tr
+                      key={book.id}
+                      className="transition hover:bg-gray-50/70"
+                    >
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={book.cover}
+                            alt={book.name}
+                            className="h-12 w-10 rounded-md border border-gray-200 object-cover"
+                            loading="lazy"
+                          />
+
+                          <div className="min-w-0">
+                            <p className="max-w-xs truncate font-semibold text-gray-800">
+                              {book.name}
+                            </p>
+                            <p className="mt-1 max-w-xs truncate text-xs text-gray-400">
+                              {book.slug}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-5 py-4 text-gray-600">
+                        {book.category.name}
+                      </td>
+
+                      <td className="px-5 py-4">
+                        <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                          {book.contents.length} Sections
+                        </span>
+                      </td>
+
+                      <td className="px-5 py-4">
+                        {book.isFeatured ? (
+                          <span className="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-700">
+                            Featured
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500">
+                            Standard
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="px-5 py-4 text-gray-500">
+                        {formatDate(book.createdAt)}
+                      </td>
+
+                      <td className="sticky right-0 z-[1] bg-white px-5 py-4">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedBook(book)}
+                            title="Edit book"
+                            aria-label={`Edit ${book.name}`}
+                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:border-teal-200 hover:bg-teal-50 hover:text-teal-700"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => void handleDeleteBook(book)}
+                            disabled={isDeletingBook}
+                            title="Delete book"
+                            aria-label={`Delete ${book.name}`}
+                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-100 text-red-500 transition hover:bg-red-50 disabled:opacity-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="flex flex-col justify-between gap-3 border-t border-gray-100 px-5 py-4 sm:flex-row sm:items-center">
+              <p className="text-sm text-gray-500">
+                Page {currentPage} of {totalPages}
+                {isBooksFetching && (
+                  <span className="ml-2 inline-flex items-center gap-1 text-teal-600">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Updating
+                  </span>
+                )}
+              </p>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCurrentPage((previous) => Math.max(1, previous - 1))
+                  }
+                  disabled={currentPage === 1 || isBooksFetching}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+
+                <span className="min-w-16 text-center text-sm text-gray-600">
+                  {currentPage} / {totalPages}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCurrentPage((previous) =>
+                      Math.min(totalPages, previous + 1),
+                    )
+                  }
+                  disabled={currentPage === totalPages || isBooksFetching}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Edit Modal */}
+      {selectedBook && (
+        <EditBookModal
+          key={selectedBook.id}
+          book={selectedBook}
+          categories={categories}
+          onClose={() => setSelectedBook(null)}
+          onSuccess={handleEditSuccess}
+        />
+      )}
     </div>
   );
 };
 
-const EmptyState = ({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) => (
-  <div className="px-5 py-16 text-center">
-    <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-slate-100">
-      <BookOpen className="size-7 text-slate-400" />
-    </div>
+// ------------------------------------------------------
+// Edit Book Modal
+// ------------------------------------------------------
 
-    <h3 className="mt-4 font-semibold text-slate-900">{title}</h3>
+const EditBookModal = ({
+  book,
+  categories,
+  onClose,
+  onSuccess,
+}: TEditBookModalProps) => {
+  // ----------------------------------------------------
+  // Mutations
+  // ----------------------------------------------------
 
-    <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">
-      {description}
-    </p>
-  </div>
-);
+  const [updateBook, { isLoading: isUpdatingBook }] = useUpdateBookMutation();
 
-// ============================================================
-// Book Content Editor
-// ============================================================
+  const [updateBookContent] = useUpdateBookContentMutation();
+  const [createBookContent] = useCreateBookContentMutation();
+  const [softDeleteBookContent] = useSoftDeleteBookContentMutation();
 
-interface TBookContentEditorProps {
-  contents: TBookContentDraft[];
-  onChange: (contents: TBookContentDraft[]) => void;
-  disabled: boolean;
-}
+  // ----------------------------------------------------
+  // State
+  // ----------------------------------------------------
 
-const BookContentEditor = ({
-  contents,
-  onChange,
-  disabled,
-}: TBookContentEditorProps) => {
-  const methods = useForm<TBookContentFormValues>({
+  const [removedContentIds, setRemovedContentIds] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Resolve category ID from the category name in the new response.
+  const initialCategoryId = getCategoryId(book.category.name, categories);
+
+  // ----------------------------------------------------
+  // Form
+  // ----------------------------------------------------
+
+  const methods = useForm<TBookFormValues>({
     defaultValues: {
-      contents,
+      name: book.name,
+      description: book.description ?? "",
+      cover: book.cover,
+      categoryId: initialCategoryId,
+      isFeatured: book.isFeatured,
+      contents: [...book.contents]
+        .sort((a, b) => a.index - b.index)
+        .map((content: TBookContentWithDetails) => ({
+          id: content.id,
+          section: content.section,
+          index: content.index,
+          // Keep the original HTML. Tiptap receives it directly.
+          text: content.text,
+        })),
     },
-    mode: "onChange",
+    mode: "onSubmit",
   });
 
-  const { control, register, getValues, setValue } = methods;
+  const {
+    register,
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = methods;
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "contents",
+    keyName: "fieldId",
+  });
 
   const watchedContents = useWatch({
     control,
     name: "contents",
   });
 
-  // Keep the parent modal synchronized with all editor fields.
-  useEffect(() => {
-    if (!watchedContents) return;
+  // ----------------------------------------------------
+  // Add / Remove Sections
+  // ----------------------------------------------------
 
-    onChange(
-      watchedContents.map((content) => ({
-        ...(content.id ? { id: content.id } : {}),
-        section: content.section ?? "",
-        index: Number(content.index),
-        text: content.text ?? "",
-      })),
-    );
-  }, [watchedContents, onChange]);
+  const handleAddSection = () => {
+    const nextIndex = getNextContentIndex(watchedContents ?? []);
 
-  const addContent = () => {
-    const currentContents = getValues("contents") ?? [];
-
-    const nextIndex =
-      currentContents.length > 0
-        ? Math.max(
-            ...currentContents.map((content) => Number(content.index) || 0),
-          ) + 1
-        : 1;
-
-    setValue(
-      "contents",
-      [
-        ...currentContents,
-        {
-          section: "",
-          index: nextIndex,
-          text: "",
-        },
-      ],
-      {
-        shouldDirty: true,
-        shouldValidate: true,
-      },
-    );
-  };
-
-  const removeContent = (index: number) => {
-    const currentContents = getValues("contents") ?? [];
-
-    setValue(
-      "contents",
-      currentContents.filter((_, currentIndex) => currentIndex !== index),
-      {
-        shouldDirty: true,
-        shouldValidate: true,
-      },
-    );
-  };
-
-  return (
-    <FormProvider {...methods}>
-      <section className="space-y-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="font-semibold text-slate-900">Book Contents</h3>
-
-            <p className="mt-1 text-xs text-slate-500">
-              Manage individual sections and their formatted content.
-            </p>
-          </div>
-
-          <span className="w-fit rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
-            {contents.length} Sections
-          </span>
-        </div>
-
-        {contents.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-5 py-12 text-center">
-            <FileText className="mx-auto size-9 text-slate-400" />
-
-            <p className="mt-3 text-sm font-semibold text-slate-700">
-              No sections available
-            </p>
-
-            <p className="mt-1 text-xs text-slate-400">
-              Add a section to start building this book.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {contents.map((content, index) => (
-              <div
-                key={content.id ?? `new-section-${index}`}
-                className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
-              >
-                <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50 px-4 py-3 sm:px-5">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-sm font-bold text-emerald-700">
-                      {index + 1}
-                    </span>
-
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-800">
-                        Section {index + 1}
-                      </p>
-
-                      <p className="text-xs text-slate-400">
-                        {content.id ? "Existing section" : "New section"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => removeContent(index)}
-                    className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-rose-100 bg-white text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    aria-label={`Remove section ${index + 1}`}
-                    title="Remove section"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
-                </div>
-
-                <div className="space-y-5 p-4 sm:p-5">
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-                    <div className="sm:col-span-3">
-                      <label
-                        htmlFor={`section-title-${index}`}
-                        className="mb-1.5 block text-xs font-semibold text-slate-600"
-                      >
-                        Section Title
-                      </label>
-
-                      <input
-                        id={`section-title-${index}`}
-                        type="text"
-                        disabled={disabled}
-                        placeholder="Enter section title"
-                        {...register(`contents.${index}.section`, {
-                          required: "Section title is required",
-                        })}
-                        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                      />
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor={`section-index-${index}`}
-                        className="mb-1.5 block text-xs font-semibold text-slate-600"
-                      >
-                        Section Index
-                      </label>
-
-                      <input
-                        id={`section-index-${index}`}
-                        type="number"
-                        min={1}
-                        step={1}
-                        disabled={disabled}
-                        {...register(`contents.${index}.index`, {
-                          valueAsNumber: true,
-                          required: true,
-                          min: 1,
-                        })}
-                        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <label className="text-xs font-semibold text-slate-600">
-                        Section Content
-                      </label>
-
-                      <span className="text-xs text-slate-400">
-                        Rich text editor
-                      </span>
-                    </div>
-
-                    <div
-                      className={`overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-100 ${
-                        disabled ? "pointer-events-none opacity-60" : ""
-                      }`}
-                    >
-                      <RichTextEditor
-                        name={`contents.${index}.text`}
-                        placeholder="Write your book section content here..."
-                      />
-                    </div>
-
-                    <p className="text-xs leading-5 text-slate-400">
-                      Use the formatting toolbar to add headings, paragraphs,
-                      lists, links, images, tables, and other supported
-                      formatting.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={addContent}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-3.5 text-sm font-semibold text-slate-500 transition hover:border-emerald-400 hover:bg-emerald-50/50 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <Plus className="size-4" />
-          Add Another Section
-        </button>
-      </section>
-    </FormProvider>
-  );
-};
-
-// ============================================================
-// Book Edit Modal
-// ============================================================
-
-const BookEditModal = ({
-  book,
-  categories,
-  onClose,
-  onSaved,
-}: TBookEditModalProps) => {
-  const [updateBook] = useUpdateBookMutation();
-  const [updateBookContent] = useUpdateBookContentMutation();
-  const [createBookContent] = useCreateBookContentMutation();
-  const [softDeleteBookContent] = useSoftDeleteBookContentMutation();
-
-  const {
-    data: contentResponse,
-    isLoading: isContentsLoading,
-    isError: isContentsError,
-    refetch: refetchContents,
-  } = useGetContentsByBookQuery(book.id ?? "", {
-    skip: !book.id,
-  });
-
-  const contents = useMemo(
-    () => extractBookContents(contentResponse),
-    [contentResponse],
-  );
-
-  const [isSaving, setIsSaving] = useState(false);
-  const [hasInitializedContents, setHasInitializedContents] = useState(false);
-
-  const [formValues, setFormValues] = useState<TBookFormValues>({
-    name: book.name,
-    description: book.description ?? "",
-    cover: book.cover,
-    categoryId: getBookCategoryId(book) ?? "",
-    isFeatured: book.isFeatured,
-  });
-
-  const [bookContents, setBookContents] = useState<TBookContentDraft[]>([]);
-
-  useEffect(() => {
-    setFormValues({
-      name: book.name,
-      description: book.description ?? "",
-      cover: book.cover,
-      categoryId: getBookCategoryId(book) ?? "",
-      isFeatured: book.isFeatured,
+    append({
+      section: "",
+      index: nextIndex,
+      text: "<p></p>",
     });
-  }, [book]);
-
-  useEffect(() => {
-    if (isContentsLoading || isContentsError || hasInitializedContents) {
-      return;
-    }
-
-    setBookContents(
-      contents.map((content) => ({
-        id: content.id,
-        section: content.section,
-        index: content.index,
-        text: content.text,
-      })),
-    );
-
-    setHasInitializedContents(true);
-  }, [contents, isContentsLoading, isContentsError, hasInitializedContents]);
-
-  const updateBookField = <K extends keyof TBookFormValues>(
-    field: K,
-    value: TBookFormValues[K],
-  ) => {
-    setFormValues((previous) => ({
-      ...previous,
-      [field]: value,
-    }));
   };
 
-  const handleSave = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleRemoveSection = (fieldIndex: number) => {
+    const content = fields[fieldIndex];
 
-    if (!book.id) {
-      toast.error("Invalid book ID.");
-      return;
+    if (content?.id) {
+      setRemovedContentIds((previous) =>
+        previous.includes(content.id) ? previous : [...previous, content.id],
+      );
     }
 
-    if (!formValues.name.trim()) {
+    remove(fieldIndex);
+  };
+
+  // ----------------------------------------------------
+  // Save
+  // ----------------------------------------------------
+
+  const onSubmit = async (values: TBookFormValues) => {
+    if (!values.name.trim()) {
       toast.error("Book name is required.");
       return;
     }
 
-    if (!formValues.cover.trim()) {
-      toast.error("Book cover URL is required.");
+    if (!values.cover.trim()) {
+      toast.error("Cover image URL is required.");
       return;
     }
 
-    try {
-      new URL(formValues.cover.trim());
-    } catch {
-      toast.error("Please enter a valid cover image URL.");
+    if (!values.categoryId) {
+      toast.error(
+        "The book category could not be resolved. Please select a category.",
+      );
       return;
     }
 
-    if (!formValues.categoryId) {
-      toast.error("Please select a category.");
-      return;
-    }
-
-    if (isContentsLoading || isContentsError || !hasInitializedContents) {
-      toast.error("Please load the book contents before saving.");
-      return;
-    }
-
-    const invalidContent = bookContents.some(
+    const invalidContentIndex = values.contents.findIndex(
       (content) =>
         !content.section.trim() ||
-        !content.text.trim() ||
         !Number.isInteger(content.index) ||
-        content.index < 1,
+        content.index < 1 ||
+        !hasEditorContent(content.text),
     );
 
-    if (invalidContent) {
-      toast.error("Every section needs a title, content, and a valid index.");
+    if (invalidContentIndex !== -1) {
+      toast.error(
+        `Please complete the title, index, and content for section ${invalidContentIndex + 1}.`,
+      );
       return;
     }
 
-    const indexes = bookContents.map((content) => content.index);
-
-    if (new Set(indexes).size !== indexes.length) {
-      toast.error("Section indexes must be unique.");
+    if (hasDuplicateIndexes(values.contents)) {
+      toast.error("Each section must have a unique index.");
       return;
     }
 
@@ -675,40 +689,27 @@ const BookEditModal = ({
 
     try {
       // 1. Update book information.
+      const bookPayload: TUpdateBookPayload = {
+        name: values.name.trim(),
+        description: values.description.trim(),
+        cover: values.cover.trim(),
+        categoryId: values.categoryId,
+        isFeatured: values.isFeatured,
+      };
+
       await updateBook({
         id: book.id,
-        data: {
-          name: formValues.name.trim(),
-          description: formValues.description.trim() || undefined,
-          cover: formValues.cover.trim(),
-          categoryId: formValues.categoryId,
-          isFeatured: formValues.isFeatured,
-        },
+        data: bookPayload,
       }).unwrap();
 
-      // 2. Find removed sections.
-      const currentContentIds = new Set(
-        bookContents
-          .map((content) => content.id)
-          .filter((id): id is string => Boolean(id)),
-      );
-
-      const removedContentIds = contents
-        .map((content) => content.id)
-        .filter((id) => !currentContentIds.has(id));
-
-      // 3. Soft-delete removed sections.
+      // 2. Delete removed sections.
       for (const contentId of removedContentIds) {
         await softDeleteBookContent(contentId).unwrap();
       }
 
-      // 4. Update existing sections and create new sections.
-      const sortedContents = [...bookContents].sort(
-        (a, b) => a.index - b.index,
-      );
-
-      for (const content of sortedContents) {
-        const payload = {
+      // 3. Create or update remaining sections.
+      for (const content of values.contents) {
+        const payload: TUpdateBookContentPayload = {
           section: content.section.trim(),
           index: content.index,
           text: content.text,
@@ -727,762 +728,405 @@ const BookEditModal = ({
         }
       }
 
-      toast.success("Book updated successfully.");
-
-      await onSaved();
-      onClose();
-    } catch (error: unknown) {
+      toast.success("Book and contents updated successfully.");
+      onSuccess();
+    } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleClose = () => {
-    if (isSaving) return;
-    onClose();
-  };
+  const isBusy = isSaving || isUpdatingBook;
+
+  // ----------------------------------------------------
+  // Modal UI
+  // ----------------------------------------------------
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-2 backdrop-blur-sm sm:p-5"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          handleClose();
-        }
-      }}
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-3 backdrop-blur-[2px] sm:p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="edit-book-title"
     >
-      <div className="flex max-h-[95vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <div className="my-auto w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl">
         {/* Header */}
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-6">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-              <Pencil className="size-5" />
-            </div>
-
-            <div className="min-w-0">
-              <h2 className="font-bold text-slate-900">Edit Book</h2>
-
-              <p className="truncate text-xs text-slate-500">
-                Update book information and contents.
-              </p>
-            </div>
+        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-gray-200 bg-white px-5 py-4 sm:px-7">
+          <div>
+            <h2
+              id="edit-book-title"
+              className="text-lg font-bold text-gray-900"
+            >
+              Edit Book
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Update book information and manage its sections.
+            </p>
           </div>
 
           <button
             type="button"
-            onClick={handleClose}
-            disabled={isSaving}
-            className="flex size-9 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
-            aria-label="Close modal"
+            onClick={onClose}
+            disabled={isBusy}
+            aria-label="Close edit modal"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 disabled:opacity-50"
           >
-            <X className="size-5" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSave} className="flex min-h-0 flex-1 flex-col">
-          <div className="min-h-0 flex-1 space-y-7 overflow-y-auto p-4 sm:p-6">
+        <FormProvider {...methods}>
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="space-y-7 px-5 py-6 sm:px-7"
+          >
             {/* Book Information */}
-            <section className="space-y-4">
+            <section className="space-y-5">
               <div>
-                <h3 className="font-semibold text-slate-900">
+                <h3 className="font-semibold text-gray-900">
                   Book Information
                 </h3>
-
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-sm text-gray-500">
                   Update the basic information of this book.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {/* Name */}
+                <div>
                   <label
                     htmlFor="book-name"
-                    className="mb-1.5 block text-xs font-semibold text-slate-600"
+                    className="mb-2 block text-sm font-medium text-gray-700"
                   >
-                    Book Name
+                    Book Name <span className="text-red-500">*</span>
                   </label>
-
                   <input
                     id="book-name"
-                    type="text"
-                    value={formValues.name}
-                    onChange={(event) =>
-                      updateBookField("name", event.target.value)
-                    }
-                    disabled={isSaving}
-                    required
-                    className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:opacity-60"
+                    {...register("name", {
+                      required: "Book name is required.",
+                      validate: (value) =>
+                        value.trim().length > 0 || "Book name cannot be empty.",
+                    })}
+                    placeholder="Enter book name"
+                    className="h-11 w-full rounded-lg border border-gray-200 px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-50"
                   />
+                  {errors.name && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {errors.name.message}
+                    </p>
+                  )}
                 </div>
 
-                <div className="sm:col-span-2">
+                {/* Category */}
+                <div>
+                  <label
+                    htmlFor="book-category"
+                    className="mb-2 block text-sm font-medium text-gray-700"
+                  >
+                    Category <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="book-category"
+                    {...register("categoryId", {
+                      required: "Select a category.",
+                    })}
+                    className="h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-teal-500"
+                  >
+                    <option value="">Select category</option>
+                    {categories
+                      .filter((category) => !category.isDeleted)
+                      .map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                  </select>
+                  {errors.categoryId && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {errors.categoryId.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Cover */}
+                <div className="md:col-span-2">
                   <label
                     htmlFor="book-cover"
-                    className="mb-1.5 block text-xs font-semibold text-slate-600"
+                    className="mb-2 block text-sm font-medium text-gray-700"
                   >
-                    Cover Image URL
+                    Cover Image URL <span className="text-red-500">*</span>
                   </label>
-
                   <input
                     id="book-cover"
                     type="url"
-                    value={formValues.cover}
-                    onChange={(event) =>
-                      updateBookField("cover", event.target.value)
-                    }
-                    disabled={isSaving}
-                    required
+                    {...register("cover", {
+                      required: "Cover image URL is required.",
+                      pattern: {
+                        value: /^https?:\/\/.+/i,
+                        message: "Enter a valid HTTP or HTTPS URL.",
+                      },
+                    })}
                     placeholder="https://example.com/book-cover.jpg"
-                    className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:opacity-60"
+                    className="h-11 w-full rounded-lg border border-gray-200 px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-50"
                   />
+                  {errors.cover && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {errors.cover.message}
+                    </p>
+                  )}
                 </div>
 
-                <div className="sm:col-span-2">
-                  <label
-                    htmlFor="book-category"
-                    className="mb-1.5 block text-xs font-semibold text-slate-600"
-                  >
-                    Category
-                  </label>
-
-                  <select
-                    id="book-category"
-                    value={formValues.categoryId}
-                    onChange={(event) =>
-                      updateBookField("categoryId", event.target.value)
-                    }
-                    disabled={isSaving}
-                    required
-                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:opacity-60"
-                  >
-                    <option value="">Select a category</option>
-
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="sm:col-span-2">
+                {/* Description */}
+                <div className="md:col-span-2">
                   <label
                     htmlFor="book-description"
-                    className="mb-1.5 block text-xs font-semibold text-slate-600"
+                    className="mb-2 block text-sm font-medium text-gray-700"
                   >
                     Description
                   </label>
-
                   <textarea
                     id="book-description"
-                    value={formValues.description}
-                    onChange={(event) =>
-                      updateBookField("description", event.target.value)
-                    }
-                    disabled={isSaving}
+                    {...register("description")}
                     rows={3}
                     placeholder="Write a short description..."
-                    className="w-full resize-y rounded-xl border border-slate-200 p-3 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:opacity-60"
+                    className="w-full resize-y rounded-lg border border-gray-200 px-3 py-3 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-50"
                   />
                 </div>
 
-                <div className="sm:col-span-2">
-                  <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3 transition hover:bg-slate-50">
+                {/* Featured */}
+                <div className="md:col-span-2">
+                  <label className="flex cursor-pointer items-center gap-3">
                     <input
                       type="checkbox"
-                      checked={formValues.isFeatured}
-                      disabled={isSaving}
-                      onChange={(event) =>
-                        updateBookField("isFeatured", event.target.checked)
-                      }
-                      className="size-4 accent-emerald-600"
+                      {...register("isFeatured")}
+                      className="h-4 w-4 rounded border-gray-300 accent-teal-600"
                     />
-
-                    <div>
-                      <p className="text-sm font-semibold text-slate-700">
-                        Featured Book
-                      </p>
-
-                      <p className="text-xs text-slate-400">
-                        Show this book as a featured item.
-                      </p>
-                    </div>
-
-                    <Star
-                      className={`ml-auto size-5 ${
-                        formValues.isFeatured
-                          ? "fill-amber-400 text-amber-400"
-                          : "text-slate-300"
-                      }`}
-                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      Mark this book as featured
+                    </span>
                   </label>
                 </div>
               </div>
             </section>
 
-            <div className="border-t border-slate-100" />
+            <div className="border-t border-gray-100" />
 
             {/* Book Contents */}
-            {isContentsLoading ? (
-              <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500">
-                <LoaderCircle className="size-5 animate-spin text-emerald-600" />
-                Loading book contents...
-              </div>
-            ) : isContentsError ? (
-              <div className="rounded-xl border border-rose-100 bg-rose-50 p-4 text-center">
-                <CircleAlert className="mx-auto size-6 text-rose-500" />
-
-                <p className="mt-2 text-sm font-semibold text-rose-700">
-                  Unable to load book contents.
-                </p>
-
-                <button
-                  type="button"
-                  onClick={() => void refetchContents()}
-                  className="mt-3 text-xs font-semibold text-rose-700 underline"
-                >
-                  Try again
-                </button>
-              </div>
-            ) : (
-              <BookContentEditor
-                contents={bookContents}
-                onChange={setBookContents}
-                disabled={isSaving}
-              />
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-100 bg-white px-4 py-4 sm:flex-row sm:justify-end sm:px-6">
-            <button
-              type="button"
-              onClick={handleClose}
-              disabled={isSaving}
-              className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              disabled={
-                isSaving ||
-                isContentsLoading ||
-                isContentsError ||
-                !hasInitializedContents
-              }
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isSaving ? (
-                <>
-                  <LoaderCircle className="size-4 animate-spin" />
-                  Saving Changes...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="size-4" />
-                  Save Changes
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// ============================================================
-// Main Manage Books Page
-// ============================================================
-
-const ManageBooksPage = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
-
-  const [selectedBook, setSelectedBook] = useState<TBook | null>(null);
-
-  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
-
-  const [softDeleteBook] = useSoftDeleteBookMutation();
-
-  // Debounced search.
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setDebouncedSearch(searchTerm.trim());
-    }, 400);
-
-    return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, selectedCategory, limit]);
-
-  // API queries.
-  const {
-    data: bookResponse,
-    isLoading,
-    isFetching,
-    isError,
-    refetch,
-  } = useGetAllBooksAdminQuery({});
-
-  const { data: categoryResponse, isLoading: isCategoriesLoading } =
-    useGetAllCategoriesAdminQuery({});
-
-  // Normalize API responses.
-  const books = useMemo(
-    () => extractArray<TBook>(bookResponse),
-    [bookResponse],
-  );
-
-  const categories = useMemo(
-    () =>
-      extractArray<TBookCategoryOption>(categoryResponse).filter(
-        (category) => !category.isDeleted,
-      ),
-    [categoryResponse],
-  );
-
-  // Efficient category lookup.
-  const categoryMap = useMemo(
-    () => new Map(categories.map((category) => [category.id, category.name])),
-    [categories],
-  );
-
-  // Filter books.
-  const filteredBooks = useMemo(() => {
-    const normalizedSearch = debouncedSearch.toLowerCase();
-
-    return books.filter((book) => {
-      const matchesSearch =
-        !normalizedSearch ||
-        book.name.toLowerCase().includes(normalizedSearch) ||
-        (book.slug ?? "").toLowerCase().includes(normalizedSearch);
-
-      const matchesCategory =
-        !selectedCategory || getBookCategoryId(book) === selectedCategory;
-
-      return matchesSearch && matchesCategory && !book.isDeleted;
-    });
-  }, [books, debouncedSearch, selectedCategory]);
-
-  // Pagination.
-  const total = filteredBooks.length;
-  const totalPages = Math.max(1, Math.ceil(total / limit));
-  const currentPage = Math.min(page, totalPages);
-
-  const startItem = total === 0 ? 0 : (currentPage - 1) * limit + 1;
-
-  const endItem = Math.min(currentPage * limit, total);
-
-  const paginatedBooks = useMemo(() => {
-    const startIndex = (currentPage - 1) * limit;
-
-    return filteredBooks.slice(startIndex, startIndex + limit);
-  }, [filteredBooks, currentPage, limit]);
-
-  // Statistics.
-  const activeCount = books.filter((book) => !book.isDeleted).length;
-
-  const featuredCount = books.filter(
-    (book) => book.isFeatured && !book.isDeleted,
-  ).length;
-
-  const getCategoryName = (book: TBook): string => {
-    return getBookCategoryName(book, categoryMap);
-  };
-
-  // Delete book.
-  const handleDelete = async (book: TBook) => {
-    if (!book.id) {
-      toast.error("Invalid book ID.");
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${book.name}"?`,
-    );
-
-    if (!confirmed) return;
-
-    setIsDeletingId(book.id);
-
-    try {
-      await softDeleteBook(book.id).unwrap();
-
-      toast.success("Book deleted successfully.");
-
-      await refetch();
-    } catch (error: unknown) {
-      toast.error(getErrorMessage(error));
-    } finally {
-      setIsDeletingId(null);
-    }
-  };
-
-  const clearFilters = () => {
-    setSearchTerm("");
-    setDebouncedSearch("");
-    setSelectedCategory("");
-    setPage(1);
-  };
-
-  const handleModalSaved = async () => {
-    await refetch();
-  };
-
-  return (
-    <main className="min-h-screen bg-slate-50/70 p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        {/* Header */}
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm">
-              <BookOpen className="size-6" />
-            </div>
-
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                Manage Books
-              </h1>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Manage books, categories, and individual book contents.
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => void refetch()}
-            disabled={isFetching}
-            className="inline-flex h-10 items-center justify-center gap-2 self-start rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 sm:self-auto"
-          >
-            <RefreshCw
-              className={`size-4 ${isFetching ? "animate-spin" : ""}`}
-            />
-            Refresh
-          </button>
-        </header>
-
-        {/* Statistics */}
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatCard
-            label="Total Books"
-            value={activeCount.toLocaleString()}
-            description="All active books"
-            icon={<BookMarked className="size-5 text-emerald-600" />}
-          />
-
-          <StatCard
-            label="Featured Books"
-            value={featuredCount.toLocaleString()}
-            description="Currently marked as featured"
-            icon={<Star className="size-5 fill-amber-400 text-amber-400" />}
-          />
-
-          <StatCard
-            label="Categories"
-            value={categories.length.toLocaleString()}
-            description="Available book categories"
-            icon={<Layers3 className="size-5 text-emerald-600" />}
-          />
-        </section>
-
-        {/* Filters */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          <div className="mb-4">
-            <h2 className="font-semibold text-slate-900">Filter Books</h2>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Search by book name or slug and filter by category.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <label className="relative block">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-
-              <input
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search books..."
-                className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
-              />
-            </label>
-
-            <select
-              value={selectedCategory}
-              onChange={(event) => setSelectedCategory(event.target.value)}
-              disabled={isCategoriesLoading}
-              aria-label="Filter by category"
-              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
-            >
-              <option value="">All Categories</option>
-
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-
-            <select
-              aria-label="Rows per page"
-              value={limit}
-              onChange={(event) => setLimit(Number(event.target.value))}
-              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-emerald-500"
-            >
-              {PAGE_SIZE_OPTIONS.map((size) => (
-                <option key={size} value={size}>
-                  {size} per page
-                </option>
-              ))}
-            </select>
-
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-            >
-              <X className="size-4" />
-              Clear Filters
-            </button>
-          </div>
-        </section>
-
-        {/* Table */}
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-col gap-2 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-            <div>
-              <h2 className="font-semibold text-slate-900">Book Records</h2>
-
-              <p className="mt-1 text-xs text-slate-500">
-                {total === 0
-                  ? "No records found"
-                  : `Showing ${startItem.toLocaleString()}–${endItem.toLocaleString()} of ${total.toLocaleString()} books`}
-              </p>
-            </div>
-
-            {isFetching && (
-              <span className="inline-flex items-center gap-2 text-xs font-medium text-emerald-700">
-                <LoaderCircle className="size-4 animate-spin" />
-                Updating records...
-              </span>
-            )}
-          </div>
-
-          {isError ? (
-            <div className="px-5 py-16 text-center">
-              <CircleAlert className="mx-auto size-10 text-rose-500" />
-
-              <h3 className="mt-3 font-semibold text-slate-900">
-                Unable to load books
-              </h3>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Check your connection and try again.
-              </p>
-
-              <button
-                type="button"
-                onClick={() => void refetch()}
-                className="mt-4 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
-              >
-                Try again
-              </button>
-            </div>
-          ) : isLoading ? (
-            <div className="flex items-center justify-center gap-3 px-5 py-20 text-sm text-slate-500">
-              <LoaderCircle className="size-5 animate-spin text-emerald-600" />
-              Loading books...
-            </div>
-          ) : paginatedBooks.length === 0 ? (
-            <EmptyState
-              title="No books found"
-              description="Try changing your search term or category filter."
-            />
-          ) : (
-            <>
-              <div className="w-full overflow-x-auto">
-                <table className="w-full min-w-[1050px] border-collapse text-left text-sm">
-                  <thead>
-                    <tr className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      <th className="whitespace-nowrap px-5 py-4">#</th>
-
-                      <th className="whitespace-nowrap px-5 py-4">Book</th>
-
-                      <th className="whitespace-nowrap px-5 py-4">Category</th>
-
-                      <th className="whitespace-nowrap px-5 py-4">Slug</th>
-
-                      <th className="whitespace-nowrap px-5 py-4">Featured</th>
-
-                      <th className="whitespace-nowrap px-5 py-4">
-                        Created At
-                      </th>
-
-                      <th className="sticky right-0 z-20 whitespace-nowrap border-l border-slate-200 bg-slate-50 px-5 py-4 text-center shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.25)]">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody className="divide-y divide-slate-100">
-                    {paginatedBooks.map((book, index) => (
-                      <tr
-                        key={book.id}
-                        className="transition hover:bg-slate-50/80"
-                      >
-                        <td className="whitespace-nowrap px-5 py-4 text-slate-400">
-                          {(currentPage - 1) * limit + index + 1}
-                        </td>
-
-                        <td className="px-5 py-4">
-                          <div className="flex min-w-[220px] items-center gap-3">
-                            {book.cover ? (
-                              <img
-                                src={book.cover}
-                                alt={book.name}
-                                className="size-12 shrink-0 rounded-xl border border-slate-200 bg-slate-50 object-cover"
-                              />
-                            ) : (
-                              <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
-                                <BookOpen className="size-5 text-emerald-600" />
-                              </div>
-                            )}
-
-                            <div className="min-w-0">
-                              <p className="max-w-[220px] truncate font-semibold text-slate-800">
-                                {book.name}
-                              </p>
-
-                              <p className="mt-1 max-w-[220px] truncate text-xs text-slate-400">
-                                {truncateText(book.description, 45)}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="whitespace-nowrap px-5 py-4">
-                          <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
-                            {getCategoryName(book)}
-                          </span>
-                        </td>
-
-                        <td className="whitespace-nowrap px-5 py-4 text-xs text-slate-500">
-                          {book.slug ?? "—"}
-                        </td>
-
-                        <td className="whitespace-nowrap px-5 py-4">
-                          {book.isFeatured ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-700">
-                              <Star className="size-3 fill-amber-500" />
-                              Featured
-                            </span>
-                          ) : (
-                            <span className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-500">
-                              Standard
-                            </span>
-                          )}
-                        </td>
-
-                        <td className="whitespace-nowrap px-5 py-4 text-xs text-slate-500">
-                          {formatDate(book.createdAt)}
-                        </td>
-
-                        {/* Sticky Actions */}
-                        <td className="sticky right-0 z-10 border-l border-slate-200 bg-white px-5 py-4 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.25)]">
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedBook(book)}
-                              className="inline-flex size-9 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100"
-                              aria-label={`Edit ${book.name}`}
-                              title="Edit book"
-                            >
-                              <Pencil className="size-4" />
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => void handleDelete(book)}
-                              disabled={isDeletingId === book.id}
-                              className="inline-flex size-9 items-center justify-center rounded-lg border border-rose-100 bg-rose-50 text-rose-600 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
-                              aria-label={`Delete ${book.name}`}
-                              title="Delete book"
-                            >
-                              {isDeletingId === book.id ? (
-                                <LoaderCircle className="size-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="size-4" />
-                              )}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination */}
-              <div className="flex flex-col gap-3 border-t border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-                <p className="text-xs text-slate-500">
-                  Page {currentPage} of {totalPages}
-                </p>
+            <section className="space-y-5">
+              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                <div>
+                  <h3 className="font-semibold text-gray-900">Book Contents</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Each section has its own heading, index, and rich-text
+                    content.
+                  </p>
+                </div>
 
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={currentPage <= 1}
-                    onClick={() => setPage((previous) => previous - 1)}
-                    className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    <ChevronLeft className="size-4" />
-                    Previous
-                  </button>
-
-                  <span className="flex h-9 min-w-9 items-center justify-center rounded-lg bg-emerald-50 px-3 text-xs font-bold text-emerald-700">
-                    {currentPage}
+                  <span className="rounded-full bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700">
+                    {fields.length} Sections
                   </span>
 
                   <button
                     type="button"
-                    disabled={currentPage >= totalPages}
-                    onClick={() => setPage((previous) => previous + 1)}
-                    className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    onClick={handleAddSection}
+                    className="inline-flex h-9 items-center gap-2 rounded-lg bg-teal-600 px-3 text-sm font-semibold text-white transition hover:bg-teal-700"
                   >
-                    Next
-                    <ChevronRight className="size-4" />
+                    <Plus className="h-4 w-4" />
+                    Add Section
                   </button>
                 </div>
               </div>
-            </>
-          )}
-        </section>
-      </div>
 
-      {/* Edit Modal */}
-      {selectedBook && (
-        <BookEditModal
-          key={selectedBook.id}
-          book={selectedBook}
-          categories={categories}
-          onClose={() => setSelectedBook(null)}
-          onSaved={handleModalSaved}
-        />
-      )}
-    </main>
+              {/* Empty State */}
+              {fields.length === 0 && (
+                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 py-12 text-center">
+                  <BookOpen className="mb-3 h-9 w-9 text-gray-300" />
+                  <p className="font-medium text-gray-700">
+                    No sections available
+                  </p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Add a section to start writing book content.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleAddSection}
+                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add First Section
+                  </button>
+                </div>
+              )}
+
+              {/* Section Cards */}
+              {fields.map((field, fieldIndex) => {
+                const currentContent = watchedContents?.[fieldIndex];
+                const contentIndex = currentContent?.index ?? field.index;
+
+                return (
+                  <div
+                    key={field.fieldId}
+                    className="overflow-hidden rounded-xl border border-gray-200 bg-white"
+                  >
+                    {/* Section Header */}
+                    <div className="flex items-center justify-between gap-3 border-b border-gray-100 bg-gray-50 px-4 py-3 sm:px-5">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-teal-100 text-sm font-bold text-teal-700">
+                          {Number.isInteger(contentIndex) && contentIndex > 0
+                            ? contentIndex
+                            : fieldIndex + 1}
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="font-semibold text-gray-800">
+                            {currentContent?.section?.trim() ||
+                              `Untitled Section ${fieldIndex + 1}`}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {field.id ? "Existing section" : "New section"}
+                            {" · "}
+                            Content index: {contentIndex || "Not set"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSection(fieldIndex)}
+                        title="Remove section"
+                        aria-label={`Remove section ${fieldIndex + 1}`}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-100 bg-white text-red-500 transition hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Section Fields */}
+                    <div className="space-y-5 p-4 sm:p-5">
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                        {/* Section Title */}
+                        <div className="md:col-span-3">
+                          <label
+                            htmlFor={`section-title-${field.fieldId}`}
+                            className="mb-2 block text-sm font-medium text-gray-700"
+                          >
+                            Section Heading{" "}
+                            <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            id={`section-title-${field.fieldId}`}
+                            {...register(
+                              `contents.${fieldIndex}.section` as const,
+                              {
+                                required: "Section heading is required.",
+                                validate: (value) =>
+                                  value.trim().length > 0 ||
+                                  "Section heading cannot be empty.",
+                              },
+                            )}
+                            placeholder="Enter section heading"
+                            className="h-11 w-full rounded-lg border border-gray-200 px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-50"
+                          />
+                          {errors.contents?.[fieldIndex]?.section && (
+                            <p className="mt-1 text-xs text-red-500">
+                              {errors.contents[fieldIndex]?.section?.message}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Section Index */}
+                        <div>
+                          <label
+                            htmlFor={`section-index-${field.fieldId}`}
+                            className="mb-2 block text-sm font-medium text-gray-700"
+                          >
+                            Content Index{" "}
+                            <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            id={`section-index-${field.fieldId}`}
+                            type="number"
+                            min={1}
+                            step={1}
+                            {...register(
+                              `contents.${fieldIndex}.index` as const,
+                              {
+                                required: "Index is required.",
+                                valueAsNumber: true,
+                                min: {
+                                  value: 1,
+                                  message: "Index must be at least 1.",
+                                },
+                                validate: (value) =>
+                                  Number.isInteger(value) ||
+                                  "Index must be a whole number.",
+                              },
+                            )}
+                            className="h-11 w-full rounded-lg border border-gray-200 px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-50"
+                          />
+                          {errors.contents?.[fieldIndex]?.index && (
+                            <p className="mt-1 text-xs text-red-500">
+                              {errors.contents[fieldIndex]?.index?.message}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Rich Text Editor */}
+                      <div>
+                        <RichTextEditor
+                          name={
+                            `contents.${fieldIndex}.text` as FieldPath<TBookFormValues>
+                          }
+                          label={`Section ${contentIndex || fieldIndex + 1} Content`}
+                          required
+                          placeholder="Start writing this section..."
+                          minHeight={300}
+                        />
+                        {errors.contents?.[fieldIndex]?.text && (
+                          <p className="mt-1 text-xs text-red-500">
+                            {errors.contents[fieldIndex]?.text?.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </section>
+
+            {/* Footer */}
+            <div className="sticky bottom-0 z-10 -mx-5 flex flex-col-reverse justify-end gap-3 border-t border-gray-200 bg-white px-5 py-4 sm:-mx-7 sm:flex-row sm:px-7">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isBusy}
+                className="h-11 rounded-lg border border-gray-200 px-5 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={isBusy}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-teal-600 px-6 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isBusy ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Saving Changes...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
+              </button>
+            </div>
+          </form>
+        </FormProvider>
+      </div>
+    </div>
   );
 };
 

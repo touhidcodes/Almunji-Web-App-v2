@@ -75,3 +75,29 @@ export interface TBookQueryParams {
 export type TBookContentQueryParams = TBookQueryParams & {
   bookId?: string;
 };
+
+export interface TBookContentWithDetails {
+  id: string;
+  section: string;
+  text: string;
+  index: number;
+  isDeleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TBookWithContents {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  cover: string;
+  category: {
+    name: string;
+  };
+  isFeatured: boolean;
+  isDeleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+  contents: TBookContentWithDetails[];
+}

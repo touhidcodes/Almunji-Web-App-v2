@@ -7,6 +7,7 @@ import type {
   TUpdateBookPayload,
   TCreateBookContentPayload,
   TUpdateBookContentPayload,
+  TBookWithContents,
 } from "@/types/book";
 
 import type { TApiResponse, TPaginatedResponse } from "@/types/api";
@@ -121,6 +122,18 @@ export const bookApi = baseServerApi.injectEndpoints({
       invalidatesTags: [tagTypes.bookContent, tagTypes.book],
     }),
 
+    getAllBooksWithContents: build.query<
+      TPaginatedResponse<TBookWithContents>,
+      TBookContentQueryParams | void
+    >({
+      query: (arg) => ({
+        url: "/book/content/books-with-contents",
+        method: "GET",
+        params: arg ?? {},
+      }),
+      providesTags: [tagTypes.book, tagTypes.bookContent],
+    }),
+
     getAllBookContentsAdmin: build.query<
       TPaginatedResponse<TBookContent>,
       TBookContentQueryParams | void
@@ -199,6 +212,7 @@ export const {
   useHardDeleteBookMutation,
 
   useCreateBookContentMutation,
+  useGetAllBooksWithContentsQuery,
   useGetAllBookContentsAdminQuery,
   useGetSingleBookContentQuery,
   useGetContentsByBookQuery,
