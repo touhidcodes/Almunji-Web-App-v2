@@ -8,6 +8,8 @@ import {
   type ReactNode,
 } from "react";
 
+import { FormProvider, useForm, useWatch } from "react-hook-form";
+
 import {
   BookOpen,
   BookMarked,
@@ -42,6 +44,7 @@ import {
 import { useGetAllCategoriesAdminQuery } from "@/redux/api/categoryApi";
 
 import type { TBook } from "@/types/book";
+import RichTextEditor from "@/components/forms/RichTextEditor";
 
 // ============================================================
 // Types
@@ -75,6 +78,10 @@ interface TBookFormValues {
   isFeatured: boolean;
 }
 
+interface TBookContentFormValues {
+  contents: TBookContentDraft[];
+}
+
 interface TBookEditModalProps {
   book: TBook;
   categories: TBookCategoryOption[];
@@ -99,15 +106,6 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null;
 };
 
-/**
- * Handles API response structures such as:
- *
- * { data: [...] }
- * { data: { data: [...] } }
- * { data: { books: [...] } }
- * { data: { categories: [...] } }
- * { data: { content: [...] } }
- */
 const extractArray = <T,>(response: unknown): T[] => {
   if (Array.isArray(response)) {
     return response as T[];
@@ -145,19 +143,6 @@ const extractArray = <T,>(response: unknown): T[] => {
   return [];
 };
 
-/**
- * Specifically extracts book contents from the actual API response:
- *
- * {
- *   success: true,
- *   data: {
- *     id: "...",
- *     book: "...",
- *     slug: "...",
- *     content: [...]
- *   }
- * }
- */
 const extractBookContents = (response: unknown): TBookContentResponse[] => {
   if (!isRecord(response)) return [];
 
@@ -224,6 +209,46 @@ const formatDate = (date: string | Date): string => {
   });
 };
 
+// Supports either categoryId or a nested category relation.
+const getBookCategoryId = (book: TBook): string | undefined => {
+  const record: unknown = book;
+
+  if (!isRecord(record)) return undefined;
+
+  if (typeof record.categoryId === "string") {
+    return record.categoryId;
+  }
+
+  if (isRecord(record.category)) {
+    return typeof record.category.id === "string"
+      ? record.category.id
+      : undefined;
+  }
+
+  return undefined;
+};
+
+const getBookCategoryName = (
+  book: TBook,
+  categoryMap: Map<string, string>,
+): string => {
+  const record: unknown = book;
+
+  if (isRecord(record) && isRecord(record.category)) {
+    const categoryName = record.category.name;
+
+    if (typeof categoryName === "string" && categoryName.trim()) {
+      return categoryName;
+    }
+  }
+
+  const categoryId = getBookCategoryId(book);
+
+  if (!categoryId) return "Uncategorized";
+
+  return categoryMap.get(categoryId) ?? "Uncategorized";
+};
+
 // ============================================================
 // Reusable Components
 // ============================================================
@@ -285,180 +310,230 @@ const BookContentEditor = ({
   onChange,
   disabled,
 }: TBookContentEditorProps) => {
-  const updateContent = (
-    index: number,
-    field: keyof TBookContentDraft,
-    value: string | number,
-  ) => {
+  const methods = useForm<TBookContentFormValues>({
+    defaultValues: {
+      contents,
+    },
+    mode: "onChange",
+  });
+
+  const { control, register, getValues, setValue } = methods;
+
+  const watchedContents = useWatch({
+    control,
+    name: "contents",
+  });
+
+  // Keep the parent modal synchronized with all editor fields.
+  useEffect(() => {
+    if (!watchedContents) return;
+
     onChange(
-      contents.map((content, currentIndex) =>
-        currentIndex === index ? { ...content, [field]: value } : content,
-      ),
+      watchedContents.map((content) => ({
+        ...(content.id ? { id: content.id } : {}),
+        section: content.section ?? "",
+        index: Number(content.index),
+        text: content.text ?? "",
+      })),
+    );
+  }, [watchedContents, onChange]);
+
+  const addContent = () => {
+    const currentContents = getValues("contents") ?? [];
+
+    const nextIndex =
+      currentContents.length > 0
+        ? Math.max(
+            ...currentContents.map((content) => Number(content.index) || 0),
+          ) + 1
+        : 1;
+
+    setValue(
+      "contents",
+      [
+        ...currentContents,
+        {
+          section: "",
+          index: nextIndex,
+          text: "",
+        },
+      ],
+      {
+        shouldDirty: true,
+        shouldValidate: true,
+      },
     );
   };
 
-  const addContent = () => {
-    const nextIndex =
-      contents.length > 0
-        ? Math.max(...contents.map((content) => content.index)) + 1
-        : 1;
-
-    onChange([
-      ...contents,
-      {
-        section: "",
-        index: nextIndex,
-        text: "",
-      },
-    ]);
-  };
-
   const removeContent = (index: number) => {
-    onChange(contents.filter((_, currentIndex) => currentIndex !== index));
+    const currentContents = getValues("contents") ?? [];
+
+    setValue(
+      "contents",
+      currentContents.filter((_, currentIndex) => currentIndex !== index),
+      {
+        shouldDirty: true,
+        shouldValidate: true,
+      },
+    );
   };
 
   return (
-    <section className="space-y-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h3 className="font-semibold text-slate-900">Book Contents</h3>
+    <FormProvider {...methods}>
+      <section className="space-y-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="font-semibold text-slate-900">Book Contents</h3>
 
-          <p className="mt-1 text-xs text-slate-500">
-            Manage individual sections of this book.
-          </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Manage individual sections and their formatted content.
+            </p>
+          </div>
+
+          <span className="w-fit rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+            {contents.length} Sections
+          </span>
         </div>
 
-        <span className="w-fit rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
-          {contents.length} Sections
-        </span>
-      </div>
+        {contents.length === 0 ? (
+          <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-5 py-12 text-center">
+            <FileText className="mx-auto size-9 text-slate-400" />
 
-      {contents.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-5 py-10 text-center">
-          <FileText className="mx-auto size-8 text-slate-400" />
+            <p className="mt-3 text-sm font-semibold text-slate-700">
+              No sections available
+            </p>
 
-          <p className="mt-3 text-sm font-semibold text-slate-700">
-            No sections available
-          </p>
+            <p className="mt-1 text-xs text-slate-400">
+              Add a section to start building this book.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {contents.map((content, index) => (
+              <div
+                key={content.id ?? `new-section-${index}`}
+                className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+              >
+                <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50 px-4 py-3 sm:px-5">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-sm font-bold text-emerald-700">
+                      {index + 1}
+                    </span>
 
-          <p className="mt-1 text-xs text-slate-400">
-            Add a section to start building this book.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {contents.map((content, index) => (
-            <div
-              key={content.id ?? `new-${index}`}
-              className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
-            >
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-2">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-xs font-bold text-emerald-700">
-                    {index + 1}
-                  </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-800">
+                        Section {index + 1}
+                      </p>
 
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-800">
-                      Section {index + 1}
-                    </p>
+                      <p className="text-xs text-slate-400">
+                        {content.id ? "Existing section" : "New section"}
+                      </p>
+                    </div>
+                  </div>
 
-                    <p className="text-xs text-slate-400">
-                      {content.id ? "Existing section" : "New section"}
+                  <button
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => removeContent(index)}
+                    className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-rose-100 bg-white text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    aria-label={`Remove section ${index + 1}`}
+                    title="Remove section"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
+
+                <div className="space-y-5 p-4 sm:p-5">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+                    <div className="sm:col-span-3">
+                      <label
+                        htmlFor={`section-title-${index}`}
+                        className="mb-1.5 block text-xs font-semibold text-slate-600"
+                      >
+                        Section Title
+                      </label>
+
+                      <input
+                        id={`section-title-${index}`}
+                        type="text"
+                        disabled={disabled}
+                        placeholder="Enter section title"
+                        {...register(`contents.${index}.section`, {
+                          required: "Section title is required",
+                        })}
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor={`section-index-${index}`}
+                        className="mb-1.5 block text-xs font-semibold text-slate-600"
+                      >
+                        Section Index
+                      </label>
+
+                      <input
+                        id={`section-index-${index}`}
+                        type="number"
+                        min={1}
+                        step={1}
+                        disabled={disabled}
+                        {...register(`contents.${index}.index`, {
+                          valueAsNumber: true,
+                          required: true,
+                          min: 1,
+                        })}
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <label className="text-xs font-semibold text-slate-600">
+                        Section Content
+                      </label>
+
+                      <span className="text-xs text-slate-400">
+                        Rich text editor
+                      </span>
+                    </div>
+
+                    <div
+                      className={`overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-100 ${
+                        disabled ? "pointer-events-none opacity-60" : ""
+                      }`}
+                    >
+                      <RichTextEditor
+                        name={`contents.${index}.text`}
+                        placeholder="Write your book section content here..."
+                      />
+                    </div>
+
+                    <p className="text-xs leading-5 text-slate-400">
+                      Use the formatting toolbar to add headings, paragraphs,
+                      lists, links, images, tables, and other supported
+                      formatting.
                     </p>
                   </div>
                 </div>
-
-                <button
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => removeContent(index)}
-                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-rose-100 bg-white text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  aria-label={`Remove section ${index + 1}`}
-                >
-                  <Trash2 className="size-4" />
-                </button>
               </div>
+            ))}
+          </div>
+        )}
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-                <div className="sm:col-span-3">
-                  <label className="mb-1.5 block text-xs font-semibold text-slate-600">
-                    Section Title
-                  </label>
-
-                  <input
-                    type="text"
-                    value={content.section}
-                    disabled={disabled}
-                    onChange={(event) =>
-                      updateContent(index, "section", event.target.value)
-                    }
-                    placeholder="Enter section title"
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:opacity-60"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-slate-600">
-                    Section Index
-                  </label>
-
-                  <input
-                    type="number"
-                    min={1}
-                    step={1}
-                    value={content.index}
-                    disabled={disabled}
-                    onChange={(event) =>
-                      updateContent(
-                        index,
-                        "index",
-                        event.target.value === ""
-                          ? 1
-                          : Number(event.target.value),
-                      )
-                    }
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:opacity-60"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-3">
-                <label className="mb-1.5 block text-xs font-semibold text-slate-600">
-                  Section Content (HTML)
-                </label>
-
-                <textarea
-                  value={content.text}
-                  disabled={disabled}
-                  onChange={(event) =>
-                    updateContent(index, "text", event.target.value)
-                  }
-                  placeholder="Write or edit the section content..."
-                  rows={8}
-                  className="w-full resize-y rounded-xl border border-slate-200 bg-white p-3 font-mono text-sm leading-6 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:opacity-60"
-                />
-
-                <p className="mt-1.5 text-xs text-slate-400">
-                  Existing HTML content is preserved. This editor currently
-                  edits the HTML source.
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={addContent}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-3 text-sm font-semibold text-slate-500 transition hover:border-emerald-400 hover:bg-emerald-50/50 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <Plus className="size-4" />
-        Add Another Section
-      </button>
-    </section>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={addContent}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-3.5 text-sm font-semibold text-slate-500 transition hover:border-emerald-400 hover:bg-emerald-50/50 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Plus className="size-4" />
+          Add Another Section
+        </button>
+      </section>
+    </FormProvider>
   );
 };
 
@@ -486,34 +561,30 @@ const BookEditModal = ({
     skip: !book.id,
   });
 
-  // IMPORTANT:
-  // The API returns the array at data.content, not data directly.
   const contents = useMemo(
     () => extractBookContents(contentResponse),
     [contentResponse],
   );
 
   const [isSaving, setIsSaving] = useState(false);
+  const [hasInitializedContents, setHasInitializedContents] = useState(false);
 
   const [formValues, setFormValues] = useState<TBookFormValues>({
     name: book.name,
     description: book.description ?? "",
     cover: book.cover,
-    categoryId: book.categoryId,
+    categoryId: getBookCategoryId(book) ?? "",
     isFeatured: book.isFeatured,
   });
 
   const [bookContents, setBookContents] = useState<TBookContentDraft[]>([]);
-
-  // Track whether the server contents have been initialized.
-  const [hasInitializedContents, setHasInitializedContents] = useState(false);
 
   useEffect(() => {
     setFormValues({
       name: book.name,
       description: book.description ?? "",
       cover: book.cover,
-      categoryId: book.categoryId,
+      categoryId: getBookCategoryId(book) ?? "",
       isFeatured: book.isFeatured,
     });
   }, [book]);
@@ -563,6 +634,13 @@ const BookEditModal = ({
       return;
     }
 
+    try {
+      new URL(formValues.cover.trim());
+    } catch {
+      toast.error("Please enter a valid cover image URL.");
+      return;
+    }
+
     if (!formValues.categoryId) {
       toast.error("Please select a category.");
       return;
@@ -596,7 +674,7 @@ const BookEditModal = ({
     setIsSaving(true);
 
     try {
-      // Step 1: Update book information.
+      // 1. Update book information.
       await updateBook({
         id: book.id,
         data: {
@@ -608,7 +686,7 @@ const BookEditModal = ({
         },
       }).unwrap();
 
-      // Step 2: Identify removed sections.
+      // 2. Find removed sections.
       const currentContentIds = new Set(
         bookContents
           .map((content) => content.id)
@@ -619,12 +697,12 @@ const BookEditModal = ({
         .map((content) => content.id)
         .filter((id) => !currentContentIds.has(id));
 
-      // Step 3: Soft-delete removed sections.
+      // 3. Soft-delete removed sections.
       for (const contentId of removedContentIds) {
         await softDeleteBookContent(contentId).unwrap();
       }
 
-      // Step 4: Update existing sections and create new sections.
+      // 4. Update existing sections and create new sections.
       const sortedContents = [...bookContents].sort(
         (a, b) => a.index - b.index,
       );
@@ -674,7 +752,7 @@ const BookEditModal = ({
         }
       }}
     >
-      <div className="flex max-h-[95vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <div className="flex max-h-[95vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
@@ -719,11 +797,15 @@ const BookEditModal = ({
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2">
-                  <label className="mb-1.5 block text-xs font-semibold text-slate-600">
+                  <label
+                    htmlFor="book-name"
+                    className="mb-1.5 block text-xs font-semibold text-slate-600"
+                  >
                     Book Name
                   </label>
 
                   <input
+                    id="book-name"
                     type="text"
                     value={formValues.name}
                     onChange={(event) =>
@@ -736,11 +818,15 @@ const BookEditModal = ({
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="mb-1.5 block text-xs font-semibold text-slate-600">
+                  <label
+                    htmlFor="book-cover"
+                    className="mb-1.5 block text-xs font-semibold text-slate-600"
+                  >
                     Cover Image URL
                   </label>
 
                   <input
+                    id="book-cover"
                     type="url"
                     value={formValues.cover}
                     onChange={(event) =>
@@ -754,11 +840,15 @@ const BookEditModal = ({
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="mb-1.5 block text-xs font-semibold text-slate-600">
+                  <label
+                    htmlFor="book-category"
+                    className="mb-1.5 block text-xs font-semibold text-slate-600"
+                  >
                     Category
                   </label>
 
                   <select
+                    id="book-category"
                     value={formValues.categoryId}
                     onChange={(event) =>
                       updateBookField("categoryId", event.target.value)
@@ -778,11 +868,15 @@ const BookEditModal = ({
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="mb-1.5 block text-xs font-semibold text-slate-600">
+                  <label
+                    htmlFor="book-description"
+                    className="mb-1.5 block text-xs font-semibold text-slate-600"
+                  >
                     Description
                   </label>
 
                   <textarea
+                    id="book-description"
                     value={formValues.description}
                     onChange={(event) =>
                       updateBookField("description", event.target.value)
@@ -914,11 +1008,12 @@ const ManageBooksPage = () => {
   const [limit, setLimit] = useState(20);
 
   const [selectedBook, setSelectedBook] = useState<TBook | null>(null);
+
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
 
   const [softDeleteBook] = useSoftDeleteBookMutation();
 
-  // Debounced search
+  // Debounced search.
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       setDebouncedSearch(searchTerm.trim());
@@ -931,7 +1026,7 @@ const ManageBooksPage = () => {
     setPage(1);
   }, [debouncedSearch, selectedCategory, limit]);
 
-  // API queries
+  // API queries.
   const {
     data: bookResponse,
     isLoading,
@@ -943,7 +1038,7 @@ const ManageBooksPage = () => {
   const { data: categoryResponse, isLoading: isCategoriesLoading } =
     useGetAllCategoriesAdminQuery({});
 
-  // Normalize responses
+  // Normalize API responses.
   const books = useMemo(
     () => extractArray<TBook>(bookResponse),
     [bookResponse],
@@ -957,7 +1052,13 @@ const ManageBooksPage = () => {
     [categoryResponse],
   );
 
-  // Filter books
+  // Efficient category lookup.
+  const categoryMap = useMemo(
+    () => new Map(categories.map((category) => [category.id, category.name])),
+    [categories],
+  );
+
+  // Filter books.
   const filteredBooks = useMemo(() => {
     const normalizedSearch = debouncedSearch.toLowerCase();
 
@@ -968,13 +1069,13 @@ const ManageBooksPage = () => {
         (book.slug ?? "").toLowerCase().includes(normalizedSearch);
 
       const matchesCategory =
-        !selectedCategory || book.categoryId === selectedCategory;
+        !selectedCategory || getBookCategoryId(book) === selectedCategory;
 
       return matchesSearch && matchesCategory && !book.isDeleted;
     });
   }, [books, debouncedSearch, selectedCategory]);
 
-  // Pagination
+  // Pagination.
   const total = filteredBooks.length;
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const currentPage = Math.min(page, totalPages);
@@ -989,23 +1090,18 @@ const ManageBooksPage = () => {
     return filteredBooks.slice(startIndex, startIndex + limit);
   }, [filteredBooks, currentPage, limit]);
 
-  // Statistics
+  // Statistics.
   const activeCount = books.filter((book) => !book.isDeleted).length;
 
   const featuredCount = books.filter(
     (book) => book.isFeatured && !book.isDeleted,
   ).length;
 
-  // Category lookup
-  const getCategoryName = (categoryId: string): string => {
-    return (
-      categories.find(
-        (category: TBookCategoryOption) => category.id === categoryId,
-      )?.name ?? "Uncategorized"
-    );
+  const getCategoryName = (book: TBook): string => {
+    return getBookCategoryName(book, categoryMap);
   };
 
-  // Delete book
+  // Delete book.
   const handleDelete = async (book: TBook) => {
     if (!book.id) {
       toast.error("Invalid book ID.");
@@ -1279,7 +1375,7 @@ const ManageBooksPage = () => {
 
                         <td className="whitespace-nowrap px-5 py-4">
                           <span className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
-                            {getCategoryName(book.categoryId)}
+                            {getCategoryName(book)}
                           </span>
                         </td>
 
