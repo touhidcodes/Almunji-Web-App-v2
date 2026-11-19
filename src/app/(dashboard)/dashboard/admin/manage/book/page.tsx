@@ -34,12 +34,10 @@ import RichTextEditor from "@/components/forms/RichTextEditor";
 
 import type {
   TBookWithContents,
-  TBookContentWithDetails,
   TBookContentQueryParams,
-} from "@/types/book";
-import type {
   TUpdateBookPayload,
   TUpdateBookContentPayload,
+  TCreateBookContentPayload,
 } from "@/types/book";
 
 // ------------------------------------------------------
@@ -105,8 +103,6 @@ const getErrorMessage = (error: unknown): string => {
 };
 
 const formatDate = (date: string): string => {
-  if (!date) return "—";
-
   const parsedDate = new Date(date);
 
   if (Number.isNaN(parsedDate.getTime())) return "—";
@@ -142,15 +138,14 @@ const getNextContentIndex = (contents: TBookContentForm[]): number => {
 
 const hasDuplicateIndexes = (contents: TBookContentForm[]): boolean => {
   const indexes = contents.map((content) => content.index);
-
   return new Set(indexes).size !== indexes.length;
 };
 
 const hasEditorContent = (html: string): boolean => {
-  // Reject empty editor output such as <p></p> or <p><br></p>.
   const text = html
     .replace(/<[^>]*>/g, "")
-    .replace(/&nbsp;/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&#160;/gi, " ")
     .trim();
 
   return text.length > 0;
@@ -160,11 +155,7 @@ const hasEditorContent = (html: string): boolean => {
 // Manage Books Page
 // ------------------------------------------------------
 
-const ManageBooksPage = () => {
-  // ----------------------------------------------------
-  // State
-  // ----------------------------------------------------
-
+export default function ManageBooksPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -172,10 +163,6 @@ const ManageBooksPage = () => {
   const [selectedBook, setSelectedBook] = useState<TBookWithContents | null>(
     null,
   );
-
-  // ----------------------------------------------------
-  // Queries
-  // ----------------------------------------------------
 
   const queryParams: TBookContentQueryParams = {
     page: currentPage,
@@ -193,7 +180,6 @@ const ManageBooksPage = () => {
 
   const { data: categoriesResponse } = useGetAllCategoriesAdminQuery({});
 
-  // Category API response is converted from unknown safely.
   const categories = useMemo<TBookCategory[]>(() => {
     const data: unknown = categoriesResponse?.data;
 
@@ -202,31 +188,21 @@ const ManageBooksPage = () => {
     return data.filter(isBookCategory);
   }, [categoriesResponse]);
 
-  // The new endpoint already returns contents with every book.
-  const books = useMemo(() => booksResponse?.data ?? [], [booksResponse]);
+  const books = booksResponse?.data ?? [];
+  const meta = booksResponse?.meta;
 
-  // The response contains category.name, not categoryId.
+  // This filter applies to the currently loaded page.
   const filteredBooks = useMemo(() => {
     if (categoryFilter === "all") return books;
 
     return books.filter((book) => book.category.name === categoryFilter);
   }, [books, categoryFilter]);
 
-  const meta = booksResponse?.meta;
-
-  const totalBooks = meta?.total ?? filteredBooks.length;
+  const totalBooks = meta?.total ?? books.length;
   const totalPages = Math.max(1, meta?.totalPages ?? 1);
-
-  // ----------------------------------------------------
-  // Mutations
-  // ----------------------------------------------------
 
   const [softDeleteBook, { isLoading: isDeletingBook }] =
     useSoftDeleteBookMutation();
-
-  // ----------------------------------------------------
-  // Effects
-  // ----------------------------------------------------
 
   useEffect(() => {
     setCurrentPage(1);
@@ -238,10 +214,6 @@ const ManageBooksPage = () => {
     }
   }, [currentPage, totalPages]);
 
-  // ----------------------------------------------------
-  // Handlers
-  // ----------------------------------------------------
-
   const handleDeleteBook = async (book: TBookWithContents) => {
     const confirmed = window.confirm(
       `Are you sure you want to delete "${book.name}"?`,
@@ -251,7 +223,6 @@ const ManageBooksPage = () => {
 
     try {
       await softDeleteBook(book.id).unwrap();
-
       toast.success("Book deleted successfully.");
       await refetchBooks();
     } catch (error) {
@@ -264,20 +235,12 @@ const ManageBooksPage = () => {
     setSelectedBook(null);
   };
 
-  // ----------------------------------------------------
-  // Statistics
-  // ----------------------------------------------------
-
   const featuredBooks = books.filter((book) => book.isFeatured).length;
 
   const totalContents = books.reduce(
     (total, book) => total + book.contents.length,
     0,
   );
-
-  // ----------------------------------------------------
-  // Render
-  // ----------------------------------------------------
 
   return (
     <div className="space-y-6">
@@ -339,7 +302,6 @@ const ManageBooksPage = () => {
           className="h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none focus:border-teal-500"
         >
           <option value="all">All Categories</option>
-
           {categories
             .filter((category) => !category.isDeleted)
             .map((category) => (
@@ -417,7 +379,6 @@ const ManageBooksPage = () => {
                             className="h-12 w-10 rounded-md border border-gray-200 object-cover"
                             loading="lazy"
                           />
-
                           <div className="min-w-0">
                             <p className="max-w-xs truncate font-semibold text-gray-800">
                               {book.name}
@@ -543,56 +504,40 @@ const ManageBooksPage = () => {
       )}
     </div>
   );
-};
+}
 
 // ------------------------------------------------------
 // Edit Book Modal
 // ------------------------------------------------------
 
-const EditBookModal = ({
+function EditBookModal({
   book,
   categories,
   onClose,
   onSuccess,
-}: TEditBookModalProps) => {
-  // ----------------------------------------------------
-  // Mutations
-  // ----------------------------------------------------
-
+}: TEditBookModalProps) {
   const [updateBook, { isLoading: isUpdatingBook }] = useUpdateBookMutation();
 
   const [updateBookContent] = useUpdateBookContentMutation();
   const [createBookContent] = useCreateBookContentMutation();
   const [softDeleteBookContent] = useSoftDeleteBookContentMutation();
 
-  // ----------------------------------------------------
-  // State
-  // ----------------------------------------------------
-
   const [removedContentIds, setRemovedContentIds] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-
-  // Resolve category ID from the category name in the new response.
-  const initialCategoryId = getCategoryId(book.category.name, categories);
-
-  // ----------------------------------------------------
-  // Form
-  // ----------------------------------------------------
 
   const methods = useForm<TBookFormValues>({
     defaultValues: {
       name: book.name,
       description: book.description ?? "",
       cover: book.cover,
-      categoryId: initialCategoryId,
+      categoryId: getCategoryId(book.category.name, categories),
       isFeatured: book.isFeatured,
       contents: [...book.contents]
         .sort((a, b) => a.index - b.index)
-        .map((content: TBookContentWithDetails) => ({
+        .map((content) => ({
           id: content.id,
           section: content.section,
           index: content.index,
-          // Keep the original HTML. Tiptap receives it directly.
           text: content.text,
         })),
     },
@@ -603,6 +548,8 @@ const EditBookModal = ({
     register,
     control,
     handleSubmit,
+    getValues,
+    setValue,
     formState: { errors },
   } = methods;
 
@@ -617,9 +564,20 @@ const EditBookModal = ({
     name: "contents",
   });
 
-  // ----------------------------------------------------
-  // Add / Remove Sections
-  // ----------------------------------------------------
+  // Categories may arrive after the modal has mounted.
+  useEffect(() => {
+    const currentCategoryId = getValues("categoryId");
+
+    if (currentCategoryId) return;
+
+    const resolvedCategoryId = getCategoryId(book.category.name, categories);
+
+    if (resolvedCategoryId) {
+      setValue("categoryId", resolvedCategoryId, {
+        shouldValidate: true,
+      });
+    }
+  }, [book.category.name, categories, getValues, setValue]);
 
   const handleAddSection = () => {
     const nextIndex = getNextContentIndex(watchedContents ?? []);
@@ -632,36 +590,34 @@ const EditBookModal = ({
   };
 
   const handleRemoveSection = (fieldIndex: number) => {
-    const content = fields[fieldIndex];
+    // Read the actual database ID from form values, not the RHF key.
+    const contentId = getValues(`contents.${fieldIndex}.id`);
 
-    if (content?.id) {
+    if (typeof contentId === "string" && contentId.length > 0) {
       setRemovedContentIds((previous) =>
-        previous.includes(content.id) ? previous : [...previous, content.id],
+        previous.includes(contentId) ? previous : [...previous, contentId],
       );
     }
 
     remove(fieldIndex);
   };
 
-  // ----------------------------------------------------
-  // Save
-  // ----------------------------------------------------
-
   const onSubmit = async (values: TBookFormValues) => {
-    if (!values.name.trim()) {
+    const bookName = values.name.trim();
+    const cover = values.cover.trim();
+
+    if (!bookName) {
       toast.error("Book name is required.");
       return;
     }
 
-    if (!values.cover.trim()) {
+    if (!cover) {
       toast.error("Cover image URL is required.");
       return;
     }
 
     if (!values.categoryId) {
-      toast.error(
-        "The book category could not be resolved. Please select a category.",
-      );
+      toast.error("Please select a book category.");
       return;
     }
 
@@ -675,7 +631,7 @@ const EditBookModal = ({
 
     if (invalidContentIndex !== -1) {
       toast.error(
-        `Please complete the title, index, and content for section ${invalidContentIndex + 1}.`,
+        `Please complete the heading, index, and content for section ${invalidContentIndex + 1}.`,
       );
       return;
     }
@@ -688,11 +644,11 @@ const EditBookModal = ({
     setIsSaving(true);
 
     try {
-      // 1. Update book information.
+      // 1. Update book metadata. Never send slug from the frontend.
       const bookPayload: TUpdateBookPayload = {
-        name: values.name.trim(),
-        description: values.description.trim(),
-        cover: values.cover.trim(),
+        name: bookName,
+        description: values.description.trim() || null,
+        cover,
         categoryId: values.categoryId,
         isFeatured: values.isFeatured,
       };
@@ -702,29 +658,36 @@ const EditBookModal = ({
         data: bookPayload,
       }).unwrap();
 
-      // 2. Delete removed sections.
+      // 2. Soft-delete removed existing sections.
       for (const contentId of removedContentIds) {
         await softDeleteBookContent(contentId).unwrap();
       }
 
-      // 3. Create or update remaining sections.
+      // 3. Update existing sections and create new sections.
       for (const content of values.contents) {
-        const payload: TUpdateBookContentPayload = {
-          section: content.section.trim(),
-          index: content.index,
-          text: content.text,
-        };
+        const section = content.section.trim();
 
-        if (content.id) {
+        if (typeof content.id === "string" && content.id.length > 0) {
+          const updatePayload: TUpdateBookContentPayload = {
+            section,
+            index: content.index,
+            text: content.text,
+          };
+
           await updateBookContent({
             id: content.id,
-            data: payload,
+            data: updatePayload,
           }).unwrap();
         } else {
-          await createBookContent({
+          // Explicit required fields: do not spread an optional update type.
+          const createPayload: TCreateBookContentPayload = {
             bookId: book.id,
-            ...payload,
-          }).unwrap();
+            section,
+            index: content.index,
+            text: content.text,
+          };
+
+          await createBookContent(createPayload).unwrap();
         }
       }
 
@@ -739,10 +702,6 @@ const EditBookModal = ({
 
   const isBusy = isSaving || isUpdatingBook;
 
-  // ----------------------------------------------------
-  // Modal UI
-  // ----------------------------------------------------
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-3 backdrop-blur-[2px] sm:p-6"
@@ -751,7 +710,7 @@ const EditBookModal = ({
       aria-labelledby="edit-book-title"
     >
       <div className="my-auto w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-        {/* Header */}
+        {/* Modal Header */}
         <div className="sticky top-0 z-20 flex items-center justify-between border-b border-gray-200 bg-white px-5 py-4 sm:px-7">
           <div>
             <h2
@@ -793,7 +752,6 @@ const EditBookModal = ({
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {/* Name */}
                 <div>
                   <label
                     htmlFor="book-name"
@@ -818,7 +776,6 @@ const EditBookModal = ({
                   )}
                 </div>
 
-                {/* Category */}
                 <div>
                   <label
                     htmlFor="book-category"
@@ -849,7 +806,6 @@ const EditBookModal = ({
                   )}
                 </div>
 
-                {/* Cover */}
                 <div className="md:col-span-2">
                   <label
                     htmlFor="book-cover"
@@ -877,7 +833,6 @@ const EditBookModal = ({
                   )}
                 </div>
 
-                {/* Description */}
                 <div className="md:col-span-2">
                   <label
                     htmlFor="book-description"
@@ -894,7 +849,6 @@ const EditBookModal = ({
                   />
                 </div>
 
-                {/* Featured */}
                 <div className="md:col-span-2">
                   <label className="flex cursor-pointer items-center gap-3">
                     <input
@@ -939,7 +893,6 @@ const EditBookModal = ({
                 </div>
               </div>
 
-              {/* Empty State */}
               {fields.length === 0 && (
                 <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 py-12 text-center">
                   <BookOpen className="mb-3 h-9 w-9 text-gray-300" />
@@ -960,10 +913,13 @@ const EditBookModal = ({
                 </div>
               )}
 
-              {/* Section Cards */}
               {fields.map((field, fieldIndex) => {
                 const currentContent = watchedContents?.[fieldIndex];
-                const contentIndex = currentContent?.index ?? field.index;
+                const contentIndex = currentContent?.index ?? fieldIndex + 1;
+                const sectionPath = `contents.${fieldIndex}.section` as const;
+                const indexPath = `contents.${fieldIndex}.index` as const;
+                const textPath =
+                  `contents.${fieldIndex}.text` as FieldPath<TBookFormValues>;
 
                 return (
                   <div
@@ -980,12 +936,14 @@ const EditBookModal = ({
                         </div>
 
                         <div className="min-w-0">
-                          <p className="font-semibold text-gray-800">
+                          <p className="truncate font-semibold text-gray-800">
                             {currentContent?.section?.trim() ||
                               `Untitled Section ${fieldIndex + 1}`}
                           </p>
                           <p className="text-xs text-gray-400">
-                            {field.id ? "Existing section" : "New section"}
+                            {getValues(`contents.${fieldIndex}.id`)
+                              ? "Existing section"
+                              : "New section"}
                             {" · "}
                             Content index: {contentIndex || "Not set"}
                           </p>
@@ -1006,7 +964,6 @@ const EditBookModal = ({
                     {/* Section Fields */}
                     <div className="space-y-5 p-4 sm:p-5">
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                        {/* Section Title */}
                         <div className="md:col-span-3">
                           <label
                             htmlFor={`section-title-${field.fieldId}`}
@@ -1017,15 +974,12 @@ const EditBookModal = ({
                           </label>
                           <input
                             id={`section-title-${field.fieldId}`}
-                            {...register(
-                              `contents.${fieldIndex}.section` as const,
-                              {
-                                required: "Section heading is required.",
-                                validate: (value) =>
-                                  value.trim().length > 0 ||
-                                  "Section heading cannot be empty.",
-                              },
-                            )}
+                            {...register(sectionPath, {
+                              required: "Section heading is required.",
+                              validate: (value) =>
+                                value.trim().length > 0 ||
+                                "Section heading cannot be empty.",
+                            })}
                             placeholder="Enter section heading"
                             className="h-11 w-full rounded-lg border border-gray-200 px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-50"
                           />
@@ -1036,7 +990,6 @@ const EditBookModal = ({
                           )}
                         </div>
 
-                        {/* Section Index */}
                         <div>
                           <label
                             htmlFor={`section-index-${field.fieldId}`}
@@ -1050,20 +1003,17 @@ const EditBookModal = ({
                             type="number"
                             min={1}
                             step={1}
-                            {...register(
-                              `contents.${fieldIndex}.index` as const,
-                              {
-                                required: "Index is required.",
-                                valueAsNumber: true,
-                                min: {
-                                  value: 1,
-                                  message: "Index must be at least 1.",
-                                },
-                                validate: (value) =>
-                                  Number.isInteger(value) ||
-                                  "Index must be a whole number.",
+                            {...register(indexPath, {
+                              required: "Index is required.",
+                              valueAsNumber: true,
+                              min: {
+                                value: 1,
+                                message: "Index must be at least 1.",
                               },
-                            )}
+                              validate: (value) =>
+                                Number.isInteger(value) ||
+                                "Index must be a whole number.",
+                            })}
                             className="h-11 w-full rounded-lg border border-gray-200 px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-50"
                           />
                           {errors.contents?.[fieldIndex]?.index && (
@@ -1074,12 +1024,9 @@ const EditBookModal = ({
                         </div>
                       </div>
 
-                      {/* Rich Text Editor */}
                       <div>
                         <RichTextEditor
-                          name={
-                            `contents.${fieldIndex}.text` as FieldPath<TBookFormValues>
-                          }
+                          name={textPath}
                           label={`Section ${contentIndex || fieldIndex + 1} Content`}
                           required
                           placeholder="Start writing this section..."
@@ -1128,6 +1075,4 @@ const EditBookModal = ({
       </div>
     </div>
   );
-};
-
-export default ManageBooksPage;
+}
