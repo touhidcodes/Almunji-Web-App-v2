@@ -39,6 +39,7 @@ import type {
   TUpdateBookContentPayload,
   TCreateBookContentPayload,
 } from "@/types/book";
+import Link from "next/link";
 
 // ------------------------------------------------------
 // Types
@@ -253,12 +254,13 @@ export default function ManageBooksPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5">
-          <BookOpen className="h-5 w-5 text-teal-600" />
-          <span className="text-sm font-medium text-gray-700">
-            {totalBooks} Books
-          </span>
-        </div>
+        <Link
+          href="/dashboard/admin/create/book"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800 sm:w-auto"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Create Book</span>
+        </Link>
       </div>
 
       {/* Statistics */}

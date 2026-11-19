@@ -268,44 +268,6 @@ function EditBlogForm({
             placeholder="Enter blog title..."
           />
 
-          {/* READ-ONLY SLUG */}
-
-          <div className="space-y-2">
-            <label
-              htmlFor="blog-slug"
-              className="flex items-center gap-2 text-sm font-semibold text-gray-700"
-            >
-              Blog Slug
-              <span className="text-red-500">*</span>
-              <span className="rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-500">
-                Read only
-              </span>
-            </label>
-
-            <div className="relative">
-              <Link2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-
-              <input
-                id="blog-slug"
-                type="text"
-                readOnly
-                required
-                {...register("slug")}
-                placeholder="Generated blog slug"
-                className="w-full cursor-not-allowed rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-4 text-sm text-gray-600 outline-none"
-              />
-            </div>
-
-            {errors.slug && (
-              <p className="text-xs text-red-500">{errors.slug.message}</p>
-            )}
-
-            <p className="text-xs leading-5 text-gray-400">
-              This slug was generated during blog creation. It remains unchanged
-              to preserve the existing blog URL.
-            </p>
-          </div>
-
           <FormInput
             name="thumbnail"
             label="Thumbnail Image URL"
@@ -812,10 +774,6 @@ export default function ManageBlogPage() {
                           Featured
                         </th>
 
-                        <th className="w-[150px] min-w-[150px] px-5 py-4 font-semibold">
-                          Created At
-                        </th>
-
                         <th className="sticky right-0 z-30 w-[150px] min-w-[150px] border-l border-gray-200 bg-gray-50 px-4 py-4 text-center font-semibold shadow-[-8px_0_12px_-10px_rgba(0,0,0,0.5)]">
                           Actions
                         </th>
@@ -899,15 +857,6 @@ export default function ManageBlogPage() {
                                 Not Featured
                               </span>
                             )}
-                          </td>
-
-                          {/* CREATED DATE */}
-
-                          <td className="whitespace-nowrap px-5 py-4">
-                            <div className="flex items-center gap-2 text-xs text-gray-500">
-                              <CalendarDays className="h-4 w-4" />
-                              {formatDate(blog.createdAt)}
-                            </div>
                           </td>
 
                           {/* STICKY ACTIONS */}
