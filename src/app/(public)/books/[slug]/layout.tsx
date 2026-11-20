@@ -1,7 +1,9 @@
-import React from "react";
+import type { ReactNode } from "react";
 
-const layout = () => {
-  return <div></div>;
-};
-
-export default layout;
+export default function BookReaderLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return <div className="min-h-screen bg-[#f8faf8]">{children}</div>;
+}
