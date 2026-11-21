@@ -520,3 +520,136 @@
     padding: 0.65rem 0.75rem;
   }
 }
+
+/* =========================================
+   Almunji Book Reader
+========================================= */
+
+.book-content {
+  color: #334155;
+  font-size: 1rem;
+  line-height: 2;
+  overflow-wrap: break-word;
+}
+
+.book-content > * + * {
+  margin-top: 1.25rem;
+}
+
+.book-content h1 {
+  color: #0f172a;
+  font-size: 1.875rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.book-content h2 {
+  color: #0f172a;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.book-content h3 {
+  color: #1e293b;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.book-content p {
+  margin: 1rem 0;
+}
+
+.book-content strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.book-content ul,
+.book-content ol {
+  margin: 1.25rem 0;
+  padding-left: 1.75rem;
+}
+
+.book-content ul {
+  list-style-type: disc;
+}
+
+.book-content ol {
+  list-style-type: decimal;
+}
+
+.book-content li {
+  margin: 0.5rem 0;
+  padding-left: 0.25rem;
+}
+
+.book-content blockquote {
+  margin: 1.5rem 0;
+  border-left: 4px solid #059669;
+  border-radius: 0 0.75rem 0.75rem 0;
+  background: #ecfdf5;
+  padding: 1rem 1.25rem;
+  color: #065f46;
+}
+
+.book-content a {
+  color: #047857;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.book-content img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border-radius: 0.75rem;
+}
+
+.book-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  overflow: hidden;
+}
+
+.book-content th,
+.book-content td {
+  border: 1px solid #e2e8f0;
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+
+.book-content th {
+  background: #f1f5f9;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.book-content pre {
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  background: #0f172a;
+  padding: 1rem;
+  color: #f8fafc;
+}
+
+.book-content code {
+  border-radius: 0.25rem;
+  background: #f1f5f9;
+  padding: 0.15rem 0.35rem;
+  font-size: 0.9em;
+}
+
+.book-content pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+.book-content hr {
+  margin: 2rem 0;
+  border-color: #e2e8f0;
+}
