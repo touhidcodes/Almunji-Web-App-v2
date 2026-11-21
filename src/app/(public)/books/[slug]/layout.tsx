@@ -1,9 +1,13 @@
 import type { ReactNode } from "react";
 
-export default function BookReaderLayout({
-  children,
-}: {
+interface BookReaderLayoutProps {
   children: ReactNode;
-}) {
-  return <div className="min-h-screen bg-[#f8faf8]">{children}</div>;
+}
+
+export default function BookReaderLayout({ children }: BookReaderLayoutProps) {
+  return (
+    <div className="min-h-screen bg-[#f8f7f2] text-slate-800 dark:bg-[#111827] dark:text-slate-100">
+      {children}
+    </div>
+  );
 }
