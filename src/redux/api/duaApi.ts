@@ -1,14 +1,20 @@
-import type { TDuaData, TDuaQueryParams, TUpdateDuaArgs } from "@/types/dua";
+import type {
+  TDua,
+  TDuaQueryParams,
+  TCreateDuaPayload,
+  TUpdateDuaArgs,
+  TDuaListResponse,
+  TDuaSingleResponse,
+  TDuaMutationResponse,
+} from "@/types/dua";
+
 import { tagTypes } from "../tags";
 import { baseServerApi } from "./baseApi";
 
 export const duaApi = baseServerApi.injectEndpoints({
   endpoints: (build) => ({
     // Create Dua
-    createDua: build.mutation<
-      { success: boolean; message?: string; data?: unknown },
-      TDuaData
-    >({
+    createDua: build.mutation<TDuaMutationResponse, TCreateDuaPayload>({
       query: (data) => ({
         url: "/dua",
         method: "POST",
@@ -18,8 +24,8 @@ export const duaApi = baseServerApi.injectEndpoints({
     }),
 
     // Get all Duas for users
-    getAllDuas: build.query({
-      query: (params: TDuaQueryParams = {}) => ({
+    getAllDuas: build.query<TDuaListResponse, TDuaQueryParams>({
+      query: (params = {}) => ({
         url: "/dua/all",
         method: "GET",
         params,
@@ -28,8 +34,8 @@ export const duaApi = baseServerApi.injectEndpoints({
     }),
 
     // Get all Duas for admin
-    getAllDuasAdmin: build.query({
-      query: (params: TDuaQueryParams = {}) => ({
+    getAllDuasAdmin: build.query<TDuaListResponse, TDuaQueryParams>({
+      query: (params = {}) => ({
         url: "/dua/admin/all",
         method: "GET",
         params,
@@ -38,8 +44,8 @@ export const duaApi = baseServerApi.injectEndpoints({
     }),
 
     // Get a single Dua
-    getSingleDua: build.query({
-      query: (id: string) => ({
+    getSingleDua: build.query<TDuaSingleResponse, string>({
+      query: (id) => ({
         url: `/dua/${id}`,
         method: "GET",
       }),
@@ -47,10 +53,7 @@ export const duaApi = baseServerApi.injectEndpoints({
     }),
 
     // Update Dua
-    updateDua: build.mutation<
-      { success: boolean; message?: string; data?: unknown },
-      TUpdateDuaArgs
-    >({
+    updateDua: build.mutation<TDuaMutationResponse, TUpdateDuaArgs>({
       query: ({ id, data }) => ({
         url: `/dua/${id}`,
         method: "PUT",

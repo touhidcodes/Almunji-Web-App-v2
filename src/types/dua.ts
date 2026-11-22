@@ -8,35 +8,56 @@ export type TDuaQueryParams = {
   sortOrder?: "asc" | "desc";
 };
 
-export interface TDuaData {
-  id?: string;
+// Prisma Json? field representation
+export type TDuaTags = string[] | null;
+
+export interface TDua {
+  id: string;
   name: string;
   arabic: string;
-  transliteration?: string;
+  transliteration: string | null;
   bangla: string;
-  english?: string;
-  reference?: string;
-  tags?: string[];
-  isDeleted?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  english: string | null;
+  reference: string | null;
+  tags: TDuaTags;
+  isDeleted: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
+
+export type TCreateDuaPayload = {
+  name: string;
+  arabic: string;
+  transliteration?: string | null;
+  bangla: string;
+  english?: string | null;
+  reference?: string | null;
+  tags?: string[] | null;
+};
+
+export type TUpdateDuaPayload = Partial<TCreateDuaPayload> & {
+  isDeleted?: boolean;
+};
 
 export type TUpdateDuaArgs = {
   id: string;
-  data: Partial<TDuaData>;
+  data: TUpdateDuaPayload;
 };
 
-export type TUpdateDuaPayload = Partial<
-  Pick<
-    TDuaData,
-    | "name"
-    | "arabic"
-    | "transliteration"
-    | "bangla"
-    | "english"
-    | "reference"
-    | "tags"
-    | "isDeleted"
-  >
->;
+export interface TDuaListResponse {
+  success: boolean;
+  message?: string;
+  data: TDua[];
+}
+
+export interface TDuaSingleResponse {
+  success: boolean;
+  message?: string;
+  data: TDua;
+}
+
+export interface TDuaMutationResponse {
+  success: boolean;
+  message?: string;
+  data?: TDua;
+}
