@@ -20,12 +20,12 @@ import {
 
 import { UpdateDuaSchema, type TDuaFormValues } from "@/schema/duaSchema";
 
-import type { TDuaData, TUpdateDuaPayload } from "@/types/dua";
+import type { TDua, TUpdateDuaPayload } from "@/types/dua";
 import { TApiError } from "@/types/api";
 
 const CREATE_URL = "/dashboard/admin/create/dua";
 
-type TManagedDua = TDuaData & {
+type TManagedDua = TDua & {
   id: string;
 };
 
