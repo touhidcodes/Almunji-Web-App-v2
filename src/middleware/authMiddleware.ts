@@ -1,19 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
 import { jwtDecode } from "jwt-decode";
-import { Permission } from "@/types/permission";
 
-interface DecodedToken {
-  role?: string;
+import type { Permission } from "@/types/permission";
+
+export interface DecodedToken {
   userId?: string;
+  email?: string;
+  role?: string;
   permissions?: Permission[];
   exp?: number;
-  [key: string]: unknown;
+  iat?: number;
 }
 
-const protectedRoutes = ["/dashboard"];
-
-// Route permission mapping for role-based access
 const roleRoutes: Record<string, string[]> = {
+  SUPERADMIN: ["/dashboard"],
   ADMIN: [
     "/dashboard/admin/overview",
     "/dashboard/admin/logs",
@@ -35,68 +34,80 @@ const roleRoutes: Record<string, string[]> = {
   ],
 };
 
-export function authMiddleware(request: NextRequest) {
-  const path = request.nextUrl.pathname;
-  
-  // Get cookie from Next.js request (server-side)
-  const token = request.cookies.get("accessToken")?.value;
-  const permissionsCookie = request.cookies.get("permissions")?.value;
-
-  // Public routes don't need auth
-  if (!protectedRoutes.some((route) => path.startsWith(route))) {
-    return NextResponse.next();
+const isPermission = (value: unknown): value is Permission => {
+  if (typeof value !== "object" || value === null) {
+    return false;
   }
 
-  // If no token, redirect to login
-  if (!token) {
-    const url = new URL("/auth", request.url);
-    url.searchParams.set("redirect", path);
-    return NextResponse.redirect(url);
-  }
+  const permission = value as Record<string, unknown>;
 
-  // Decode token to check role and permissions
-  let decoded: DecodedToken;
+  return (
+    typeof permission.id === "string" &&
+    typeof permission.resource === "string" &&
+    typeof permission.action === "string"
+  );
+};
+
+export const decodeAccessToken = (token: string): DecodedToken | null => {
   try {
-    decoded = jwtDecode(token);
-  } catch {
-    const url = new URL("/auth", request.url);
-    return NextResponse.redirect(url);
-  }
+    const decoded = jwtDecode<DecodedToken>(token);
 
-  // Check if token is expired
-  if (decoded.exp && Date.now() > decoded.exp * 1000) {
-    const url = new URL("/auth", request.url);
-    return NextResponse.redirect(url);
-  }
-
-  const role = decoded.role?.toUpperCase();
-  const permissions = decoded.permissions || (permissionsCookie ? (JSON.parse(permissionsCookie) as Permission[]) : []);
-
-  // Check if role has access to this route
-  const allowedRoutes = roleRoutes[role] || [];
-  
-  // Check if path matches any allowed route
-  const hasRouteAccess = allowedRoutes.some((route) => path.startsWith(route));
-
-  if (!hasRouteAccess) {
-    // For MODERATOR role, check specific permissions
-    if (role === "MODERATOR" && permissions.length > 0) {
-      const hasPermission = permissions.some((perm: Permission) => {
-        return path.startsWith(perm.route) && 
-               (perm.action === "read" || perm.action === "update" || perm.action === "delete" || perm.action === "create");
-      });
-      
-      if (hasPermission) {
-        return NextResponse.next();
-      }
+    if (!decoded.exp || Date.now() >= decoded.exp * 1000) {
+      return null;
     }
-    
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+
+    return decoded;
+  } catch {
+    return null;
+  }
+};
+
+export const getUserPermissions = (
+  tokenPermissions?: Permission[],
+  permissionsCookie?: string,
+): Permission[] => {
+  if (Array.isArray(tokenPermissions)) {
+    return tokenPermissions.filter(isPermission);
   }
 
-  return NextResponse.next();
-}
+  if (!permissionsCookie) return [];
 
-export const config = {
-  matcher: ["/dashboard/:path*", "/auth"],
+  try {
+    const parsed: unknown = JSON.parse(permissionsCookie);
+
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.filter(isPermission);
+  } catch {
+    return [];
+  }
+};
+
+export const hasRouteAccess = (
+  path: string,
+  allowedRoutes: string[],
+): boolean => {
+  return allowedRoutes.some(
+    (route) => path === route || path.startsWith(`${route}/`),
+  );
+};
+
+export const hasRoleAccess = (role: string, path: string): boolean => {
+  const allowedRoutes = roleRoutes[role] ?? [];
+
+  return hasRouteAccess(path, allowedRoutes);
+};
+
+export const hasPermissionAccess = (
+  path: string,
+  permissions: Permission[],
+): boolean => {
+  return permissions.some((permission) => {
+    const resourceRoute = `/dashboard/admin/${permission.resource}`;
+
+    return (
+      hasRouteAccess(path, [resourceRoute]) &&
+      ["read", "create", "update", "delete"].includes(permission.action)
+    );
+  });
 };
