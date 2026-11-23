@@ -1,4 +1,4 @@
-import { Resource, Action } from "./user";
+import type { Resource, Action } from "./user";
 
 export interface Permission {
   id: string;
