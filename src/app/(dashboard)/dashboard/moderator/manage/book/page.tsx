@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export default function ModeratorManageBookPage() {
   const [deleteBook] = useSoftDeleteBookMutation();
-  const { data: booksData, isLoading } = useGetAllBooksAdminQuery({ searchTerm: "" });
+  const { data: booksData, isLoading } = useGetAllBooksAdminQuery();
   const books = booksData?.data || [];
 
   const handleDelete = async (id: string) => {

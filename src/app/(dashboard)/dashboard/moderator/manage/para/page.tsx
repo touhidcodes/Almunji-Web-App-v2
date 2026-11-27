@@ -1,12 +1,12 @@
 "use client";
 
-import { useGetAllParasQuery, useSoftDeleteParaMutation } from "@/redux/api/paraApi";
+import { useGetAllParaQuery, useSoftDeleteParaMutation } from "@/redux/api/paraApi";
 import { Book } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ModeratorManageParaPage() {
   const [deletePara] = useSoftDeleteParaMutation();
-  const { data: parasData, isLoading } = useGetAllParasQuery();
+  const { data: parasData, isLoading } = useGetAllParaQuery({});
   const paras = parasData?.data || [];
 
   const handleDelete = async (id: string) => {

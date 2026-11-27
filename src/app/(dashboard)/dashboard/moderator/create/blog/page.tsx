@@ -16,7 +16,7 @@ export default function ModeratorCreateBlogPage() {
       const res = await createBlog({ ...data, isPublished: true }).unwrap();
       if (res.success) {
         toast.success("Blog published!");
-        setTimeout(() => Link.push("/dashboard/moderator/manage/blog"), 1000);
+        setTimeout(() => window.location.assign("/dashboard/moderator/manage/blog"), 1000);
       }
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to create blog");

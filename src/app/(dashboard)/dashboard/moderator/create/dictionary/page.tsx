@@ -22,7 +22,7 @@ export default function ModeratorCreateDictionaryPage() {
       const res = await createWord(apiData).unwrap();
       if (res.success) {
         toast.success("Word created!");
-        setTimeout(() => Link.push("/dashboard/moderator/dictionary"), 1000);
+        setTimeout(() => window.location.assign("/dashboard/moderator/manage/dictionary"), 1000);
       }
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to create word");

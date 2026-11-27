@@ -16,7 +16,7 @@ export default function ModeratorCreateTafsirPage() {
       const res = await createTafsir(data).unwrap();
       if (res.success) {
         toast.success("Tafsir created!");
-        setTimeout(() => Link.push("/dashboard/moderator/manage/tafsir"), 1000);
+        setTimeout(() => window.location.assign("/dashboard/moderator/manage/tafsir"), 1000);
       }
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to create tafsir");

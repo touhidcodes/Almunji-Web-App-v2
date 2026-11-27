@@ -16,7 +16,7 @@ export default function ModeratorCreateParaPage() {
       const res = await createPara(data).unwrap();
       if (res.success) {
         toast.success("Para created!");
-        setTimeout(() => Link.push("/dashboard/moderator/manage/para"), 1000);
+        setTimeout(() => window.location.assign("/dashboard/moderator/manage/para"), 1000);
       }
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to create para");

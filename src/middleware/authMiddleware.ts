@@ -111,7 +111,7 @@ export const hasPermissionAccess = (
   const section = route[3];
   const name = section === "dictionary" ? "dictionary" : route[4];
   const resourceByRoute: Record<string, string> = {
-    para: "PARA", surahs: "SURAH", ayahs: "AYAH", tafsir: "TAFSIR",
+    para: "PARA", surah: "SURAH", surahs: "SURAH", ayah: "AYAH", ayahs: "AYAH", tafsir: "TAFSIR",
     dictionary: "DICTIONARY", dua: "DUA", book: "BOOK", category: "BOOKCATEGORY",
     blog: "BLOG", bookmarks: "BOOKMARK",
   };

@@ -16,7 +16,7 @@ export default function ModeratorCreateDuaPage() {
       const res = await createDua(data).unwrap();
       if (res.success) {
         toast.success("Dua created!");
-        setTimeout(() => Link.push("/dashboard/moderator/manage/dua"), 1000);
+        setTimeout(() => window.location.assign("/dashboard/moderator/manage/dua"), 1000);
       }
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to create dua");

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 export default function ModeratorManageBlogPage() {
   const [deleteBlog] = useSoftDeleteBlogMutation();
   const { data: blogsData, isLoading } = useGetAllBlogsAdminQuery({ searchTerm: "" });
-  const blogs = blogsData?.data || [];
+  const blogs = blogsData?.data?.blogs || [];
 
   const handleDelete = async (id: string) => {
     if (confirm("Delete this blog?")) {

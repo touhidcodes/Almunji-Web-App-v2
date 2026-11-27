@@ -16,7 +16,7 @@ export default function ModeratorCreateBookPage() {
       const res = await createBook(data).unwrap();
       if (res.success) {
         toast.success("Book created!");
-        setTimeout(() => Link.push("/dashboard/moderator/manage/book"), 1000);
+        setTimeout(() => window.location.assign("/dashboard/moderator/manage/book"), 1000);
       }
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to create book");

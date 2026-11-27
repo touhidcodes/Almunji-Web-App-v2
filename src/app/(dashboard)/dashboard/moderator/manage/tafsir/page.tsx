@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export default function ModeratorManageTafsirPage() {
   const [deleteTafsir] = useSoftDeleteTafsirMutation();
-  const { data: tafsirData, isLoading } = useGetAllTafsirAdminQuery();
+  const { data: tafsirData, isLoading } = useGetAllTafsirAdminQuery({});
   const tafsirs = tafsirData?.data || [];
 
   const handleDelete = async (id: string) => {

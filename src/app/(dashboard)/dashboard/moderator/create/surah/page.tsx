@@ -16,7 +16,7 @@ export default function ModeratorCreateSurahPage() {
       const res = await createSurah(data).unwrap();
       if (res.success) {
         toast.success("Surah created!");
-        setTimeout(() => Link.push("/dashboard/moderator/manage/surahs"), 1000);
+        setTimeout(() => window.location.assign("/dashboard/moderator/manage/surah"), 1000);
       }
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to create surah");

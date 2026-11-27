@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export default function ModeratorManageCategoryPage() {
   const [deleteCategory] = useSoftDeleteCategoryMutation();
-  const { data: categoriesData, isLoading } = useGetAllCategoriesAdminQuery();
+  const { data: categoriesData, isLoading } = useGetAllCategoriesAdminQuery({});
   const categories = categoriesData?.data || [];
 
   const handleDelete = async (id: string) => {

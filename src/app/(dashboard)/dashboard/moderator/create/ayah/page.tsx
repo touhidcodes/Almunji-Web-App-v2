@@ -16,7 +16,7 @@ export default function ModeratorCreateAyahPage() {
       const res = await createAyah(data).unwrap();
       if (res.success) {
         toast.success("Ayah created!");
-        setTimeout(() => Link.push("/dashboard/moderator/manage/ayahs"), 1000);
+        setTimeout(() => window.location.assign("/dashboard/moderator/manage/ayah"), 1000);
       }
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to create ayah");

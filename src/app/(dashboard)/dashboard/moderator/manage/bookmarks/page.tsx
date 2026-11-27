@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export default function ModeratorManageBookmarksPage() {
   const [deleteBookmark] = useHardDeleteBookmarkMutation();
-  const { data: bookmarksData, isLoading } = useGetAllBookmarksAdminQuery();
+  const { data: bookmarksData, isLoading } = useGetAllBookmarksAdminQuery({});
   const bookmarks = bookmarksData?.data || [];
 
   const handleDelete = async (id: string) => {

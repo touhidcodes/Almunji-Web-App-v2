@@ -1,12 +1,12 @@
 "use client";
 
-import { useGetAllDuasQuery, useSoftDeleteDuaMutation } from "@/redux/api/duaApi";
+import { useGetAllDuasAdminQuery, useSoftDeleteDuaMutation } from "@/redux/api/duaApi";
 import { BookOpen } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ModeratorManageDuaPage() {
   const [deleteDua] = useSoftDeleteDuaMutation();
-  const { data: duasData, isLoading } = useGetAllDuasQuery();
+  const { data: duasData, isLoading } = useGetAllDuasAdminQuery({});
   const duas = duasData?.data || [];
 
   const handleDelete = async (id: string) => {

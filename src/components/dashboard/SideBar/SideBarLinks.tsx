@@ -46,10 +46,10 @@ const routePermissions = {
 
   moderatorOverview: "/dashboard/moderator/overview",
   moderatorManagePara: "/dashboard/moderator/manage/para",
-  moderatorManageSurahs: "/dashboard/moderator/manage/surahs",
-  moderatorManageAyahs: "/dashboard/moderator/manage/ayahs",
+  moderatorManageSurahs: "/dashboard/moderator/manage/surah",
+  moderatorManageAyahs: "/dashboard/moderator/manage/ayah",
   moderatorManageTafsir: "/dashboard/moderator/manage/tafsir",
-  moderatorDictionary: "/dashboard/moderator/dictionary",
+  moderatorDictionary: "/dashboard/moderator/manage/dictionary",
   moderatorManageDua: "/dashboard/moderator/manage/dua",
   moderatorManageBook: "/dashboard/moderator/manage/book",
   moderatorManageCategory: "/dashboard/moderator/manage/category",
