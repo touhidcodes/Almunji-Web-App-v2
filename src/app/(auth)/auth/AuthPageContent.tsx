@@ -34,7 +34,7 @@ const AuthPageContent = () => {
       setError("");
       const res = await userLogin(values);
 
-      if (res?.data?.token) {
+      if (res?.authenticated) {
         toast.success(res?.message);
         router.push("/");
       } else {

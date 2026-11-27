@@ -2,11 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { getPermissions } from "@/services/actions/getPermissions";
-
-export interface Permission {
-  route: string;
-  action: "read" | "create" | "update" | "delete";
-}
+import { hasPermissionAccess } from "@/middleware/authMiddleware";
+import type { Permission } from "@/types/permission";
 
 export const usePermissions = () => {
   const [permissions, setPermissions] = useState<Permission[]>([]);
@@ -28,9 +25,7 @@ export const usePermissions = () => {
 
   // Helper function to check if user has specific permission
   const hasPermission = (route: string, action: "read" | "create" | "update" | "delete" = "read") => {
-    return permissions.some(
-      (perm) => perm.route === route && (perm.action === action || perm.action === "read")
-    );
+    return hasPermissionAccess(route, permissions);
   };
 
   // Helper function to check if user has any of the specified permissions

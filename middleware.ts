@@ -34,7 +34,7 @@ export async function middleware(request: NextRequest) {
       return response;
     }
 
-    const { role, permissions: tokenPermissions } = decodedToken;
+    const { role } = decodedToken;
 
     // Profile pages are available to every signed-in dashboard role.
     const sharedRoute = pathname === "/dashboard/profile" || pathname === "/dashboard/change-password";
@@ -57,10 +57,14 @@ export async function middleware(request: NextRequest) {
         if (user?.role !== "MODERATOR" || user?.status !== "ACTIVE") {
           return NextResponse.redirect(new URL("/", request.url));
         }
-        permissions = getUserPermissions(
-          tokenPermissions,
-          request.cookies.get(PERMISSIONS_COOKIE)?.value,
-        );
+        const grantsResponse = await fetch(`${baseUrl.replace(/\/$/, "")}/permission/me`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          cache: "no-store",
+        });
+        if (!grantsResponse.ok) return NextResponse.redirect(new URL("/auth?type=login", request.url));
+        const grantsPayload = await grantsResponse.json();
+        if (!Array.isArray(grantsPayload?.data)) return NextResponse.redirect(new URL("/auth?type=login", request.url));
+        permissions = getUserPermissions(grantsPayload.data);
       } catch {
         return NextResponse.redirect(new URL("/auth?type=login", request.url));
       }

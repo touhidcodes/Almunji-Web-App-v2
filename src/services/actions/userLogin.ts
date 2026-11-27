@@ -1,6 +1,7 @@
+"use server";
+
 import { FieldValues } from "react-hook-form";
-import { toast } from "sonner";
-import { setClientCookie } from "@/utils/clientCookies";
+import setAccessToken from "./setAccessToken";
 
 export const userLogin = async (data: FieldValues) => {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5000/api/v1";
@@ -16,20 +17,13 @@ export const userLogin = async (data: FieldValues) => {
   const userInfo = await res.json();
 
   if (userInfo.success === false) {
-    toast.error(userInfo.message || "Login failed");
     return userInfo;
   }
 
   if (userInfo.data?.token) {
-    setClientCookie("accessToken", userInfo.data.token);
-    
-    // Store permissions if available (from backend response)
-    if (userInfo.data.permissions) {
-      setClientCookie("permissions", JSON.stringify(userInfo.data.permissions));
-    }
-    
-    toast.success("Login successful!");
+    await setAccessToken(userInfo.data.token);
+    return { success: true, message: userInfo.message, authenticated: true };
   }
 
-  return userInfo;
+  return { success: false, message: userInfo.message || "Login failed", authenticated: false };
 };

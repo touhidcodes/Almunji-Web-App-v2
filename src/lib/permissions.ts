@@ -1,4 +1,5 @@
 import { Permission } from "@/types/permission";
+import { hasPermissionAccess } from "@/middleware/authMiddleware";
 
 export interface User {
   role?: string;
@@ -20,9 +21,7 @@ export const hasPermission = (
 
   // Check specific permissions for non-admin users
   if (user.permissions && user.permissions.length > 0) {
-    return user.permissions.some(
-      (perm) => perm.route === route && (perm.action === action || perm.action === "read")
-    );
+    return hasPermissionAccess(route, user.permissions);
   }
 
   return false;
