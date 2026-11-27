@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 
 import { Permission, SidebarGroup, SidebarItem } from "@/types/sidebar";
+import { getUserPermissions, hasPermissionAccess } from "@/middleware/authMiddleware";
+import type { Permission as ResourcePermission } from "@/types/permission";
 
 // Route permission mappings
 const routePermissions = {
@@ -66,7 +68,7 @@ const routePermissions = {
 
 export const getSidebarLinks = (
   role: TAuthRole,
-  permissions: Permission[] = [],
+  permissions: ResourcePermission[] = [],
 ): SidebarGroup[] => {
   // Helper to check permission
   const hasPermission = (
@@ -77,11 +79,8 @@ export const getSidebarLinks = (
     if (role === "ADMIN") {
       return true;
     }
-    return permissions.some(
-      (perm) =>
-        perm.route === route &&
-        (perm.action === action || perm.action === "read"),
-    );
+    if (role === "MODERATOR") return hasPermissionAccess(route, getUserPermissions(permissions));
+    return true;
   };
 
   // Filter items by permission
@@ -459,7 +458,20 @@ export const getSidebarLinks = (
         },
         ...profileSettingsItems,
         ...settingsItem,
-      ];
+        {
+          section: "Create",
+          items: filterItems([
+            { label: "Add Para", href: "/dashboard/moderator/create/para", icon: FilePlus2, permission: { route: "/dashboard/moderator/create/para", action: "create" } },
+            { label: "Add Surah", href: "/dashboard/moderator/create/surah", icon: FilePlus2, permission: { route: "/dashboard/moderator/create/surah", action: "create" } },
+            { label: "Add Ayah", href: "/dashboard/moderator/create/ayah", icon: FilePlus2, permission: { route: "/dashboard/moderator/create/ayah", action: "create" } },
+            { label: "Add Tafsir", href: "/dashboard/moderator/create/tafsir", icon: FilePlus2, permission: { route: "/dashboard/moderator/create/tafsir", action: "create" } },
+            { label: "Add Dua", href: "/dashboard/moderator/create/dua", icon: FilePlus2, permission: { route: "/dashboard/moderator/create/dua", action: "create" } },
+            { label: "Add Dictionary Word", href: "/dashboard/moderator/create/dictionary", icon: FilePlus2, permission: { route: "/dashboard/moderator/create/dictionary", action: "create" } },
+            { label: "Add Blog", href: "/dashboard/moderator/create/blog", icon: FilePlus2, permission: { route: "/dashboard/moderator/create/blog", action: "create" } },
+            { label: "Add Book", href: "/dashboard/moderator/create/book", icon: FilePlus2, permission: { route: "/dashboard/moderator/create/book", action: "create" } },
+          ]),
+        },
+      ].filter((group) => group.items.length > 0);
 
     case authRole.USER:
       return [

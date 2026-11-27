@@ -10,7 +10,7 @@ import {
 const ACCESS_TOKEN_COOKIE = "accessToken";
 const PERMISSIONS_COOKIE = "permissions";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
@@ -36,17 +36,34 @@ export function middleware(request: NextRequest) {
 
     const { role, permissions: tokenPermissions } = decodedToken;
 
-    // Check role-based access
-    if (!hasRoleAccess(role, pathname)) {
+    // Profile pages are available to every signed-in dashboard role.
+    const sharedRoute = pathname === "/dashboard/profile" || pathname === "/dashboard/change-password";
+    if (!sharedRoute && !hasRoleAccess(role, pathname)) {
       return NextResponse.redirect(new URL("/", request.url));
     }
 
-    // Check additional permissions for moderators
+    // Fetch current grants from the backend; cookies are display hints, not authority.
     if (role === "MODERATOR") {
-      const permissions = getUserPermissions(
-        tokenPermissions,
-        request.cookies.get(PERMISSIONS_COOKIE)?.value,
-      );
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5000/api/v1";
+      let permissions;
+      try {
+        const result = await fetch(`${baseUrl.replace(/\/$/, "")}/user`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          cache: "no-store",
+        });
+        if (!result.ok) return NextResponse.redirect(new URL("/auth?type=login", request.url));
+        const payload = await result.json();
+        const user = payload?.data?.user ?? payload?.data;
+        if (user?.role !== "MODERATOR" || user?.status !== "ACTIVE") {
+          return NextResponse.redirect(new URL("/", request.url));
+        }
+        permissions = getUserPermissions(
+          tokenPermissions,
+          request.cookies.get(PERMISSIONS_COOKIE)?.value,
+        );
+      } catch {
+        return NextResponse.redirect(new URL("/auth?type=login", request.url));
+      }
 
       if (!hasPermissionAccess(pathname, permissions)) {
         return NextResponse.redirect(

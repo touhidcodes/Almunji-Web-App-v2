@@ -23,6 +23,7 @@ const roleRoutes: Record<string, string[]> = {
   MODERATOR: [
     "/dashboard/moderator/overview",
     "/dashboard/moderator/manage",
+    "/dashboard/moderator/create",
     "/dashboard/moderator/dictionary",
     "/dashboard/moderator/bookmarks",
   ],
@@ -39,10 +40,12 @@ const isPermission = (value: unknown): value is Permission => {
     return false;
   }
 
-  const permission = value as Record<string, unknown>;
+  const wrapper = value as Record<string, unknown>;
+  const permission = (wrapper.permission && typeof wrapper.permission === "object"
+    ? wrapper.permission
+    : wrapper) as Record<string, unknown>;
 
   return (
-    typeof permission.id === "string" &&
     typeof permission.resource === "string" &&
     typeof permission.action === "string"
   );
@@ -67,7 +70,7 @@ export const getUserPermissions = (
   permissionsCookie?: string,
 ): Permission[] => {
   if (Array.isArray(tokenPermissions)) {
-    return tokenPermissions.filter(isPermission);
+    return tokenPermissions.map((item) => (item as { permission?: Permission }).permission ?? item).filter(isPermission);
   }
 
   if (!permissionsCookie) return [];
@@ -77,7 +80,7 @@ export const getUserPermissions = (
 
     if (!Array.isArray(parsed)) return [];
 
-    return parsed.filter(isPermission);
+    return parsed.map((item) => item?.permission ?? item).filter(isPermission);
   } catch {
     return [];
   }
@@ -102,12 +105,20 @@ export const hasPermissionAccess = (
   path: string,
   permissions: Permission[],
 ): boolean => {
-  return permissions.some((permission) => {
-    const resourceRoute = `/dashboard/admin/${permission.resource}`;
-
-    return (
-      hasRouteAccess(path, [resourceRoute]) &&
-      ["read", "create", "update", "delete"].includes(permission.action)
-    );
-  });
+  if (path === "/dashboard/moderator/overview" || path === "/dashboard/profile" || path === "/dashboard/change-password") return true;
+  const route = path.replace(/\/$/, "").split("/");
+  if (route[1] !== "dashboard" || route[2] !== "moderator") return false;
+  const section = route[3];
+  const name = section === "dictionary" ? "dictionary" : route[4];
+  const resourceByRoute: Record<string, string> = {
+    para: "PARA", surahs: "SURAH", ayahs: "AYAH", tafsir: "TAFSIR",
+    dictionary: "DICTIONARY", dua: "DUA", book: "BOOK", category: "BOOKCATEGORY",
+    blog: "BLOG", bookmarks: "BOOKMARK",
+  };
+  const resource = resourceByRoute[name];
+  const action = section === "create" ? "CREATE" : section === "manage" || section === "dictionary" ? "READ" : "";
+  if (!resource || !action || route.length > (section === "dictionary" ? 4 : 5)) return false;
+  return permissions.some((permission) =>
+    permission.resource.toUpperCase() === resource && permission.action.toUpperCase() === action,
+  );
 };
