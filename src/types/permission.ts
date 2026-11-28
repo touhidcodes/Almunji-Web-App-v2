@@ -31,10 +31,6 @@ export interface UserPermissionData {
 }
 
 export interface UserPermissionsResponse {
-  permissions: PermissionData[];
-}
-
-export interface UserPermissionsResponse {
   permissions: Permission[];
 }
 

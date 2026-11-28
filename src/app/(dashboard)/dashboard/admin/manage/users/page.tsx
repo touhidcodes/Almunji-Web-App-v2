@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
 import {
   useGetAllUsersQuery,
   useUpdateUserStatusMutation,
@@ -12,7 +11,8 @@ import {
   useGetUserPermissionsQuery,
   useRemovePermissionMutation,
 } from "@/redux/api/permissionApi";
-import type { TUser } from "@/types/user";
+import type { TUser, UserRole, UserStatus } from "@/types/user";
+import type { Permission } from "@/types/permission";
 import {
   Users,
   X,
@@ -25,50 +25,37 @@ import {
   ChevronDown,
   Shield,
   Award,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
-interface PermissionData {
-  id: string;
-  resource: string;
-  action: string;
+interface StatCardProps {
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+  iconClass: string;
 }
 
-interface UserPermissionData {
-  permission?: PermissionData | null;
-  permissionId?: string;
-}
+const ROLE_OPTIONS: { label: string; value: UserRole }[] = [
+  { label: "User", value: "USER" as UserRole },
+  { label: "Moderator", value: "MODERATOR" as UserRole },
+  { label: "Admin", value: "ADMIN" as UserRole },
+];
 
-interface PermissionsResponse {
-  data: {
-    permissions: PermissionData[];
-  };
-}
-
-interface UserPermissionsResponse {
-  data: UserPermissionData[];
-}
-
-const getPermissionIds = (userPermissions: UserPermissionData[]): string[] => {
-  return [
-    ...new Set(
-      userPermissions.flatMap((item) => {
-        const permissionId = item?.permission?.id ?? item?.permissionId;
-
-        return permissionId ? [permissionId] : [];
-      }),
-    ),
-  ];
-};
+const STATUS_OPTIONS: { label: string; value: UserStatus }[] = [
+  { label: "Active", value: "ACTIVE" as UserStatus },
+  { label: "Blocked", value: "BLOCKED" as UserStatus },
+];
 
 export default function ManageUsersPage() {
   // Selected user and modal state
   const [selectedUser, setSelectedUser] = useState<TUser | null>(null);
-  const [status, setStatus] = useState("ACTIVE");
-  const [role, setRole] = useState("USER");
+  const [status, setStatus] = useState<UserStatus>("ACTIVE" as UserStatus);
+  const [role, setRole] = useState<UserRole>("USER" as UserRole);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [assignedPermissions, setAssignedPermissions] = useState<string[]>([]);
 
-  // Filters
+  // Directory filters
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [roleFilter, setRoleFilter] = useState("ALL");
@@ -78,23 +65,23 @@ export default function ManageUsersPage() {
     data: usersData,
     isLoading: usersLoading,
     isError: usersError,
-  } = useGetAllUsersQuery({});
+    refetch: refetchUsers,
+  } = useGetAllUsersQuery();
 
-  // Permissions query
-  const { data: permissionsData } =
-    useGetAllPermissionsQuery<PermissionsResponse>({});
+  // Available permissions
+  const { data: permissionsData, isLoading: permissionsLoading } =
+    useGetAllPermissionsQuery();
 
-  // Use currentData to avoid displaying another user's cached permissions
+  // User permissions
+  // currentData belongs to the currently selected query argument.
   const {
-    currentData: userPermissionsData,
-    isLoading: permissionsLoading,
-    isError: permissionsError,
-  } = useGetUserPermissionsQuery<UserPermissionsResponse>(
-    selectedUser?.id || "",
-    {
-      skip: !selectedUser?.id,
-    },
-  );
+    currentData: currentUserPermissionsData,
+    isLoading: userPermissionsLoading,
+    isFetching: userPermissionsFetching,
+    isError: userPermissionsError,
+  } = useGetUserPermissionsQuery(selectedUser?.id ?? "", {
+    skip: !selectedUser?.id,
+  });
 
   // Mutations
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserStatusMutation();
@@ -105,11 +92,35 @@ export default function ManageUsersPage() {
   const [removePermission, { isLoading: isRemoving }] =
     useRemovePermissionMutation();
 
-  const isProcessing = isUpdating || isAssigning || isRemoving;
-
-  // Data
+  // API data
   const users: TUser[] = usersData?.data ?? [];
-  const permissions = permissionsData?.data?.permissions ?? [];
+  const permissions: Permission[] = permissionsData?.data?.permissions ?? [];
+
+  // Synchronize modal state when the selected user changes.
+  useEffect(() => {
+    if (!selectedUser) {
+      return;
+    }
+
+    setStatus(selectedUser.status);
+    setRole(selectedUser.role);
+    setSelectedPermissions([]);
+    setAssignedPermissions([]);
+  }, [selectedUser?.id]);
+
+  // Load permissions only from the currently selected user's query.
+  useEffect(() => {
+    if (!selectedUser || !currentUserPermissionsData) {
+      return;
+    }
+
+    const permissionIds = (currentUserPermissionsData.data ?? [])
+      .filter((permission) => Boolean(permission?.id))
+      .map((permission) => permission.id);
+
+    setSelectedPermissions(permissionIds);
+    setAssignedPermissions(permissionIds);
+  }, [selectedUser?.id, currentUserPermissionsData]);
 
   // Filter users
   const filteredUsers = useMemo(() => {
@@ -128,7 +139,7 @@ export default function ManageUsersPage() {
         statusFilter === "ALL" || user.status === statusFilter;
 
       const matchesRole =
-        roleFilter === "ALL" || user.role?.toUpperCase() === roleFilter;
+        roleFilter === "ALL" || String(user.role).toUpperCase() === roleFilter;
 
       return matchesSearch && matchesStatus && matchesRole;
     });
@@ -139,89 +150,49 @@ export default function ManageUsersPage() {
 
   const blockedCount = users.filter((user) => user.status === "BLOCKED").length;
 
-  // Load permissions for the currently selected user
-  useEffect(() => {
-    if (!selectedUser || !userPermissionsData?.data) return;
-
-    setSelectedPermissions(getPermissionIds(userPermissionsData.data));
-  }, [selectedUser?.id, userPermissionsData]);
+  const isSaving = isUpdating || isAssigning || isRemoving;
 
   // Modal handlers
   const handleOpenModal = (user: TUser) => {
-    setStatus(user.status);
-    setRole(user.role?.toUpperCase() || "USER");
     setSelectedPermissions([]);
+    setAssignedPermissions([]);
     setSelectedUser(user);
   };
 
   const handleCloseModal = () => {
-    if (isProcessing) return;
+    if (isSaving) return;
 
     setSelectedUser(null);
     setSelectedPermissions([]);
   };
 
-  // Close modal with Escape key
-  useEffect(() => {
-    if (!selectedUser) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        handleCloseModal();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [selectedUser, isProcessing]);
-
-  // Permission selection
   const handleTogglePermission = (permissionId: string) => {
-    setSelectedPermissions((prev) =>
-      prev.includes(permissionId)
-        ? prev.filter((id) => id !== permissionId)
-        : [...prev, permissionId],
+    setSelectedPermissions((previous) =>
+      previous.includes(permissionId)
+        ? previous.filter((id) => id !== permissionId)
+        : [...previous, permissionId],
     );
   };
 
-  // Remove permission
-  const handleRemovePermission = async (permissionId: string) => {
-    if (!selectedUser || isProcessing) return;
-
-    try {
-      await removePermission({
-        userId: selectedUser.id,
-        permissionId,
-      }).unwrap();
-
-      setSelectedPermissions((prev) =>
-        prev.filter((id) => id !== permissionId),
-      );
-
-      toast.success("Permission removed successfully");
-    } catch {
-      toast.error("Failed to remove permission");
-    }
-  };
-
   // Update user role and status
-  const handleUpdateStatus = async () => {
-    if (!selectedUser || isProcessing) return;
+  const handleUpdateUser = async () => {
+    if (!selectedUser) return;
+
+    const hasChanges =
+      status !== selectedUser.status || role !== selectedUser.role;
+
+    if (!hasChanges) {
+      toast.info("No changes to update.");
+      return;
+    }
 
     try {
       await updateUser({
-        id: selectedUser.id,
-        data: {
-          status,
-          role: role.toLowerCase(),
-        },
+        userId: selectedUser.id,
+        data: { status, role },
       }).unwrap();
 
-      toast.success("User status and role updated successfully.");
-
+      toast.success("User updated successfully.");
       setSelectedUser(null);
       setSelectedPermissions([]);
     } catch {
@@ -229,26 +200,60 @@ export default function ManageUsersPage() {
     }
   };
 
-  // Assign permissions
+  // Assign selected permissions
   const handleAssignPermissions = async () => {
-    if (!selectedUser || isProcessing) return;
+    if (!selectedUser) return;
 
-    if (selectedPermissions.length === 0) {
-      toast.error("Please select at least one permission");
+    if (userPermissionsLoading || userPermissionsFetching) {
+      toast.info("Please wait until the user's permissions finish loading.");
+      return;
+    }
+
+    if (userPermissionsError) {
+      toast.error("Unable to load the user's current permissions.");
+      return;
+    }
+
+    const newPermissionIds = selectedPermissions.filter(
+      (id) => !assignedPermissions.includes(id),
+    );
+    if (newPermissionIds.length === 0) {
+      toast.error("Please select at least one permission.");
       return;
     }
 
     try {
       await assignPermissions({
         userId: selectedUser.id,
-        permissionIds: selectedPermissions,
+        permissionIds: newPermissionIds,
       }).unwrap();
 
       toast.success(
-        `Assigned ${selectedPermissions.length} permissions successfully!`,
+        `${newPermissionIds.length} permissions assigned successfully.`,
       );
     } catch {
-      toast.error("Failed to assign permissions");
+      toast.error("Failed to assign permissions.");
+    }
+  };
+
+  // Remove a permission
+  const handleRemovePermission = async (permissionId: string) => {
+    if (!selectedUser) return;
+
+    try {
+      await removePermission({
+        userId: selectedUser.id,
+        permissionId,
+      }).unwrap();
+
+      setSelectedPermissions((previous) =>
+        previous.filter((id) => id !== permissionId),
+      );
+      setAssignedPermissions((previous) => previous.filter((id) => id !== permissionId));
+
+      toast.success("Permission removed successfully.");
+    } catch {
+      toast.error("Failed to remove permission.");
     }
   };
 
@@ -264,12 +269,23 @@ export default function ManageUsersPage() {
   // Error state
   if (usersError) {
     return (
-      <div className="flex min-h-64 flex-col items-center justify-center gap-2 px-6 text-center">
-        <Users className="h-8 w-8 text-slate-400" />
-        <h2 className="font-semibold text-slate-900">Unable to load users</h2>
-        <p className="text-sm text-slate-500">
-          Please refresh the page or try again later.
-        </p>
+      <div className="flex min-h-64 flex-col items-center justify-center gap-3 px-6 text-center">
+        <AlertCircle className="h-9 w-9 text-red-500" />
+
+        <div>
+          <h2 className="font-semibold text-gray-900">Unable to load users</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Something went wrong while retrieving user accounts.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => void refetchUsers()}
+          className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-700"
+        >
+          Try again
+        </button>
       </div>
     );
   }
@@ -278,7 +294,7 @@ export default function ManageUsersPage() {
     <>
       <div className="min-h-screen bg-gray-50/70 p-4 sm:p-6">
         <div className="mx-auto max-w-7xl space-y-6">
-          {/* Header */}
+          {/* Page header */}
           <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-teal-600 p-3">
@@ -290,7 +306,7 @@ export default function ManageUsersPage() {
                   Manage Users
                 </h1>
                 <p className="mt-1 text-sm text-gray-500">
-                  View user accounts and manage their access status.
+                  View user accounts and manage their access.
                 </p>
               </div>
             </div>
@@ -328,7 +344,7 @@ export default function ManageUsersPage() {
             />
           </section>
 
-          {/* User Directory */}
+          {/* User directory */}
           <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
             <div className="flex flex-col gap-4 border-b border-gray-200 p-5">
               <div>
@@ -356,7 +372,7 @@ export default function ManageUsersPage() {
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row">
-                  {/* Status Filter */}
+                  {/* Status filter */}
                   <div className="relative w-full sm:w-48">
                     <select
                       value={statusFilter}
@@ -372,7 +388,7 @@ export default function ManageUsersPage() {
                     <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   </div>
 
-                  {/* Role Filter */}
+                  {/* Role filter */}
                   <div className="relative w-full sm:w-48">
                     <select
                       value={roleFilter}
@@ -392,7 +408,7 @@ export default function ManageUsersPage() {
               </div>
             </div>
 
-            {/* User Table */}
+            {/* Empty state */}
             {filteredUsers.length === 0 ? (
               <div className="flex min-h-64 flex-col items-center justify-center px-6 py-12 text-center">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 text-gray-400">
@@ -406,7 +422,7 @@ export default function ManageUsersPage() {
                 <p className="mt-1 text-sm text-gray-500">
                   {users.length === 0
                     ? "User accounts will appear here."
-                    : "Try another search term or status filter."}
+                    : "Try another search term or filter."}
                 </p>
 
                 {(searchTerm ||
@@ -426,6 +442,7 @@ export default function ManageUsersPage() {
                 )}
               </div>
             ) : (
+              /* Users table */
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[760px] border-collapse text-left">
                   <thead>
@@ -480,9 +497,9 @@ export default function ManageUsersPage() {
                         <td className="px-5 py-4">
                           <span
                             className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                              user.role?.toUpperCase() === "ADMIN"
+                              user.role === "ADMIN"
                                 ? "bg-purple-50 text-purple-700"
-                                : user.role?.toUpperCase() === "MODERATOR"
+                                : user.role === "MODERATOR"
                                   ? "bg-blue-50 text-blue-700"
                                   : "bg-gray-50 text-gray-700"
                             }`}
@@ -517,7 +534,6 @@ export default function ManageUsersPage() {
                               type="button"
                               onClick={() => handleOpenModal(user)}
                               aria-label={`Manage ${user.username}`}
-                              title="Manage user status and permissions"
                               className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 transition hover:border-teal-200 hover:bg-teal-50 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
                             >
                               <Settings className="h-4 w-4" />
@@ -532,7 +548,7 @@ export default function ManageUsersPage() {
               </div>
             )}
 
-            {/* Table Footer */}
+            {/* Table footer */}
             {filteredUsers.length > 0 && (
               <div className="flex flex-col gap-1 border-t border-gray-200 bg-gray-50/60 px-5 py-3 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
                 <span>
@@ -547,7 +563,7 @@ export default function ManageUsersPage() {
         </div>
       </div>
 
-      {/* User Management Modal */}
+      {/* Manage user modal */}
       {selectedUser && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]"
@@ -563,7 +579,7 @@ export default function ManageUsersPage() {
             aria-labelledby="manage-user-title"
             className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl"
           >
-            {/* Modal Header */}
+            {/* Modal header */}
             <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
               <div>
                 <h2
@@ -580,7 +596,7 @@ export default function ManageUsersPage() {
               <button
                 type="button"
                 onClick={handleCloseModal}
-                disabled={isProcessing}
+                disabled={isSaving}
                 aria-label="Close modal"
                 className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -588,12 +604,12 @@ export default function ManageUsersPage() {
               </button>
             </div>
 
-            {/* Modal Body */}
+            {/* Modal body */}
             <div className="flex-1 space-y-6 overflow-y-auto p-6">
-              {/* User Information */}
+              {/* User information */}
               <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-50 font-bold uppercase text-teal-700">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-50 font-bold uppercase text-teal-700">
                     {selectedUser.username?.trim().charAt(0) || "U"}
                   </div>
 
@@ -608,7 +624,7 @@ export default function ManageUsersPage() {
                 </div>
               </div>
 
-              {/* Role and Status */}
+              {/* Role and status */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label
@@ -621,18 +637,21 @@ export default function ManageUsersPage() {
                   <select
                     id="user-role"
                     value={role}
-                    onChange={(event) => setRole(event.target.value)}
-                    disabled={isUpdating}
+                    onChange={(event) =>
+                      setRole(event.target.value as UserRole)
+                    }
+                    disabled={isSaving}
                     className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm text-gray-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-gray-100"
                   >
-                    <option value="USER">User</option>
-                    <option value="MODERATOR">Moderator</option>
-                    <option value="ADMIN">Admin</option>
+                    {ROLE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
 
                   <p className="mt-2 text-xs leading-5 text-gray-500">
-                    Role determines overall access level. Admins have full
-                    system access.
+                    Role determines the user&apos;s overall access level.
                   </p>
                 </div>
 
@@ -641,18 +660,23 @@ export default function ManageUsersPage() {
                     htmlFor="user-status"
                     className="mb-2 block text-sm font-medium text-gray-700"
                   >
-                    Account status
+                    Account Status
                   </label>
 
                   <select
                     id="user-status"
                     value={status}
-                    onChange={(event) => setStatus(event.target.value)}
-                    disabled={isUpdating}
+                    onChange={(event) =>
+                      setStatus(event.target.value as UserStatus)
+                    }
+                    disabled={isSaving}
                     className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-sm text-gray-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-gray-100"
                   >
-                    <option value="ACTIVE">Active</option>
-                    <option value="BLOCKED">Blocked</option>
+                    {STATUS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
 
                   <p className="mt-2 text-xs leading-5 text-gray-500">
@@ -662,67 +686,91 @@ export default function ManageUsersPage() {
               </div>
 
               {/* Permissions */}
-              <div className="space-y-4 border-t pt-6">
-                <div className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-teal-600" />
-                  <h3 className="text-base font-semibold text-gray-900">
-                    Permissions ({selectedPermissions.length})
-                  </h3>
+              <div className="space-y-4 border-t border-gray-100 pt-6">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-teal-600" />
+                    <h3 className="text-base font-semibold text-gray-900">
+                      Permissions
+                    </h3>
+                    <span className="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700">
+                      {selectedPermissions.length} selected
+                    </span>
+                  </div>
                 </div>
 
-                {/* Permissions Loading */}
-                {permissionsLoading && (
-                  <div className="flex items-center justify-center gap-2 rounded-lg border border-gray-200 py-6 text-sm text-gray-500">
-                    <Loader2 className="h-4 w-4 animate-spin text-teal-600" />
-                    Loading user permissions...
+                {/* Permissions loading */}
+                {(userPermissionsLoading || userPermissionsFetching) && (
+                  <div className="flex min-h-32 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50">
+                    <Loader2 className="h-5 w-5 animate-spin text-teal-600" />
+                    <span className="text-sm text-gray-500">
+                      Loading user permissions...
+                    </span>
                   </div>
                 )}
 
-                {/* Permissions Error */}
-                {permissionsError && (
-                  <div className="rounded-lg border border-red-100 bg-red-50 p-4 text-sm text-red-600">
-                    Unable to load this user's permissions. Please try again.
-                  </div>
-                )}
+                {/* Permissions error */}
+                {userPermissionsError &&
+                  !userPermissionsLoading &&
+                  !userPermissionsFetching && (
+                    <div className="flex items-start gap-3 rounded-xl border border-red-100 bg-red-50 p-4">
+                      <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+                      <div>
+                        <p className="text-sm font-medium text-red-700">
+                          Unable to load user permissions
+                        </p>
+                        <p className="mt-1 text-xs text-red-600">
+                          Close the modal and try again.
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
-                {/* Current Permissions */}
-                {!permissionsLoading &&
-                  !permissionsError &&
+                {/* Current assigned permissions */}
+                {!userPermissionsLoading &&
+                  !userPermissionsFetching &&
+                  !userPermissionsError &&
                   selectedPermissions.length > 0 && (
                     <div>
                       <p className="mb-3 text-xs font-medium text-gray-500">
-                        Currently assigned
+                        Currently selected permissions
                       </p>
 
                       <div className="grid grid-cols-1 gap-2">
-                        {selectedPermissions.map((permId) => {
-                          const perm = permissions.find(
-                            (item) => item.id === permId,
+                        {selectedPermissions.map((permissionId) => {
+                          const permission = permissions.find(
+                            (item) => item.id === permissionId,
                           );
 
-                          if (!perm) return null;
+                          if (!permission) return null;
 
                           return (
                             <div
-                              key={permId}
+                              key={permissionId}
                               className="flex items-center gap-3 rounded-lg border border-teal-100 bg-teal-50 px-4 py-3"
                             >
-                              <ShieldCheck className="h-5 w-5 text-teal-600" />
+                              <ShieldCheck className="h-5 w-5 shrink-0 text-teal-600" />
 
                               <div className="min-w-0 flex-1">
                                 <span className="text-sm font-medium text-gray-700">
-                                  {perm.resource}:{perm.action}
+                                  {permission.resource}:{permission.action}
                                 </span>
                               </div>
 
                               <button
                                 type="button"
-                                onClick={() => handleRemovePermission(permId)}
-                                disabled={isProcessing}
-                                aria-label={`Remove ${perm.resource}:${perm.action}`}
-                                className="text-red-500 transition hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                onClick={() =>
+                                  handleRemovePermission(permissionId)
+                                }
+                                disabled={isSaving}
+                                aria-label={`Remove ${permission.resource} ${permission.action} permission`}
+                                className="rounded-md p-1 text-red-500 transition hover:bg-red-100 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                               >
-                                <X className="h-4 w-4" />
+                                {isRemoving ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <X className="h-4 w-4" />
+                                )}
                               </button>
                             </div>
                           );
@@ -731,126 +779,135 @@ export default function ManageUsersPage() {
                     </div>
                   )}
 
-                {/* Available Permissions */}
+                {/* Available permissions */}
                 <div>
                   <p className="mb-3 text-xs font-medium text-gray-500">
-                    Add permissions
+                    Available permissions
                   </p>
 
-                  <div className="max-h-80 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-3">
-                    {permissions.length === 0 ? (
-                      <p className="py-6 text-center text-sm text-gray-500">
-                        No permissions available.
+                  {permissionsLoading ? (
+                    <div className="flex min-h-32 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50">
+                      <Loader2 className="h-5 w-5 animate-spin text-teal-600" />
+                      <span className="text-sm text-gray-500">
+                        Loading available permissions...
+                      </span>
+                    </div>
+                  ) : permissions.length === 0 ? (
+                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-6 text-center">
+                      <Shield className="mx-auto h-6 w-6 text-gray-400" />
+                      <p className="mt-2 text-sm text-gray-500">
+                        No permissions are available.
                       </p>
-                    ) : (
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {permissions.map((perm) => {
-                          const isSelected = selectedPermissions.includes(
-                            perm.id,
-                          );
+                    </div>
+                  ) : (
+                    <div className="grid max-h-80 grid-cols-1 gap-3 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 p-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {permissions.map((permission) => {
+                        const isSelected = selectedPermissions.includes(
+                          permission.id,
+                        );
 
-                          return (
-                            <label
-                              key={perm.id}
-                              className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2.5 transition ${
-                                isSelected
-                                  ? "border-teal-200 bg-teal-50"
-                                  : "border-gray-200 bg-white hover:bg-gray-50"
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                disabled={
-                                  permissionsLoading ||
-                                  permissionsError ||
-                                  isProcessing
-                                }
-                                onChange={() => handleTogglePermission(perm.id)}
-                                className="mt-1 h-4 w-4 rounded text-teal-600 focus:ring-teal-500"
-                              />
+                        return (
+                          <label
+                            key={permission.id}
+                            className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2.5 transition ${
+                              isSelected
+                                ? "border-teal-200 bg-teal-50"
+                                : "border-gray-200 bg-white hover:bg-gray-50"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              disabled={
+                                isSaving ||
+                                userPermissionsLoading ||
+                                userPermissionsFetching ||
+                                userPermissionsError ||
+                                assignedPermissions.includes(permission.id)
+                              }
+                              onChange={() =>
+                                handleTogglePermission(permission.id)
+                              }
+                              className="mt-1 h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                            />
 
-                              <div className="min-w-0 flex-1">
-                                <span
-                                  className={`text-sm font-medium ${
-                                    isSelected
-                                      ? "text-teal-700"
-                                      : "text-gray-700"
-                                  }`}
-                                >
-                                  {perm.resource}:{perm.action}
-                                </span>
+                            <div className="min-w-0 flex-1">
+                              <span
+                                className={`text-sm font-medium ${
+                                  isSelected ? "text-teal-700" : "text-gray-700"
+                                }`}
+                              >
+                                {permission.resource}:{permission.action}
+                              </span>
 
-                                {isSelected && (
-                                  <div className="mt-1">
-                                    <ShieldCheck className="h-3 w-3 text-teal-600" />
-                                  </div>
-                                )}
-                              </div>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                              {isSelected && (
+                                <div className="mt-1 flex items-center gap-1 text-xs text-teal-600">
+                                  <ShieldCheck className="h-3 w-3" />
+                                  Selected
+                                </div>
+                              )}
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Block Account Warning */}
+              {/* Block account warning */}
               {status === "BLOCKED" && selectedUser.status !== "BLOCKED" && (
                 <div className="flex gap-3 rounded-xl border border-red-100 bg-red-50 p-4">
                   <ShieldBan className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
 
                   <div>
-                    <p className="text-sm leading-5 text-red-700">
+                    <p className="text-sm font-medium text-red-700">
                       You are about to block this account.
                     </p>
                     <p className="mt-1 text-xs leading-5 text-red-600">
-                      This will remove access to protected resources.
+                      This user may lose access to protected resources.
                     </p>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Modal Footer */}
-            <div className="flex flex-wrap justify-end gap-3 border-t border-gray-100 px-6 py-4">
+            {/* Modal footer */}
+            <div className="flex flex-col-reverse gap-3 border-t border-gray-100 px-6 py-4 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={handleCloseModal}
-                disabled={isProcessing}
+                disabled={isSaving}
                 className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
 
-              {/* Update User */}
               <button
                 type="button"
-                onClick={handleUpdateStatus}
+                onClick={handleUpdateUser}
                 disabled={
-                  isProcessing ||
-                  (status === selectedUser.status &&
-                    role === selectedUser.role?.toUpperCase())
+                  isSaving ||
+                  (status === selectedUser.status && role === selectedUser.role)
                 }
-                className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
-
                 {isUpdating ? "Updating..." : "Update User"}
               </button>
 
-              {/* Assign Permissions */}
               <button
                 type="button"
                 onClick={handleAssignPermissions}
                 disabled={
-                  isProcessing ||
+                  isSaving ||
+                  userPermissionsLoading ||
+                  userPermissionsFetching ||
+                  userPermissionsError ||
                   permissionsLoading ||
-                  permissionsError ||
-                  selectedPermissions.length === 0
+                  selectedPermissions.every((id) => assignedPermissions.includes(id))
                 }
-                className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isAssigning ? (
                   <>
@@ -870,14 +927,6 @@ export default function ManageUsersPage() {
       )}
     </>
   );
-}
-
-// Statistics Card
-interface StatCardProps {
-  label: string;
-  value: number;
-  icon: ReactNode;
-  iconClass: string;
 }
 
 function StatCard({ label, value, icon, iconClass }: StatCardProps) {

@@ -1,4 +1,5 @@
 import { TApiResponse } from "@/types/api";
+import type { TUser, UserStatus } from "@/types/user";
 import { tagTypes } from "../tags";
 import { baseServerApi } from "./baseApi";
 
@@ -49,7 +50,7 @@ export const userApi = baseServerApi.injectEndpoints({
       providesTags: [tagTypes.user],
     }),
 
-    getAllUsers: build.query({
+    getAllUsers: build.query<TApiResponse<TUser[]>, void>({
       query: () => ({
         url: "/user/all",
         method: "GET",
@@ -69,7 +70,7 @@ export const userApi = baseServerApi.injectEndpoints({
       invalidatesTags: [tagTypes.user],
     }),
 
-    updateUserStatus: build.mutation({
+    updateUserStatus: build.mutation<unknown, { userId: string; data: { status?: UserStatus; role?: string } }>({
       query: ({ userId, data }) => ({
         url: `/user/status/${userId}`,
         method: "PUT",

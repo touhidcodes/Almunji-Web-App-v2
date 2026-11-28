@@ -4,11 +4,12 @@ import type {
   CreatePermissionPayload,
   PermissionsResponse,
   RemovePermissionPayload,
-  UserPermissionsResponse,
+  Permission,
 } from "@/types/permission";
 
 import { tagTypes } from "../tags";
 import { baseServerApi } from "./baseApi";
+import type { TApiResponse } from "@/types/api";
 
 export const permissionApi = baseServerApi.injectEndpoints({
   endpoints: (build) => ({
@@ -21,7 +22,7 @@ export const permissionApi = baseServerApi.injectEndpoints({
       invalidatesTags: [tagTypes.permission],
     }),
 
-    getAllPermissions: build.query<PermissionsResponse, void>({
+    getAllPermissions: build.query<TApiResponse<PermissionsResponse>, void>({
       query: () => ({
         url: "/permission/all",
         method: "GET",
@@ -50,9 +51,9 @@ export const permissionApi = baseServerApi.injectEndpoints({
       invalidatesTags: [tagTypes.user, tagTypes.permission],
     }),
 
-    getUserPermissions: build.query<UserPermissionsResponse, string>({
+    getUserPermissions: build.query<TApiResponse<Permission[]>, string>({
       query: (userId) => ({
-        url: `/users/${userId}/permissions`,
+        url: `/permission/${userId}`,
         method: "GET",
       }),
       providesTags: [tagTypes.user, tagTypes.permission],
