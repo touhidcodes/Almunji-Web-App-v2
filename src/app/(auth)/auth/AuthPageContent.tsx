@@ -4,7 +4,7 @@ import LoginForm from "@/components/pages/Auth/LoginForm";
 import RegisterForm from "@/components/pages/Auth/RegisterForm";
 import { userLogin } from "@/services/actions/userLogin";
 import { userRegister } from "@/services/actions/userRegister";
-import { AxiosError } from "axios";
+import getErrorMessage from "@/utils/getErrorMessage";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FieldValues } from "react-hook-form";
@@ -32,16 +32,17 @@ const AuthPageContent = () => {
     try {
       setLoading(true);
       setError("");
+
       const res = await userLogin(values);
 
       if (res?.authenticated) {
-        toast.success(res?.message);
+        toast.success(res.message);
         router.push("/");
       } else {
-        setError(res.message);
+        setError(getErrorMessage(res, "Login failed"));
       }
-    } catch {
-      setError("Login failed");
+    } catch (err) {
+      setError(getErrorMessage(err, "Login failed"));
     } finally {
       setLoading(false);
     }
@@ -51,22 +52,17 @@ const AuthPageContent = () => {
     try {
       setLoading(true);
       setError("");
+
       const res = await userRegister(data);
 
       if (res?.data?.id) {
         toast.success(res.message);
         router.push("/");
       } else if (res?.success === false) {
-        setError(res?.message || "Registration failed!");
+        setError(getErrorMessage(res, "Registration failed"));
       }
     } catch (err) {
-      if (err instanceof AxiosError) {
-        const errorMessage =
-          err.response?.data?.message || "Registration failed";
-        setError(errorMessage);
-      } else {
-        setError("Unexpected error");
-      }
+      setError(getErrorMessage(err, "Registration failed"));
     } finally {
       setLoading(false);
     }
