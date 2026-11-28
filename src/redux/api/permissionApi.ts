@@ -1,9 +1,18 @@
+import type {
+  AssignBulkPermissionsPayload,
+  AssignPermissionPayload,
+  CreatePermissionPayload,
+  PermissionsResponse,
+  RemovePermissionPayload,
+  UserPermissionsResponse,
+} from "@/types/permission";
+
 import { tagTypes } from "../tags";
 import { baseServerApi } from "./baseApi";
 
 export const permissionApi = baseServerApi.injectEndpoints({
   endpoints: (build) => ({
-    createPermission: build.mutation({
+    createPermission: build.mutation<unknown, CreatePermissionPayload>({
       query: (data) => ({
         url: "/permission",
         method: "POST",
@@ -11,14 +20,16 @@ export const permissionApi = baseServerApi.injectEndpoints({
       }),
       invalidatesTags: [tagTypes.permission],
     }),
-    getAllPermissions: build.query({
+
+    getAllPermissions: build.query<PermissionsResponse, void>({
       query: () => ({
         url: "/permission/all",
         method: "GET",
       }),
       providesTags: [tagTypes.permission],
     }),
-    assignPermission: build.mutation({
+
+    assignPermission: build.mutation<unknown, AssignPermissionPayload>({
       query: (data) => ({
         url: "/permission/assign",
         method: "POST",
@@ -26,7 +37,11 @@ export const permissionApi = baseServerApi.injectEndpoints({
       }),
       invalidatesTags: [tagTypes.user, tagTypes.permission],
     }),
-    assignBulkPermissions: build.mutation({
+
+    assignBulkPermissions: build.mutation<
+      unknown,
+      AssignBulkPermissionsPayload
+    >({
       query: (data) => ({
         url: "/permission/bulk-assign",
         method: "POST",
@@ -34,14 +49,16 @@ export const permissionApi = baseServerApi.injectEndpoints({
       }),
       invalidatesTags: [tagTypes.user, tagTypes.permission],
     }),
-    getUserPermissions: build.query({
-      query: () => ({
-        url: `/permission`,
+
+    getUserPermissions: build.query<UserPermissionsResponse, string>({
+      query: (userId) => ({
+        url: `/users/${userId}/permissions`,
         method: "GET",
       }),
-      providesTags: [tagTypes.permission],
+      providesTags: [tagTypes.user, tagTypes.permission],
     }),
-    removePermission: build.mutation({
+
+    removePermission: build.mutation<unknown, RemovePermissionPayload>({
       query: (data) => ({
         url: "/permission/remove",
         method: "DELETE",
@@ -49,7 +66,8 @@ export const permissionApi = baseServerApi.injectEndpoints({
       }),
       invalidatesTags: [tagTypes.user, tagTypes.permission],
     }),
-    deletePermission: build.mutation({
+
+    deletePermission: build.mutation<unknown, string>({
       query: (id) => ({
         url: `/permission/${id}`,
         method: "DELETE",
