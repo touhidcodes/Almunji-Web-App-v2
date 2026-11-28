@@ -28,6 +28,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import Link from "next/link";
 
 interface StatCardProps {
   label: string;
@@ -70,7 +71,7 @@ export default function ManageUsersPage() {
 
   // Available permissions
   const { data: permissionsData, isLoading: permissionsLoading } =
-    useGetAllPermissionsQuery();
+    useGetAllPermissionsQuery(undefined, { skip: role !== "MODERATOR" || !selectedUser });
 
   // User permissions
   // currentData belongs to the currently selected query argument.
@@ -80,7 +81,7 @@ export default function ManageUsersPage() {
     isFetching: userPermissionsFetching,
     isError: userPermissionsError,
   } = useGetUserPermissionsQuery(selectedUser?.id ?? "", {
-    skip: !selectedUser?.id,
+    skip: !selectedUser?.id || role !== "MODERATOR",
   });
 
   // Mutations
@@ -202,7 +203,7 @@ export default function ManageUsersPage() {
 
   // Assign selected permissions
   const handleAssignPermissions = async () => {
-    if (!selectedUser) return;
+    if (!selectedUser || role !== "MODERATOR" || selectedUser.role !== "MODERATOR") return;
 
     if (userPermissionsLoading || userPermissionsFetching) {
       toast.info("Please wait until the user's permissions finish loading.");
@@ -238,7 +239,7 @@ export default function ManageUsersPage() {
 
   // Remove a permission
   const handleRemovePermission = async (permissionId: string) => {
-    if (!selectedUser) return;
+    if (!selectedUser || role !== "MODERATOR" || selectedUser.role !== "MODERATOR") return;
 
     try {
       await removePermission({
@@ -318,6 +319,7 @@ export default function ManageUsersPage() {
               </span>
               <span className="text-sm text-gray-500">total users</span>
             </div>
+            <Link href="/dashboard/admin/create/users" className="rounded-xl bg-teal-600 px-4 py-3 text-sm font-semibold text-white hover:bg-teal-700">Create User</Link>
           </header>
 
           {/* Statistics */}
@@ -686,7 +688,11 @@ export default function ManageUsersPage() {
               </div>
 
               {/* Permissions */}
+              {role === "MODERATOR" && (
               <div className="space-y-4 border-t border-gray-100 pt-6">
+                {selectedUser.role !== "MODERATOR" && (
+                  <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">Save the moderator role before assigning permissions.</p>
+                )}
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <Shield className="h-5 w-5 text-teal-600" />
@@ -762,7 +768,7 @@ export default function ManageUsersPage() {
                                 onClick={() =>
                                   handleRemovePermission(permissionId)
                                 }
-                                disabled={isSaving}
+                                disabled={isSaving || selectedUser.role !== "MODERATOR"}
                                 aria-label={`Remove ${permission.resource} ${permission.action} permission`}
                                 className="rounded-md p-1 text-red-500 transition hover:bg-red-100 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                               >
@@ -820,6 +826,7 @@ export default function ManageUsersPage() {
                               checked={isSelected}
                               disabled={
                                 isSaving ||
+                                selectedUser.role !== "MODERATOR" ||
                                 userPermissionsLoading ||
                                 userPermissionsFetching ||
                                 userPermissionsError ||
@@ -854,6 +861,7 @@ export default function ManageUsersPage() {
                   )}
                 </div>
               </div>
+              )}
 
               {/* Block account warning */}
               {status === "BLOCKED" && selectedUser.status !== "BLOCKED" && (
@@ -896,7 +904,7 @@ export default function ManageUsersPage() {
                 {isUpdating ? "Updating..." : "Update User"}
               </button>
 
-              <button
+              {role === "MODERATOR" && selectedUser.role === "MODERATOR" && <button
                 type="button"
                 onClick={handleAssignPermissions}
                 disabled={
@@ -920,7 +928,7 @@ export default function ManageUsersPage() {
                     Assign Permissions
                   </>
                 )}
-              </button>
+              </button>}
             </div>
           </div>
         </div>
